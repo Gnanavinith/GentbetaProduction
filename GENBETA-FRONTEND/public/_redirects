@@ -1,0 +1,4 @@
+# Redirect rules for Netlify or other static hosting platforms
+
+# Catch-all redirect to index.html for SPA routing
+/*    /index.html    200
