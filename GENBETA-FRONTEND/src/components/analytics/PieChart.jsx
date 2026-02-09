@@ -11,7 +11,7 @@ const COLORS = {
 export default function PieChart({ data, title }) {
   if (!data || Object.keys(data).length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 h-full flex flex-col min-h-[300px]">
+      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 h-full flex flex-col min-h-[380px]">
         <h3 className="text-lg font-bold text-gray-900 mb-3">{title}</h3>
         <div className="flex-1 flex flex-col items-center justify-center text-gray-400 space-y-4">
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
@@ -38,7 +38,7 @@ export default function PieChart({ data, title }) {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 h-full flex flex-col min-h-[300px]">
+      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 h-full flex flex-col min-h-[380px]">
         <h3 className="text-lg font-bold text-gray-900 mb-3">{title}</h3>
         <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
           <p className="font-medium">No data to display</p>
@@ -64,7 +64,7 @@ export default function PieChart({ data, title }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 h-full flex flex-col min-h-[300px] transition-all hover:shadow-md">
+    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 h-full flex flex-col min-h-[380px] transition-all hover:shadow-md">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold text-gray-900 tracking-tight">{title}</h3>
@@ -73,7 +73,7 @@ export default function PieChart({ data, title }) {
       </div>
       
       <div className="flex-1 w-full relative flex items-center justify-center">
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={280}>
           <RePieChart>
             <defs>
               {chartData.map((entry) => (
@@ -116,7 +116,7 @@ export default function PieChart({ data, title }) {
         </ResponsiveContainer>
         
         {/* Center Text */}
-        <div className="absolute top-[41%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+        <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
           <p className="text-2xl font-black text-gray-900 tracking-tighter">
             {chartData.reduce((acc, curr) => acc + curr.value, 0)}
           </p>

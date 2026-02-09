@@ -1,4 +1,4 @@
-import { Crown, Zap, Star, Sparkles, Settings } from "lucide-react";
+import { FaCrown as Crown, FaBolt as Zap, FaStar as Star, FaMagic as Sparkles, FaCog as Settings, FaMedal as Medal, FaGem as Gem, FaSlidersH as Sliders } from "react-icons/fa";
 
 export default function PlanSelectionStep({ 
   selectedPlan, 
@@ -12,10 +12,10 @@ export default function PlanSelectionStep({
 }) {
   const getPlanIcon = (planKey) => {
     switch(planKey?.toUpperCase()) {
-      case "GOLD": return "🥇";
-      case "PREMIUM": return "💎";
-      case "CUSTOM": return "✨";
-      default: return "🥈";
+      case "GOLD": return <Medal size={24} className="mx-auto text-amber-500" />;
+      case "PREMIUM": return <Gem size={24} className="mx-auto text-purple-500" />;
+      case "CUSTOM": return <Sliders size={24} className="mx-auto text-blue-500" />;
+      default: return <Star size={24} className="mx-auto text-slate-500" />;
     }
   };
 

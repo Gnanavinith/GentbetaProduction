@@ -17,12 +17,79 @@ const generatePlantCode = () =>
 ====================================================== */
 export const createCompanyWithPlantsAdmin = async (req, res) => {
   try {
-    const { company, plants, admin, plan, customLimits } = req.body;
+    // Log request body to debug
+    console.log("Raw request body:", req.body);
+    console.log("Raw request body type:", typeof req.body);
+    console.log("Request has body:", !!req.body);
+    console.log("Request files:", req.file);
+    console.log("Content-Type header:", req.get('Content-Type'));
     
-    console.log("Received request body:", JSON.stringify(req.body, null, 2));
+    // Handle the case where data might be sent as JSON strings in FormData
+    let parsedBody = req.body;
+    if (req.body && req.body.company && typeof req.body.company === 'string') {
+      try {
+        parsedBody = { ...req.body };
+        parsedBody.company = JSON.parse(req.body.company);
+      } catch (parseError) {
+        console.error('Failed to parse company data:', parseError);
+        console.error('Company data string:', req.body.company);
+      }
+    } else {
+      console.log('Company data not found or not a string:', req.body.company, typeof req.body.company);
+    }
+    if (req.body && typeof req.body.plants === 'string') {
+      try {
+        parsedBody = { ...parsedBody };
+        parsedBody.plants = JSON.parse(req.body.plants);
+      } catch (parseError) {
+        console.error('Failed to parse plants data:', parseError);
+      }
+    }
+    if (req.body && typeof req.body.admin === 'string') {
+      try {
+        parsedBody = { ...parsedBody };
+        parsedBody.admin = JSON.parse(req.body.admin);
+      } catch (parseError) {
+        console.error('Failed to parse admin data:', parseError);
+      }
+    }
+    if (req.body && typeof req.body.customLimits === 'string') {
+      try {
+        parsedBody = { ...parsedBody };
+        parsedBody.customLimits = JSON.parse(req.body.customLimits);
+      } catch (parseError) {
+        console.error('Failed to parse customLimits data:', parseError);
+      }
+    }
+    
+    console.log("Request body keys:", Object.keys(req.body));
+    console.log("Request body type:", typeof req.body);
+    console.log("Company in req.body:", req.body.company);
+    console.log("Plants in req.body:", req.body.plants);
+    console.log("Admin in req.body:", req.body.admin);
+    console.log("Full parsed body:", JSON.stringify(parsedBody, null, 2));
+    console.log("Is file uploaded?:", !!req.file);
+
+    // Extract the data from parsedBody
+    const { company, plants, admin, plan, customLimits } = parsedBody;
+
+    // Validate the extracted data
+    console.log("Parsed company:", !!company, company);
+    console.log("Parsed plants:", !!plants, plants);
+    console.log("Parsed admin:", !!admin, admin);
 
     if (!company || !plants || !admin) {
+      console.log("Validation failed - missing fields. Company:", !!company, "Plants:", !!plants, "Admin:", !!admin);
+      console.log("Raw parsedBody:", JSON.stringify(parsedBody, null, 2));
+      console.log("Keys in parsedBody:", Object.keys(parsedBody));
       return res.status(400).json({ message: "Missing required data (company, plants, or admin)" });
+    }
+
+    // Handle logo if uploaded via multer (using Cloudinary)
+    let logoUrl;
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer);
+      logoUrl = result.secure_url;
     }
 
     // Check if primary admin email already exists
@@ -50,7 +117,7 @@ export const createCompanyWithPlantsAdmin = async (req, res) => {
       address: company.address,
       contactPhone: company.contactPhone,
       gstNumber: company.gstNumber,
-      logoUrl: company.logoUrl,
+      logoUrl: logoUrl || company.logoUrl,
       subscription: {
         plan: selectedPlan,
         startDate: new Date(),
@@ -350,6 +417,8 @@ export const updateCompany = async (req, res) => {
     if (gstNumber) updateData.gstNumber = gstNumber;
     if (address) updateData.address = address;
     if (logoUrl) updateData.logoUrl = logoUrl;
+    // Also update logoUrl if provided in the request body (when not uploading a file)
+    if (!logoUrl && parsedBody.logoUrl !== undefined) updateData.logoUrl = parsedBody.logoUrl;
 
     const updatedCompany = await Company.findByIdAndUpdate(
       req.params.id,

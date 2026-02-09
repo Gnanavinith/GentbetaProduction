@@ -1,12 +1,12 @@
-import { Crown, Zap, Star } from "lucide-react";
+import { Crown, Zap, Star, Medal, Sparkles } from "lucide-react";
 
 export default function CompanySubscriptionForm({ company }) {
   const getPlanIcon = (planKey) => {
     switch(planKey?.toUpperCase()) {
-      case "GOLD": return "🥇";
-      case "PREMIUM": return "💎";
-      case "CUSTOM": return "✨";
-      default: return "🥈";
+      case "GOLD": return <Medal className="w-5 h-5 text-amber-500" />;
+      case "PREMIUM": return <Crown className="w-5 h-5 text-purple-500" />;
+      case "CUSTOM": return <Sparkles className="w-5 h-5 text-blue-500" />;
+      default: return <Star className="w-5 h-5 text-slate-400" />;
     }
   };
 

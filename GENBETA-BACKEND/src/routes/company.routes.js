@@ -46,7 +46,7 @@ router.post("/upload-logo", auth, authorize(["SUPER_ADMIN"]), upload.single("log
 });
 
 router.post("/", auth, authorize(["SUPER_ADMIN"]), createCompany);
-router.post("/create-with-plants-admin", auth, authorize(["SUPER_ADMIN"]), createCompanyWithPlantsAdmin);
+router.post("/create-with-plants-admin", auth, authorize(["SUPER_ADMIN"]), upload.single("logo"), createCompanyWithPlantsAdmin);
 router.get("/", auth, authorize(["SUPER_ADMIN"]), getCompanies);
 router.get("/my-company", auth, authorize(["COMPANY_ADMIN"]), getMyCompany);
 router.get("/:id", auth, authorize(["SUPER_ADMIN", "COMPANY_ADMIN"]), checkPlanLimits, getCompanyById);

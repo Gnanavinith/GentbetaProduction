@@ -37,6 +37,7 @@ export default function CreateCompanyWizard() {
     address: "",
     gstNumber: "",
     logoUrl: "",
+    logoFile: null,
   });
 
   const [plants, setPlants] = useState([
@@ -77,34 +78,50 @@ export default function CreateCompanyWizard() {
     try {
       setLoading(true);
       
-      // Log the payload for debugging
-      const payload = {
-        company: {
-          companyName: company.companyName,
-          industry: company.industry,
-          contactEmail: company.contactEmail,
-          address: company.address,
-          gstNumber: company.gstNumber,
-          logoUrl: company.logoUrl,
-        },
-        plants: plants.map(plant => ({
-          name: plant.plantName,
-          location: plant.location,
-          plantNumber: plant.plantNumber || undefined,
-          adminName: plant.adminName || plant.adminEmail.split('@')[0],
-          adminEmail: plant.adminEmail,
-          adminPassword: plant.adminPassword,
-        })),
-        admin: {
-          name: companyAdmin.adminName,
-          email: companyAdmin.adminEmail,
-          password: companyAdmin.adminPassword
-        },
-        plan: selectedPlan,
-        customLimits: selectedPlan === "CUSTOM" ? customLimits : undefined
+      // Prepare payload - handle file upload if logo exists
+      const payload = new FormData();
+      
+      // Create company data object without the logoFile (since we handle the actual file separately)
+      const companyData = {
+        companyName: company.companyName,
+        industry: company.industry,
+        contactEmail: company.contactEmail,
+        address: company.address,
+        gstNumber: company.gstNumber,
       };
-
-      console.log("Sending payload:", JSON.stringify(payload, null, 2));
+      
+      // Add company data
+      payload.append('company', JSON.stringify(companyData));
+      
+      // Add logo file if it exists
+      if (company.logoFile) {
+        payload.append('logo', company.logoFile);
+      }
+      
+      // Add plants data
+      payload.append('plants', JSON.stringify(plants.map(plant => ({
+        name: plant.plantName,
+        location: plant.location,
+        plantNumber: plant.plantNumber || undefined,
+        adminName: plant.adminName || plant.adminEmail.split('@')[0],
+        adminEmail: plant.adminEmail,
+        adminPassword: plant.adminPassword,
+      }))));
+      
+      // Add admin data
+      payload.append('admin', JSON.stringify({
+        name: companyAdmin.adminName,
+        email: companyAdmin.adminEmail,
+        password: companyAdmin.adminPassword
+      }));
+      
+      // Add plan data
+      payload.append('plan', selectedPlan);
+      if (selectedPlan === "CUSTOM") {
+        payload.append('customLimits', JSON.stringify(customLimits));
+      }
+      
+      console.log("Sending payload keys:", [...payload.keys()]);
       
       await api.post("/api/companies/create-with-plants-admin", payload);
       toast.success("Company created successfully!", { id: toastId });

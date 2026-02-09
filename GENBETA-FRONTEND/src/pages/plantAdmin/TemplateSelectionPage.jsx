@@ -137,7 +137,11 @@ export default function TemplateSelectionPage() {
               Back to Forms
             </button>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">New</h1>
-            <p className="text-gray-600">Choose a new form design or start from an existing template.</p>
+            <p className="text-gray-600">
+              {templateFeatureEnabled 
+                ? "Choose a new form design or start from an existing template." 
+                : "Choose a new form design to get started."}
+            </p>
           </div>
 
           {/* New form design - Blank */}
@@ -158,34 +162,28 @@ export default function TemplateSelectionPage() {
           </div>
 
           {/* Create as Template */}
-          <div className="mb-8">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">New template</h2>
-            <button
-              onClick={handleCreateBlankAsTemplate}
-              className="w-full bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-purple-500 hover:bg-purple-50/30 transition-all group"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-purple-100 transition-colors">
-                  <FileText className="w-8 h-8 text-gray-400 group-hover:text-purple-600" />
+          {templateFeatureEnabled && (
+            <div className="mb-8">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">New template</h2>
+              <button
+                onClick={handleCreateBlankAsTemplate}
+                className="w-full bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-purple-500 hover:bg-purple-50/30 transition-all group"
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                    <FileText className="w-8 h-8 text-gray-400 group-hover:text-purple-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900">Blank template</h2>
+                  <p className="text-sm text-gray-500">Create as a reusable template</p>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Blank template</h2>
-                <p className="text-sm text-gray-500">Create as a reusable template</p>
-              </div>
-            </button>
-          </div>
+              </button>
+            </div>
+          )}
 
           {/* Existing template design */}
-          <div>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Existing template design</h2>
-            {!templateFeatureEnabled ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Saved templates</h3>
-                <p className="text-gray-500">
-                  Template feature is not enabled. Saved templates will appear here when enabled by your administrator.
-                </p>
-              </div>
-            ) : (
+          {templateFeatureEnabled && (
+            <div>
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Existing template design</h2>
               <>
                 <div className="mb-6">
                   <div className="relative">
@@ -245,8 +243,8 @@ export default function TemplateSelectionPage() {
                   </div>
                 )}
               </>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

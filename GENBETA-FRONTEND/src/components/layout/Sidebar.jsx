@@ -273,7 +273,7 @@ export default function Sidebar({ isOpen, onToggle }) {
           <div className={`h-16 flex items-center border-b border-slate-200/60 gap-3 transition-all duration-300 ${
             isOpen ? "px-6" : "justify-center px-0"
           }`}>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/30">
+            <div className="w-8 h-8 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
               {user?.companyLogo ? (
                 <img 
                   src={user.companyLogo} 
@@ -286,7 +286,7 @@ export default function Sidebar({ isOpen, onToggle }) {
             </div>
             <div className={`min-w-0 transition-all duration-200 ${isOpen ? "opacity-100 w-auto" : "opacity-0 w-0"}`}>
               <h2 className="text-sm font-bold text-slate-900 truncate">
-                {user?.companyName || "Plant Admin"}
+                {user?.companyName || (user?.role === "SUPER_ADMIN" ? "Super Admin" : "Plant Admin")}
               </h2>
               <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block leading-none mt-0.5">
                 {user?.role?.replace("_", " ")}
