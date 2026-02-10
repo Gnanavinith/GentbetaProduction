@@ -16,12 +16,14 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 // Environment-based configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+const API_BASE_URL = import.meta.env.DEV
+  ? "" // dev → Vite proxy handles /api
+  : import.meta.env.VITE_API_URL || "https://app.matapangtech.com";
 
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 90000, // Increased to 90 seconds to handle email sending latency
+  timeout: 90000,
 });
 
 // Request interceptor - Add auth token
