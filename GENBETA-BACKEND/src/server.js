@@ -24,13 +24,42 @@ import { seedSuperAdmin } from "./utils/seedSuperAdmin.js";
 
 dotenv.config();
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://your-frontend.com",
+  "https://admin.your-frontend.com",
+  "http://login.matapangtech.com",
+  "https://product.matapangtech.com",
+  "https://admin.matapangtech.com",
+  "https://genbeta.matapangtech.com",
+];
+
 
 const app = express();
 app.use(helmet());
 app.use(compression());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-app.use(cors());
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
+
 
 // Serve uploaded files
 const __filename = fileURLToPath(import.meta.url);
@@ -44,8 +73,8 @@ app.get("/", (req, res) => {
 
 // Health check route
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
+  res.json({
+    status: "OK",
     uptime: process.uptime(),
     timestamp: new Date().toISOString()
   });
