@@ -29,6 +29,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://your-frontend.com",
   "https://admin.your-frontend.com",
+  "https://login.matapangtech.com",
   "http://login.matapangtech.com",
   "https://product.matapangtech.com",
   "https://admin.matapangtech.com",
