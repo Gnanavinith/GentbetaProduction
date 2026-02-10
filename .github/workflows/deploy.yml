@@ -1,0 +1,43 @@
+name: CI/CD Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            echo "Go to project directory"
+            cd ${{ secrets.SERVER_PATH }}
+
+            echo "Pull latest code"
+            git pull origin main
+
+            echo "Restore environment files"
+            cp /root/frontend.env.backup frontend/.env
+            cp /root/backend.env.backup backend/.env
+
+            echo "===== FRONTEND BUILD ====="
+            cd frontend
+            npm install
+            npm run build
+            chown -R www-data:www-data dist
+            chmod -R 755 dist
+
+            echo "===== BACKEND RESTART ====="
+            cd ../backend
+            npm install
+            pm2 restart all
+            pm2 save
+
+            echo "DEPLOYMENT COMPLETED SUCCESSFULLY ✅"
