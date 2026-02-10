@@ -16,21 +16,43 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
           script: |
             set -e
 
-            echo "===== 🌐 FRONTEND DEPLOY ====="
+            echo "=============================="
+            echo "🚀 STARTING DEPLOYMENT"
+            echo "=============================="
+
+            # 🔥 LOAD NODE (NVM FIX)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+            nvm install --lts
+            nvm use --lts
+
+            echo "Node version:"
+            node -v
+            echo "NPM version:"
+            npm -v
+
+            echo "=============================="
+            echo "🌐 FRONTEND DEPLOY"
+            echo "=============================="
+
             cd /var/www/GentbetaProduction/GENBETA-FRONTEND
 
             echo "⬇️ Pull latest frontend code"
             git fetch origin
             git reset --hard origin/main
 
-            echo "🔐 Restore frontend env"
+            echo "🔐 Restore frontend environment"
             cp /root/frontend.env.backup .env
 
-            echo "📦 Install deps & build"
+            echo "📦 Install frontend dependencies"
             npm ci
+
+            echo "🏗 Build frontend"
             npm run build
 
             echo "🔐 Fix permissions"
@@ -40,22 +62,26 @@ jobs:
             echo "🔁 Reload Nginx"
             sudo systemctl reload nginx
 
+            echo "=============================="
+            echo "⚙️ BACKEND DEPLOY"
+            echo "=============================="
 
-            echo "===== ⚙️ BACKEND DEPLOY ====="
             cd /var/www/GentbetaProduction/GENBETA-BACKEND
 
             echo "⬇️ Pull latest backend code"
             git fetch origin
             git reset --hard origin/main
 
-            echo "🔐 Restore backend env"
+            echo "🔐 Restore backend environment"
             cp /root/backend.env.backup .env
 
-            echo "📦 Install backend deps"
+            echo "📦 Install backend dependencies"
             npm ci
 
-            echo "♻️ Restart backend via PM2"
+            echo "♻️ Restart backend using PM2"
             pm2 restart genbeta-backend || pm2 start app.js --name genbeta-backend
             pm2 save
 
+            echo "=============================="
             echo "✅ DEPLOYMENT COMPLETED SUCCESSFULLY"
+            echo "=============================="
