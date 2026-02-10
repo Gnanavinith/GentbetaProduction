@@ -1,5 +1,5 @@
 export const API = (url, data, token) =>
-  fetch(`${process.env.API_BASE_URL || 'http://localhost:5001'}${url}`, {
+  fetch(`${process.env.API_BASE_URL || 'https://app.matapangtech.com'}${url}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
