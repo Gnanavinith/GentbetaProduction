@@ -20,68 +20,42 @@ jobs:
           script: |
             set -e
 
-            echo "=============================="
-            echo "🚀 STARTING DEPLOYMENT"
-            echo "=============================="
+            # ✅ Explicit Node paths (FIXES npm not found)
+            export NODE_BIN="/root/.nvm/versions/node/v18.19.0/bin"
+            export PATH="$NODE_BIN:$PATH"
 
-            # 🔥 LOAD NODE (NVM FIX)
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
-            nvm install --lts
-            nvm use --lts
-
-            echo "Node version:"
+            echo "Node:"
             node -v
-            echo "NPM version:"
+            echo "NPM:"
             npm -v
 
-            echo "=============================="
-            echo "🌐 FRONTEND DEPLOY"
-            echo "=============================="
-
+            echo "===== FRONTEND DEPLOY ====="
             cd /var/www/GentbetaProduction/GENBETA-FRONTEND
 
-            echo "⬇️ Pull latest frontend code"
             git fetch origin
             git reset --hard origin/main
 
-            echo "🔐 Restore frontend environment"
             cp /root/frontend.env.backup .env
 
-            echo "📦 Install frontend dependencies"
             npm ci
-
-            echo "🏗 Build frontend"
             npm run build
 
-            echo "🔐 Fix permissions"
             chown -R www-data:www-data dist
             chmod -R 755 dist
 
-            echo "🔁 Reload Nginx"
-            sudo systemctl reload nginx
+            systemctl reload nginx
 
-            echo "=============================="
-            echo "⚙️ BACKEND DEPLOY"
-            echo "=============================="
-
+            echo "===== BACKEND DEPLOY ====="
             cd /var/www/GentbetaProduction/GENBETA-BACKEND
 
-            echo "⬇️ Pull latest backend code"
             git fetch origin
             git reset --hard origin/main
 
-            echo "🔐 Restore backend environment"
             cp /root/backend.env.backup .env
 
-            echo "📦 Install backend dependencies"
             npm ci
 
-            echo "♻️ Restart backend using PM2"
             pm2 restart genbeta-backend || pm2 start app.js --name genbeta-backend
             pm2 save
 
-            echo "=============================="
-            echo "✅ DEPLOYMENT COMPLETED SUCCESSFULLY"
-            echo "=============================="
+            echo "✅ DEPLOYMENT COMPLETED"
