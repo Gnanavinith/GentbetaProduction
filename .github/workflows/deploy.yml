@@ -17,27 +17,45 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            echo "Go to project directory"
-            cd ${{ secrets.SERVER_PATH }}
+            set -e
 
-            echo "Pull latest code"
-            git pull origin main
+            echo "===== 🌐 FRONTEND DEPLOY ====="
+            cd /var/www/GentbetaProduction/GENBETA-FRONTEND
 
-            echo "Restore environment files"
-            cp /root/frontend.env.backup frontend/.env
-            cp /root/backend.env.backup backend/.env
+            echo "⬇️ Pull latest frontend code"
+            git fetch origin
+            git reset --hard origin/main
 
-            echo "===== FRONTEND BUILD ====="
-            cd frontend
-            npm install
+            echo "🔐 Restore frontend env"
+            cp /root/frontend.env.backup .env
+
+            echo "📦 Install deps & build"
+            npm ci
             npm run build
+
+            echo "🔐 Fix permissions"
             chown -R www-data:www-data dist
             chmod -R 755 dist
 
-            echo "===== BACKEND RESTART ====="
-            cd ../backend
-            npm install
-            pm2 restart all
+            echo "🔁 Reload Nginx"
+            sudo systemctl reload nginx
+
+
+            echo "===== ⚙️ BACKEND DEPLOY ====="
+            cd /var/www/GentbetaProduction/GENBETA-BACKEND
+
+            echo "⬇️ Pull latest backend code"
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "🔐 Restore backend env"
+            cp /root/backend.env.backup .env
+
+            echo "📦 Install backend deps"
+            npm ci
+
+            echo "♻️ Restart backend via PM2"
+            pm2 restart genbeta-backend || pm2 start app.js --name genbeta-backend
             pm2 save
 
-            echo "DEPLOYMENT COMPLETED SUCCESSFULLY ✅"
+            echo "✅ DEPLOYMENT COMPLETED SUCCESSFULLY"
