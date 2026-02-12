@@ -50,6 +50,7 @@ const formSubmissionSchema = new mongoose.Schema({
   
   // Tracking
   numericalId: { type: Number, unique: true },
+  readableId: { type: String, unique: true }, // Human-readable submission ID
   isArchived: { type: Boolean, default: false }
   
 }, { 
@@ -77,6 +78,18 @@ formSubmissionSchema.pre('save', async function(next) {
       this.numericalId = Date.now();
     }
   }
+  
+  // Generate readable ID if not already set
+  if (!this.readableId && this.numericalId && this.formName) {
+    try {
+      const { generateReadableSubmissionId } = await import('../utils/formIdGenerator.js');
+      this.readableId = generateReadableSubmissionId(this.formName, this.numericalId);
+    } catch (err) {
+      console.error('Error generating readable ID:', err);
+      this.readableId = `submission-${this.numericalId}`;
+    }
+  }
+  
   next();
 });
 

@@ -10,7 +10,7 @@ dotenv.config();
 const debugFormCount = async () => {
   try {
     // Connect to database
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/genbeta');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/matapang');
     console.log('Connected to database');
 
     // Find your company (you'll need to replace this with your actual company ID)

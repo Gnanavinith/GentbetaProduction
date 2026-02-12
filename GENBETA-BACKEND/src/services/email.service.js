@@ -35,11 +35,11 @@ const transporter = createTransporter();
  * Resolve the appropriate sender email based on context
  * Implements hierarchical email sending: Super Admin → Company → Plant → Employee
  */
-const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"GenBeta" <no-reply@genbeta.com>' }) => {
+const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"Matapang" <no-reply@matapang.com>' }) => {
   try {
     // Super Admin level - use platform identity
     if (actor === "SUPER_ADMIN") {
-      return process.env.PLATFORM_EMAIL || '"GenBeta Platform" <no-reply@genbeta.com>';
+      return process.env.PLATFORM_EMAIL || '"Matapang Platform" <no-reply@matapang.com>';
     }
     
     // Company Admin level - use company email if available
@@ -55,8 +55,8 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
       const plant = await Plant.findById(plantId).populate("companyId", "email name").select("email name");
       if (plant) {
         // Prefer plant-specific email, then company email, then fallback
-        const fromEmail = plant.email || plant.companyId?.email || process.env.PLATFORM_EMAIL || "no-reply@genbeta.com";
-        const fromName = plant.name || plant.companyId?.name || "GenBeta";
+        const fromEmail = plant.email || plant.companyId?.email || process.env.PLATFORM_EMAIL || "no-reply@matapang.com";
+        const fromName = plant.name || plant.companyId?.name || "Matapang";
         return `"${fromName}" <${fromEmail}>`;
       }
     }
@@ -75,7 +75,7 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
 const getBaseLayout = (content, company = {}, plant = {}) => {
   const logoHtml = company.logoUrl 
     ? `<img src="${company.logoUrl}" alt="${company.name}" style="max-height: 60px; margin-bottom: 20px;">` 
-    : `<h1 style="color: #4f46e5; margin: 0;">${company.name || 'GenBeta'}</h1>`;
+    : `<h1 style="color: #4f46e5; margin: 0;">${company.name || 'Matapang'}</h1>`;
 
   const plantInfoHtml = (plant && plant.name) 
     ? `<div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #4f46e5; margin-bottom: 20px; border-radius: 0 4px 4px 0;">
@@ -86,7 +86,7 @@ const getBaseLayout = (content, company = {}, plant = {}) => {
 
   const companyFooterHtml = `
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
-      <p style="margin: 2px 0;"><strong>${company.name || 'GenBeta'}</strong></p>
+      <p style="margin: 2px 0;"><strong>${company.name || 'Matapang'}</strong></p>
       ${company.address ? `<p style="margin: 2px 0;">${company.address}</p>` : ''}
       ${company.gstNumber ? `<p style="margin: 2px 0;">GST: ${company.gstNumber}</p>` : ''}
     </div>
@@ -130,7 +130,7 @@ export const sendApprovalEmail = async (to, formName, link, company = {}, plant 
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -221,7 +221,7 @@ export const sendWelcomeEmail = async (to, name, role, companyName, loginUrl, pa
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -275,7 +275,7 @@ export const sendPlantCreatedEmail = async (to, plantName, plantCode, companyNam
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -365,7 +365,7 @@ export const sendSubmissionNotificationToApprover = async (to, formName, submitt
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   // Use standardized subject format for employee submission
@@ -406,7 +406,7 @@ export const sendFormCreatedApproverNotification = async (to, formName, creatorN
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -455,7 +455,7 @@ export const sendSubmissionNotificationToPlant = async (to, formName, submitterN
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -508,7 +508,7 @@ export const sendApprovalStatusNotificationToPlant = async (to, formName, submit
         actor,
         companyId,
         plantId: plantIdParam || plantId,
-        fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+        fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
       });
 
   const mailOptions = {
@@ -552,7 +552,7 @@ export const sendRejectionNotificationToSubmitter = async (to, formName, rejecto
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -599,7 +599,7 @@ export const sendProfileUpdateNotification = async (to, employeeName, updatedFie
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -647,7 +647,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (to, formName, sub
     actor,
     companyId,
     plantId: plantIdParam,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -695,7 +695,7 @@ export const sendFinalApprovalNotificationToPlant = async (to, formName, submitt
         actor,
         companyId,
         plantId: plantIdParam,
-        fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+        fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
       });
 
   const mailOptions = {

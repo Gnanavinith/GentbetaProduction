@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, FileText, Trash2, Edit, Check, Archive, RefreshCw, Download, Loader2, Table } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { formApi } from "../../api/form.api";
 import { useAuth } from "../../context/AuthContext";
@@ -174,6 +174,15 @@ export default function DraftFormsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Refresh data when coming back from form editing
+  useEffect(() => {
+    if (location.state?.shouldRefresh) {
+      fetchData();
+      // Clear the refresh flag
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const fetchData = async () => {
     setLoading(true);

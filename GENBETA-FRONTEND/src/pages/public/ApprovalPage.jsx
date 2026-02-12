@@ -185,7 +185,7 @@ export default function ApprovalPage() {
         </div>
         
         <div className="mt-8 text-center text-gray-400 text-sm">
-          <p>&copy; 2025 GenBeta. All rights reserved.</p>
+          <p>&copy; 2025 Matapang. All rights reserved.</p>
         </div>
       </div>
     </div>

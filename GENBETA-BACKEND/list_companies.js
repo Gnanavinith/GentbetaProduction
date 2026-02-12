@@ -7,7 +7,7 @@ dotenv.config();
 const listCompanies = async () => {
   try {
     // Connect to database
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/genbeta');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/matapang');
     console.log('Connected to database');
 
     // List all companies

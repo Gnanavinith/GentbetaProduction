@@ -27,13 +27,14 @@ dotenv.config();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
+  "http://localhost:5174",
   "https://your-frontend.com",
   "https://admin.your-frontend.com",
   "https://login.matapangtech.com",
   "http://login.matapangtech.com",
   "https://product.matapangtech.com",
   "https://admin.matapangtech.com",
-  "https://genbeta.matapangtech.com",
+  "https://matapang.matapangtech.com",
 ];
 
 

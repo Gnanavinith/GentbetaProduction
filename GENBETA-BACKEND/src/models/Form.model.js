@@ -38,7 +38,7 @@ const fieldSchema = new mongoose.Schema({
   content: String,
   height: String, // For spacer
   maxFileSize: { type: Number, default: 5 },
-  fields: [String], // For auto-user fields selection
+  fields: [mongoose.Schema.Types.Mixed], // For nested fields within layout components like columns-2, columns-3, etc.
   format: String, // For auto-date format
 
   // Additional field properties

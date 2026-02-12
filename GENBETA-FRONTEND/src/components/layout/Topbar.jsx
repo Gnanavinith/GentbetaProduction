@@ -57,7 +57,7 @@ export default function Topbar({ onMenuClick }) {
                 className="h-12 w-auto object-contain"
               />
             <span className="text-2xl font-extrabold text-slate-900 ml-2 tracking-wide font-[Satoshi]">
-  Metapang
+  Matapang
 </span>
 
             </div>

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 async function checkUsers() {
   try {
     // Connect to MongoDB
-    await mongoose.connect('mongodb://localhost:27017/genbeta');
+    await mongoose.connect('mongodb://localhost:27017/matapang');
     console.log('Connected to MongoDB');
     
     // Import User model dynamically

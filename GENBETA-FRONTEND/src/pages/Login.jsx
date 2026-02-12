@@ -83,7 +83,7 @@ export default function Login() {
           <div className="p-3 bg-slate-800 rounded-xl border border-slate-700">
             <ShieldCheck className="w-7 h-7 text-slate-200" />
           </div>
-          <h1 className="text-3xl font-black">GenBeta</h1>
+          <h1 className="text-3xl font-black">Matapang</h1>
         </div>
 
         <div>
@@ -129,7 +129,7 @@ export default function Login() {
               <ShieldCheck className="text-white w-6 h-6" />
             </div>
 
-            <h2 className="text-2xl font-bold text-slate-900">GenBeta</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Matapang</h2>
             <p className="text-sm text-slate-500 mt-1">Sign in to your workspace</p>
           </div>
 

@@ -283,7 +283,14 @@ export const getAssignedSubmissions = async (req, res) => {
     const cacheKey = generateCacheKey('employee-assigned-submissions', { userId, plantId });
     
     // Try to get from cache first
-    let cachedResult = await getFromCache(cacheKey);
+    let cachedResult = null;
+    try {
+      cachedResult = await getFromCache(cacheKey);
+    } catch (cacheError) {
+      console.error("Cache get error:", cacheError);
+      // Continue without cache
+    }
+    
     if (cachedResult) {
       return res.json(cachedResult);
     }
@@ -294,7 +301,10 @@ export const getAssignedSubmissions = async (req, res) => {
       status: "pending"
     }).populate("formId").lean();
     
-    const formIds = assignedTasks.map(task => task.formId._id);
+    // Safely extract form IDs, filtering out tasks with missing formId
+    const formIds = assignedTasks
+      .filter(task => task.formId && task.formId._id)
+      .map(task => task.formId._id);
     
     // Also get forms from user's plant that have no approval flow (direct submissions)
     const formsWithoutFlow = await Form.find({
@@ -323,8 +333,11 @@ export const getAssignedSubmissions = async (req, res) => {
     .sort({ submittedAt: -1 })
     .lean();
 
+    // Filter out submissions that don't have a valid formId after population
+    const validSubmissions = submissions.filter(sub => sub.formId && sub.formId._id);
+
     // Enhance submissions with task information and "isMyTurn" logic
-    const enhancedSubmissions = submissions.map(sub => {
+    const enhancedSubmissions = validSubmissions.map(sub => {
       const form = sub.formId;
       const flow = form?.approvalFlow || [];
       
@@ -335,7 +348,13 @@ export const getAssignedSubmissions = async (req, res) => {
           isMyTurn: true,
           userLevel: 1,
           pendingApproverName: null,
-          assignedTask: assignedTasks.find(task => task.formId._id.toString() === sub.formId._id.toString())
+          assignedTask: assignedTasks.find(task => 
+            task.formId && 
+            task.formId._id && 
+            sub.formId && 
+            sub.formId._id && 
+            task.formId._id.toString() === sub.formId._id.toString()
+          )
         };
       }
       
@@ -361,12 +380,23 @@ export const getAssignedSubmissions = async (req, res) => {
         isMyTurn,
         userLevel,
         pendingApproverName,
-        assignedTask: assignedTasks.find(task => task.formId._id.toString() === sub.formId._id.toString())
+        assignedTask: assignedTasks.find(task => 
+          task.formId && 
+          task.formId._id && 
+          sub.formId && 
+          sub.formId._id && 
+          task.formId._id.toString() === sub.formId._id.toString()
+        )
       };
     });
     
     // Cache the result for 2 minutes
-    await setInCache(cacheKey, enhancedSubmissions, 120);
+    try {
+      await setInCache(cacheKey, enhancedSubmissions, 120);
+    } catch (cacheError) {
+      console.error("Cache set error:", cacheError);
+      // Continue without caching
+    }
 
     res.json(enhancedSubmissions);
   } catch (error) {
