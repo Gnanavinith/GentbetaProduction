@@ -243,7 +243,9 @@ export default function FormBuilder() {
         formName: formName.trim(),
         formId: generateFieldId(formName),
         sections: cleanedSections,
-        fields: allFields,
+        // Only include root fields for legacy forms that don't use sections
+        // Modern forms should use sections[].fields instead
+        fields: [],
         approvalFlow: approvalFlow,
         isTemplate: true,
         status: "PUBLISHED"

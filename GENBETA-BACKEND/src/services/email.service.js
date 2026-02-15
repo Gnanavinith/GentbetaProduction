@@ -5,6 +5,77 @@ import Plant from "../models/Plant.model.js";
 
 dotenv.config();
 
+// Helper function to format field values for email display
+const formatFieldValue = (value, fieldType = "text") => {
+  // Handle null/undefined/empty values
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+  
+  // Handle arrays (checkbox, multiple select)
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "—";
+    return value.join(", ");
+  }
+  
+  // Handle objects (file uploads, complex data)
+  if (typeof value === "object") {
+    // Auto-user object
+    if (fieldType === "auto-user" && value.name) {
+      const userFields = [];
+      if (value.name) userFields.push(`Name: ${value.name}`);
+      if (value.email) userFields.push(`Email: ${value.email}`);
+      if (value.role) userFields.push(`Role: ${value.role}`);
+      if (value.employeeID) userFields.push(`Employee ID: ${value.employeeID}`);
+      if (value.department) userFields.push(`Department: ${value.department}`);
+      if (value.phoneNumber) userFields.push(`Phone: ${value.phoneNumber}`);
+      if (value.position) userFields.push(`Position: ${value.position}`);
+      
+      // Add any other fields that might be present
+      Object.keys(value).forEach(key => {
+        if (!["name", "email", "role", "employeeID", "department", "phoneNumber", "position", "id"].includes(key)) {
+          userFields.push(`${key}: ${value[key]}`);
+        }
+      });
+      
+      return userFields.join(" | ");
+    }
+    
+    // File upload object
+    if (value.url && value.originalName) {
+      return `${value.originalName} (${value.url})`;
+    }
+    
+    // Generic object - convert to JSON string for display
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch (e) {
+      return "[Complex Data]";
+    }
+  }
+  
+  // Handle dates
+  if (fieldType === "date" && typeof value === "string") {
+    const date = new Date(value);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString();
+    }
+  }
+  
+  // Handle numbers
+  if (fieldType === "number" && typeof value === "number") {
+    return value.toString();
+  }
+  
+  // Handle booleans
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+  
+  // Default: convert to string
+  return String(value);
+};
+
 const createTransporter = () => {
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     return nodemailer.createTransport({
@@ -92,6 +163,15 @@ const getBaseLayout = (content, company = {}, plant = {}) => {
     </div>
   `;
 
+  const loginButtonHtml = `
+    <div style="text-align: center; margin: 25px 0;">
+      <a href="https://login.matapangtech.com/login" 
+         style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        Go to Login
+      </a>
+    </div>
+  `;
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; color: #334155;">
       <div style="text-align: center; margin-bottom: 20px;">
@@ -99,6 +179,7 @@ const getBaseLayout = (content, company = {}, plant = {}) => {
       </div>
       ${plantInfoHtml}
       ${content}
+      ${loginButtonHtml}
       ${companyFooterHtml}
       <p style="margin-top: 20px; font-size: 11px; color: #94a3b8; text-align: center;">
         This is an automated notification. Please do not reply to this email.
@@ -320,10 +401,13 @@ export const sendSubmissionNotificationToApprover = async (to, formName, submitt
                         submissionData[field.label?.toLowerCase().replace(/\s+/g, '_')] || 
                         '—';
       
+      // Format field value properly based on field type
+      const formattedValue = formatFieldValue(fieldValue, field.type);
+      
       return `
         <tr>
           <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 500; color: #374151;">${field.label}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #4b5563;">${fieldValue}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #4b5563;">${formattedValue}</td>
         </tr>
       `;
     }).join('');
@@ -372,7 +456,7 @@ export const sendSubmissionNotificationToApprover = async (to, formName, submitt
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Submitted] ${formId || 'FORM-ID'} – ${formName} | Submitted by ${submitterName}`,
+    subject: `[Form Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -461,7 +545,7 @@ export const sendSubmissionNotificationToPlant = async (to, formName, submitterN
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Submitted] ${formId || 'FORM-ID'} – ${formName} | Submitted by ${submitterName}`,
+    subject: `[Form Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -498,8 +582,8 @@ export const sendApprovalStatusNotificationToPlant = async (to, formName, submit
 
   // Use standardized subject format for approval status
   const subject = isApproved 
-    ? `[Form Approved] ${formId || 'FORM-ID'} – ${formName} | Level ${level} Approved by ${approverName}`
-    : `[Form Rejected] ${formId || 'FORM-ID'} – ${formName} | Level ${level} Rejected by ${approverName}`;
+    ? `[Form Approved] ${submissionId || formId || 'FORM-ID'} | Level ${level} Approved by ${approverName}`
+    : `[Form Rejected] ${submissionId || formId || 'FORM-ID'} | Level ${level} Rejected by ${approverName}`;
   
   // Use approver's email as sender if provided, otherwise use resolved sender
   const fromAddress = approverEmail 
@@ -558,7 +642,7 @@ export const sendRejectionNotificationToSubmitter = async (to, formName, rejecto
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Rejected] ${formId || 'FORM-ID'} – ${formName} | Rejected at Level 1`,
+    subject: `[Form Rejected] ${submissionId || formId || 'FORM-ID'} | Rejected at Level 1`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -653,7 +737,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (to, formName, sub
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Fully Approved] ${formId || 'FORM-ID'} – ${formName} | Final Approval Completed`,
+    subject: `[Form Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -701,7 +785,7 @@ export const sendFinalApprovalNotificationToPlant = async (to, formName, submitt
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Fully Approved] ${formId || 'FORM-ID'} – ${formName} | Final Approval Completed`,
+    subject: `[Form Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 

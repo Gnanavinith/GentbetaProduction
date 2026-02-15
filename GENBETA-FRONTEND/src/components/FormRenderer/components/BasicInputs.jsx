@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { 
   AlertCircle, 
   CheckCircle2,
@@ -17,7 +17,11 @@ export default function BasicInputs({
   update,
   setFocusedField
 }) {
-  const fieldId = field.fieldId || field.id;
+  const fieldId = field.fieldId || field.id || field.name;
+
+  const handleInputChange = useCallback((e) => {
+    update(fieldId, e.target.value);
+  }, [fieldId, update]);
 
   switch (field.type) {
     case "text":
@@ -25,18 +29,19 @@ export default function BasicInputs({
     case "number":
     case "phone":
       return (
-        <div key={customKey} className="group">
+        <div className="group">
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
             {field.label}
             {field.required && <span className="text-red-500 text-lg leading-none">*</span>}
           </label>
           <div className="relative">
             <input
+              key={fieldId}
               type={field.type}
               value={value || ""}
-              onChange={(e) => update(fieldId, e.target.value)}
-              onFocus={() => setFocusedField(fieldId)}
-              onBlur={() => setFocusedField(null)}
+              onChange={handleInputChange}
+              onFocus={() => setFocusedField && setFocusedField(fieldId)}
+              onBlur={() => setFocusedField && setFocusedField(null)}
               placeholder={field.placeholder}
               className={inputClasses}
               disabled={readOnly}

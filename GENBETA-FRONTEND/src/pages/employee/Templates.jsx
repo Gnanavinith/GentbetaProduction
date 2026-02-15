@@ -36,12 +36,11 @@ export default function EmployeeTemplates() {
       const formsRes = await formApi.getForms();
 
       if (formsRes.success) {
-        // Add field count calculation to each template
+        // Add field count calculation to each template (count only top-level fields)
         const templatesWithFieldCount = formsRes.data.map(template => {
           const topLevelFields = template.fields?.length || 0;
-          const sectionFields = template.sections?.reduce((total, section) => 
-            total + (section.fields?.length || 0), 0) || 0;
-          const totalFields = topLevelFields + sectionFields;
+          // Only count top-level fields, not section fields
+          const totalFields = topLevelFields;
           
           return {
             ...template,
@@ -121,7 +120,7 @@ export default function EmployeeTemplates() {
                 <tr>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Form Name</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Form ID</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fields</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Top-level Fields</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Approval Levels</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Created At</th>
                 </tr>
@@ -148,7 +147,7 @@ export default function EmployeeTemplates() {
                             <div className="flex items-center gap-2">
                               <Hash className="w-4 h-4 text-gray-400" />
                               <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                                {template.fieldCount || 0} fields
+                                {template.fieldCount || 0} top-level
                               </span>
                             </div>
                           </td>

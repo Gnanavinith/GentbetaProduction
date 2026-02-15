@@ -8,7 +8,7 @@ const fieldSchema = new mongoose.Schema({
       required: true,
       enum: [
         "text", "email", "number", "phone", "radio", "checkbox", "file", "date", "datetime", "range", "color", "table", "textarea", "dropdown", "multi-select", "multiselect", "signature", "section-divider",
-        "checklist-row", "checklist", "grid-table", "section-header", "description", "columns-2", "columns-3", "spacer", "image", "terms", "auto-date", "auto-user", "daterange"
+        "checklist-row", "checklist", "grid-table", "image", "terms", "auto-date", "auto-user", "daterange"
       ]
     },
 
@@ -38,7 +38,7 @@ const fieldSchema = new mongoose.Schema({
   content: String,
   height: String, // For spacer
   maxFileSize: { type: Number, default: 5 },
-  fields: [mongoose.Schema.Types.Mixed], // For nested fields within layout components like columns-2, columns-3, etc.
+
   format: String, // For auto-date format
 
   // Additional field properties

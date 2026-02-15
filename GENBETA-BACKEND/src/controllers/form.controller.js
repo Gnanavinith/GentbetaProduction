@@ -6,25 +6,14 @@ import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
 import { sendApprovalEmail, sendFormCreatedApproverNotification } from "../services/email.service.js";
-import { generateCacheKey, getFromCache, setInCache, deleteFromCache } from "../utils/cache.js";
+import { generateCacheKey, getFromCache, setInCache, deleteFromCache, warmCache, getCacheStats } from "../utils/cache.js";
 
 // Helper function to validate layout structure
 function validateLayoutStructure(fields) {
   if (!fields || !Array.isArray(fields)) return;
   
   fields.forEach(field => {
-    if (["columns-2", "columns-3", "section-header", "section-divider", "spacer"].includes(field.type)) {
-      // Layout fields may have nested fields array
-      if (field.fields !== undefined) {
-        // If fields property exists, it should be an array
-        if (!Array.isArray(field.fields)) {
-          throw new Error("Layout fields must have 'fields' property as an array when specified");
-        } else {
-          // Recursively validate nested fields
-          validateLayoutStructure(field.fields);
-        }
-      }
-    }
+
     
     // For grid-table, ensure it has proper structure
     if (field.type === "grid-table") {
@@ -45,8 +34,11 @@ export const createForm = async (req, res) => {
   try {
     const { formId, formName, fields, sections, approvalFlow, approvalLevels, description, status } = req.body;
 
-    // Validate layout structure to ensure proper nesting
-    validateLayoutStructure([...(fields || []), ...(sections || []).flatMap(s => s.fields || [])]);
+    // Validate layout structure - prefer sections fields, fall back to root fields for legacy forms
+    const allFieldsToValidate = (sections && sections.length > 0) 
+      ? sections.flatMap(s => s.fields || [])
+      : (fields || []);
+    validateLayoutStructure(allFieldsToValidate);
 
     // Map approvalLevels from frontend to approvalFlow for backend
     const finalApprovalFlow = (approvalLevels || approvalFlow || []).map((level, index) => ({
@@ -275,8 +267,11 @@ export const updateForm = async (req, res) => {
   try {
     const { formId, formName, fields, sections, approvalFlow, approvalLevels, description } = req.body;
 
-    // Validate layout structure to ensure proper nesting
-    validateLayoutStructure([...(fields || []), ...(sections || []).flatMap(s => s.fields || [])]);
+    // Validate layout structure - prefer sections fields, fall back to root fields for legacy forms
+    const allFieldsToValidate = (sections && sections.length > 0) 
+      ? sections.flatMap(s => s.fields || [])
+      : (fields || []);
+    validateLayoutStructure(allFieldsToValidate);
 
     // Map approvalLevels from frontend to approvalFlow for backend if provided
     let finalPayload = { ...req.body };

@@ -39,7 +39,7 @@ function DraggablePaletteItem({ field }) {
 
 export default function LeftPanel() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedGroups, setExpandedGroups] = useState(["basic", "special"]);
+  const [expandedGroups, setExpandedGroups] = useState(["basic", "checklist", "special"]);
 
   const toggleGroup = (groupId) => {
     setExpandedGroups(prev => 

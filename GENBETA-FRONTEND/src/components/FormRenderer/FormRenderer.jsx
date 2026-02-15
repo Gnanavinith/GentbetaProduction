@@ -1,43 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import { BasicInputs, ChecklistAndTables, LayoutAndStructure, SpecialFields } from './components';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { BasicInputs, ChecklistAndTables, SpecialFields } from './components';
 
 const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submitting = false, readOnly = false, initialData, showSubmitButton = true, mode = 'fill', onDataChange }) => {
-  const [formData, setFormData] = useState(initialData || {});
+  const [formData, setFormData] = useState({});
   const [files, setFiles] = useState({});
   const [uploadProgress, setUploadProgress] = useState({});
+  const isInitialRender = useRef(true);
 
-  const handleChange = (fieldName, value) => {
+  // console.log('[FormRenderer] Props received:', { form, formDefinition, fields, sections, initialData, mode });
+  // console.log('[FormRenderer] Current formData:', formData);
+
+  // Initialize formData with initialData when it changes
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      // console.log('[FormRenderer] Initializing formData with initialData:', initialData);
+      setFormData(prev => ({
+        ...prev,
+        ...initialData
+      }));
+    }
+  }, [initialData]);
+
+  // Notify parent when formData changes
+  useEffect(() => {
+    // Skip notification on initial render
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+    
+    if (onDataChange && Object.keys(formData).length > 0) {
+      onDataChange(formData);
+    }
+  }, [formData, onDataChange]);
+
+  const handleChange = useCallback((fieldName, value) => {
+    const fieldId = fieldName.fieldId || fieldName.id || fieldName;
+    setFormData(prev => ({
+      ...prev,
+      [fieldId]: value
+    }));
+  }, []);
+
+  const handleFileChange = (fieldName, fileList) => {
+    const fieldId = fieldName.fieldId || fieldName.id || fieldName;
+    const fileArray = Array.from(fileList);
+    setFiles(prev => ({
+      ...prev,
+      [fieldId]: fileArray
+    }));
+    
+    // Store file names in formData
     setFormData(prev => {
       const newData = {
         ...prev,
-        [fieldName]: value
+        [fieldId]: fileArray.map(f => f.name)
       };
+      
       if (onDataChange) {
-        onDataChange(newData);
+        if (hasMounted.current) {
+          console.log('[FormRenderer] handleFileChange onDataChange called for:', fieldId, newData[fieldId]);
+          onDataChange(newData);
+        } else {
+          // Queue the update for later
+          console.log('[FormRenderer] Queuing file update for:', fieldId, newData[fieldId]);
+          pendingUpdates.current.push(() => onDataChange(newData));
+        }
       }
+      
       return newData;
     });
   };
 
-  const handleFileChange = (fieldName, fileList) => {
-    const fileArray = Array.from(fileList);
-    setFiles(prev => ({
-      ...prev,
-      [fieldName]: fileArray
-    }));
-    
-    // Store file names in formData
-    setFormData(prev => ({
-      ...prev,
-      [fieldName]: fileArray.map(f => f.name)
-    }));
-  };
-
-  const renderField = (field, index) => {
+  const renderField = useCallback((field, index) => {
+    const key = field.fieldId || field.id || index;
+    const fieldValue = formData[field.fieldId || field.id] || '';
     const commonProps = {
-      key: field.id || index,
       field,
-      value: formData[field.name] || '',
+      value: fieldValue,
       onChange: handleChange,
       onFileChange: handleFileChange,
       update: handleChange,
@@ -47,7 +87,7 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
       uploadProgress,
       setUploadProgress,
       setFocusedField: () => {},
-      customKey: field.id || index,
+      customKey: key,
       inputClasses: "w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-2 transition-colors",
       readOnly
     };
@@ -64,104 +104,54 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
       case 'tel':
       case 'url':
       case 'password':
-      case 'color':
-        return <BasicInputs {...commonProps} />;
-          
-      case 'select':
-      case 'multiselect':
+      case 'textarea':
+        return <BasicInputs key={key} {...commonProps} />;
+            
       case 'radio':
       case 'checkbox':
-      case 'textarea':
-        return <BasicInputs {...commonProps} />;
-          
+      case 'dropdown':
+      case 'multi-select':
+      case 'multiselect':
+        return <BasicInputs key={key} {...commonProps} />;
+            
+      case 'checklist-row':
       case 'checklist':
       case 'grid-table':
-        return <ChecklistAndTables {...commonProps} />;
-            
-      case 'section-header':
-      case 'section-divider':
-      case 'spacer':
       case 'columns-2':
       case 'columns-3':
-        return <LayoutAndStructure {...commonProps} />;
-          
-      case 'signature':
-      case 'file-upload':
-      case 'image':
+        return <ChecklistAndTables key={key} {...commonProps} />;
+            
       case 'file':
+      case 'signature':
       case 'auto-date':
-      case 'description':
       case 'terms':
-        return <SpecialFields {...commonProps} />;
+        return <SpecialFields key={key} {...commonProps} />;
             
       case 'location':
       case 'barcode-scanner':
       case 'rich-text':
-        return <BasicInputs {...commonProps} />;
+        return <BasicInputs key={key} {...commonProps} />;
             
       default:
-        return <BasicInputs {...commonProps} />;
+        return <BasicInputs key={key} {...commonProps} />;
     };
-  };
+  }, [formData, handleChange, handleFileChange, files, setFiles, uploadProgress, setUploadProgress, readOnly]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log('[FormRenderer] handleSubmit called with formData:', formData);
     if (onSubmit) {
-      onSubmit(formData, files);
+      // Convert files object to array
+      const filesArray = Object.values(files).flat();
+      onSubmit(formData, filesArray);
     }
   };
 
-  // Handle case where initialData changes externally
-  useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      setFormData(initialData);
-    }
-  }, [initialData]);
-
-  // Helper function to normalize form data by nesting fields inside layout containers
+  // Helper function to normalize form data - only enhance grid-table fields
   const normalizeFormFields = (fields) => {
     if (!fields || !Array.isArray(fields)) return [];
     
-    // First, try to detect and group fields that should be nested within layout containers
-    const groupedFields = [];
-    let i = 0;
-    
-    while (i < fields.length) {
-      const field = fields[i];
-      
-      // If this is a layout field (columns-2, columns-3, etc.)
-      if (['columns-2', 'columns-3', 'section-header', 'section-divider', 'spacer'].includes(field.type)) {
-        const layoutField = { ...field };
-        layoutField.fields = layoutField.fields || [];
-        
-        // Look ahead for fields that should be nested inside this layout
-        i++;
-        while (i < fields.length) {
-          const nextField = fields[i];
-          
-          // If we encounter another layout field or section-related field, stop nesting
-          if (['columns-2', 'columns-3', 'section-header', 'section-divider', 'spacer'].includes(nextField.type)) {
-            // Put this field back to be processed in the outer loop
-            i--; // Step back so the outer loop will process this field
-            break;
-          }
-          
-          // Add this field to the current layout's fields
-          layoutField.fields.push(nextField);
-          i++;
-        }
-        
-        groupedFields.push(layoutField);
-      } else {
-        // Regular field, add directly
-        groupedFields.push(field);
-        i++;
-      }
-    }
-    
-    // Process the grouped fields to enhance grid-table and other special fields
-    const normalizedFields = [];
-    for (const field of groupedFields) {
+    return fields.map(field => {
       let processedField = { ...field };
       
       // Enhance grid-table fields to have at least one row if no items exist
@@ -181,10 +171,8 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
         processedField.fields = normalizeFormFields(processedField.fields);
       }
       
-      normalizedFields.push(processedField);
-    }
-    
-    return normalizedFields;
+      return processedField;
+    });
   };
   
   // Determine which form data to use
@@ -198,18 +186,35 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
     };
   }
   
-  if (!formToRender || !formToRender.fields) {
+  if (!formToRender || (!formToRender.fields && !formToRender.sections)) {
     return <div>No form data available</div>;
   }
   
-  // Normalize the fields to ensure layout containers have their nested fields
-  const normalizedFields = normalizeFormFields(formToRender.fields);
-  formToRender = { ...formToRender, fields: normalizedFields };
-
+  // Combine fields from all sections into a single array
+  // This prevents duplication since fields might exist in both root fields[] and sections[].fields[]
+  let allFields = [];
+  
+  // Add fields from sections
+  if (formToRender.sections && Array.isArray(formToRender.sections)) {
+    formToRender.sections.forEach(section => {
+      if (section.fields && Array.isArray(section.fields)) {
+        allFields = [...allFields, ...section.fields];
+      }
+    });
+  }
+  
+  // Only add root fields if sections don't exist (fallback for legacy forms)
+  if (formToRender.fields && Array.isArray(formToRender.fields) && (!formToRender.sections || formToRender.sections.length === 0)) {
+    allFields = [...allFields, ...formToRender.fields];
+  }
+  
+  // Normalize the combined fields to ensure layout containers have their nested fields
+  const normalizedFields = normalizeFormFields(allFields);
+  
   return (
     <form onSubmit={onSubmit ? handleSubmit : undefined} className="form-renderer">
       <div className="space-y-4">
-        {formToRender.fields.map((field, index) => renderField(field, index))}
+        {normalizedFields.map((field, index) => renderField(field, index))}
       </div>
       {onSubmit && showSubmitButton && !readOnly && (
         <div className="mt-6">

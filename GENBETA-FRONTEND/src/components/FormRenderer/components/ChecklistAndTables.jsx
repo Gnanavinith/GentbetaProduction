@@ -13,7 +13,7 @@ export default function ChecklistAndTables({
   readOnly,
   update
 }) {
-  const fieldId = field.fieldId || field.id;
+  const fieldId = field.fieldId || field.id || field.name;
 
   switch (field.type) {
     case "checklist":

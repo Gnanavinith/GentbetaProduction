@@ -128,10 +128,9 @@ export default function ModernFormBuilder({ formId }) {
                 };
               })
             })),
-            fields: sections.flatMap(s => s.fields.map(f => ({
-              ...f,
-              fieldId: f.fieldId || f.label.toLowerCase().replace(/\s+/g, '_')
-            }))),
+            // Only include root fields for legacy forms that don't use sections
+            // Modern forms should use sections[].fields instead
+            fields: [],
             approvalLevels: workflow,
             plantId: user?.plantId
           };
@@ -462,6 +461,7 @@ export default function ModernFormBuilder({ formId }) {
       if (activeSectionId === overSectionId) {
         setSections(prev => prev.map(section => {
           if (section.id === activeSectionId) {
+            // Regular field reordering within section
             const oldIndex = (section.fields || []).findIndex(f => f.id === active.id);
             const newIndex = (section.fields || []).findIndex(f => f.id === over.id);
             if (oldIndex !== -1 && newIndex !== -1) {

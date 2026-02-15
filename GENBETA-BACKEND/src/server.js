@@ -6,7 +6,7 @@ import helmet from "helmet";
 import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
-import { connectDB } from "./config/db.js";
+import { connectDB, checkDBHealth, getDBStats } from "./config/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import companyRoutes from "./routes/company.routes.js";
 import plantRoutes from "./routes/plant.routes.js";
@@ -73,12 +73,95 @@ app.get("/", (req, res) => {
   res.send("Dynamic Form Approval SaaS API is running 🚀");
 });
 
-// Health check route
+// Basic health check
 app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
     uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    version: "1.0.0"
+  });
+});
+
+// Detailed health check with dependencies
+app.get("/api/health/detailed", async (req, res) => {
+  try {
+    const dbHealth = await checkDBHealth();
+    
+    const healthStatus = {
+      status: dbHealth.status === 'healthy' ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
+        rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + ' MB'
+      },
+      dependencies: {
+        database: dbHealth
+      },
+      system: {
+        cpu: process.cpuUsage(),
+        pid: process.pid,
+        platform: process.platform
+      }
+    };
+    
+    res.status(healthStatus.status === 'healthy' ? 200 : 503).json(healthStatus);
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Database statistics endpoint
+app.get("/api/stats/database", async (req, res) => {
+  try {
+    const dbStats = await getDBStats();
+    if (dbStats) {
+      res.json({
+        success: true,
+        data: dbStats
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve database statistics'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Database statistics error',
+      error: error.message
+    });
+  }
+});
+
+// Application metrics
+app.get("/api/metrics", (req, res) => {
+  const metrics = {
+    timestamp: new Date().toISOString(),
+    process: {
+      pid: process.pid,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage()
+    },
+    system: {
+      platform: process.platform,
+      arch: process.arch,
+      nodeVersion: process.version
+    },
+    versions: process.versions
+  };
+  
+  res.json({
+    success: true,
+    data: metrics
   });
 });
 

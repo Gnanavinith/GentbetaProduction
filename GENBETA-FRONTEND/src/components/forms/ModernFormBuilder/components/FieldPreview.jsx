@@ -38,11 +38,7 @@ export const FieldIcon = memo(function FieldIcon({ type }) {
       radio: MousePointer2,
       checklist: CheckCircle2,
       "grid-table": TableIcon,
-    "section-header": Layout,
-    description: AlignLeft,
-    "columns-2": Grid3X3,
-    "columns-3": Grid3X3,
-    spacer: Divide,
+
     file: Upload,
     image: CreditCard,
     signature: SignatureIcon,
@@ -197,21 +193,7 @@ export const FieldPreview = memo(function FieldPreview({ field, isPreview }) {
             )}
           </div>
         );
-    case "section-header":
-      return (
-        <div style={widthStyle} className={`py-4 border-b border-slate-100 ${alignmentClass}`}>
-          <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">{field.label || "Section Title"}</h3>
-          {field.description && <p className="text-sm text-slate-400 mt-1">{field.description}</p>}
-        </div>
-      );
-    case "description":
-      return (
-        <div style={widthStyle} className={`py-2 text-sm text-slate-500 leading-relaxed ${alignmentClass}`}>
-          {field.content}
-        </div>
-      );
-    case "spacer":
-      return <div style={{ ...widthStyle, height: field.height || "20px" }} />;
+
     case "file":
     case "image":
       return (
@@ -258,18 +240,7 @@ export const FieldPreview = memo(function FieldPreview({ field, isPreview }) {
           </div>
         </div>
       );
-    case "columns-2":
-    case "columns-3":
-      const cols = field.type === "columns-2" ? 2 : 3;
-      return (
-        <div className={`grid grid-cols-${cols} gap-4 w-full border-2 border-dashed border-slate-100 rounded-2xl p-4 bg-slate-50/20`}>
-          {[...Array(cols)].map((_, i) => (
-            <div key={i} className="min-h-[100px] border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center bg-white/50">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Column {i+1}</span>
-            </div>
-          ))}
-        </div>
-      );
+
     default:
       return <div className={baseInput}>{field.label}</div>;
   }

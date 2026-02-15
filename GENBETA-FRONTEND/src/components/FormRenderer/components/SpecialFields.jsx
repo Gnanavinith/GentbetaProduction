@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   AlertTriangle,
   FileText,
@@ -11,6 +11,7 @@ import SignaturePad from "../../forms/ModernFormBuilder/components/SignaturePad"
 import api from "../../../api/api";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function SpecialFields({ 
   field, 
@@ -25,7 +26,56 @@ export default function SpecialFields({
   uploadProgress,
   setUploadProgress
 }) {
-  const fieldId = field.fieldId || field.id;
+  const fieldId = field.fieldId || field.id || field.name;
+  const { user } = useAuth();
+
+  // Ensure auto-user fields are populated on initial render
+  useEffect(() => {
+    if (field.type === "auto-user" && (!value || Object.keys(value).length === 0)) {
+      // Create user data object
+      const userFields = field.fields || ["name", "email", "role"];
+      const userData = {};
+      userFields.forEach(f => {
+        switch(f) {
+          case "name":
+            userData.name = user?.name || "";
+            break;
+          case "email":
+            userData.email = user?.email || "";
+            break;
+          case "role":
+            userData.role = user?.role || "";
+            break;
+          case "id":
+            userData.id = user?._id || "";
+            break;
+          case "employeeID":
+            userData.employeeID = user?.employeeID || user?._id || "";
+            break;
+          case "department":
+            userData.department = user?.department || "";
+            break;
+          case "phoneNumber":
+            userData.phoneNumber = user?.phoneNumber || "";
+            break;
+          case "position":
+            userData.position = user?.position || "";
+            break;
+          default:
+            userData[f] = user?.[f] || "";
+        }
+      });
+      
+      console.log('[SpecialFields] Initial auto-user population:', fieldId, userData, 'user:', user);
+      update(fieldId, userData);
+      
+      // Also trigger a manual update to ensure parent components get notified
+      setTimeout(() => {
+        console.log('[SpecialFields] Manual trigger of update for:', fieldId);
+        // The update function should handle notifying parent components
+      }, 100);
+    }
+  }, [field.type, field.fields, user, fieldId, value, update]);
 
   // File upload handlers
   const addFile = async (id, file) => {
@@ -297,12 +347,95 @@ export default function SpecialFields({
         </div>
       );
 
-    case "description":
+
+
+    case "auto-user":
+      // Auto-user fields should display user information and be non-editable
+      const userFields = field.fields || ["name", "email", "role"];
+      
+      // Create user data object based on requested fields
+      const userData = {};
+      userFields.forEach(f => {
+        switch(f) {
+          case "name":
+            userData.name = user?.name || "";
+            break;
+          case "email":
+            userData.email = user?.email || "";
+            break;
+          case "role":
+            userData.role = user?.role || "";
+            break;
+          case "id":
+            userData.id = user?._id || "";
+            break;
+          case "employeeID":
+            userData.employeeID = user?.employeeID || user?._id || "";
+            break;
+          case "department":
+            userData.department = user?.department || "";
+            break;
+          case "phoneNumber":
+            userData.phoneNumber = user?.phoneNumber || "";
+            break;
+          case "position":
+            userData.position = user?.position || "";
+            break;
+          default:
+            userData[f] = user?.[f] || "";
+        }
+      });
+      
+      console.log('[SpecialFields] Processing auto-user field:', { fieldId, userFields, userData, user });
+      
+      // Auto-fill the value if it's not already set or if this is the initial render
+      const shouldAutoFill = !value || Object.keys(value).length === 0 || 
+                            (typeof value === 'object' && Object.keys(value).length === 0);
+      
+      if (shouldAutoFill) {
+        setTimeout(() => {
+          console.log('[SpecialFields] Auto-filling auto-user field:', fieldId, userData);
+          update(fieldId, userData);
+          // Also notify parent directly to ensure data propagation
+          if (typeof update === 'function') {
+            // This should trigger the FormRenderer's handleChange which calls onDataChange
+          }
+        }, 0);
+      }
+      
       return (
-        <div key={customKey} className="mb-6">
-          <div className="prose prose-sm max-w-none text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            {field.content || field.description || "No description provided"}
+        <div key={customKey} className="group">
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+            {field.label}
+            {field.required && <span className="text-red-500 text-lg leading-none">*</span>}
+          </label>
+          <div className="relative">
+            <div className="p-3 bg-gray-100 rounded-lg border border-gray-200">
+              <div className="space-y-1 text-sm">
+                {userFields
+                  .filter(f => userData[f] && userData[f] !== "")
+                  .map((f, index) => (
+                    <div key={index} className="flex justify-between">
+                      <span className="font-medium text-gray-600 capitalize">{f}:</span>
+                      <span className="text-gray-800">{userData[f]}</span>
+                    </div>
+                  ))
+                }
+                {userFields.every(f => !userData[f] || userData[f] === "") && (
+                  <div className="text-gray-500 italic">No user information available</div>
+                )}
+              </div>
+            </div>
+            <div className="absolute top-2 right-2 text-xs text-gray-500">
+              Auto-filled
+            </div>
           </div>
+          {error && (
+            <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+              <AlertTriangle className="w-4 h-4" />
+              {error}
+            </p>
+          )}
         </div>
       );
 
