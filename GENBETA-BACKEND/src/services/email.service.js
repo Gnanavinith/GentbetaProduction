@@ -11,12 +11,20 @@ dotenv.config();
 
 const formatIST = (date) => {
   if (!date) return "—";
-  return new Date(date).toLocaleString("en-IN", {
+
+  const d = date instanceof Date ? date : new Date(date);
+
+  return d.toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
-    dateStyle: "medium",
-    timeStyle: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
   });
 };
+
 
 const getBaseUrl = () => {
   return (
