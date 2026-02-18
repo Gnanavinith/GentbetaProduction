@@ -5,8 +5,9 @@ import Assignment from "../models/Assignment.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
-import { sendApprovalEmail, sendFormCreatedApproverNotification } from "../services/email.service.js";
+import { sendApprovalEmail, sendFormCreatedApproverNotification } from "../services/email/index.js";
 import { generateCacheKey, getFromCache, setInCache, deleteFromCache, warmCache, getCacheStats } from "../utils/cache.js";
+import { generateFormId } from "../utils/formIdGenerator.js";
 
 // Helper function to validate layout structure
 function validateLayoutStructure(fields) {
@@ -32,13 +33,41 @@ function validateLayoutStructure(fields) {
 ====================================================== */
 export const createForm = async (req, res) => {
   try {
-    const { formId, formName, fields, sections, approvalFlow, approvalLevels, description, status } = req.body;
+    const { formId: providedFormId, formName, fields, sections, approvalFlow, approvalLevels, description, status } = req.body;
 
     // Validate layout structure - prefer sections fields, fall back to root fields for legacy forms
     const allFieldsToValidate = (sections && sections.length > 0) 
       ? sections.flatMap(s => s.fields || [])
       : (fields || []);
     validateLayoutStructure(allFieldsToValidate);
+
+    // Generate formId if not provided
+    let finalFormId = providedFormId || generateFormId(formName);
+    
+    // Ensure the formId is unique
+    if (!providedFormId) { // Only check uniqueness if we generated the ID
+      let isUnique = false;
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      while (!isUnique && attempts < maxAttempts) {
+        try {
+          const existingForm = await Form.findOne({ formId: finalFormId });
+          if (!existingForm) {
+            isUnique = true;
+          } else {
+            // Generate a new ID with additional randomness
+            finalFormId = generateFormId(formName + Date.now().toString());
+            attempts++;
+          }
+        } catch (error) {
+          console.error('Error checking formId uniqueness:', error);
+          isUnique = true; // Proceed anyway to avoid blocking the creation
+        }
+      }
+    } else {
+      finalFormId = providedFormId; // Use the provided ID
+    }
 
     // Map approvalLevels from frontend to approvalFlow for backend
     const finalApprovalFlow = (approvalLevels || approvalFlow || []).map((level, index) => ({
@@ -49,7 +78,7 @@ export const createForm = async (req, res) => {
     }));
 
     const form = await Form.create({
-      formId,
+      formId: finalFormId,
       formName,
       description,
       fields: fields || [],
@@ -99,7 +128,8 @@ export const createForm = async (req, res) => {
               const reviewLink = `${process.env.FRONTEND_URL}/plant/forms/${form._id}`;
               await sendFormCreatedApproverNotification(
                 approver.email,
-                formName,
+                form.formName,
+                form.formId, // Pass the formId
                 creator?.name || "A plant admin",
                 reviewLink,
                 company,

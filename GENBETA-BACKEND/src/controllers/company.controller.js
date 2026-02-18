@@ -2,7 +2,7 @@ import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
 import User from "../models/User.model.js";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendPlantCreatedEmail } from "../services/email.service.js";
+import { sendWelcomeEmail, sendPlantCreatedEmail } from "../services/email/index.js";
 
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";

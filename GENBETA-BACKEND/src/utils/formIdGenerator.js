@@ -1,35 +1,28 @@
 import crypto from 'crypto';
 
 /**
- * Generate form ID in slug format: new-template---24-jan-10:08-pm-mksj9upq
- * Format: [form-name-in-lowercase-with-dashes]---[day]-[month]-[hour]:[minute]-[am/pm]-[random-string]
+ * Generate form ID in simple format: efsdf-523006
+ * Format: [random-string]-[timestamp-based-number]
  * @param {string} formName - The name of the form
  * @returns {string} Generated form ID
  */
 export const generateFormId = (formName) => {
-  // Convert form name to lowercase and replace spaces/special chars with dashes
-  const sanitizedName = formName
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and dashes
-    .replace(/\s+/g, '-') // Replace spaces with dashes
-    .replace(/-+/g, '-') // Replace multiple dashes with single dash
-    .replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
+  // Generate a random short string based on form name if available
+  let baseString = 'form';
   
-  // Get current date/time
-  const now = new Date();
-  const day = now.getDate().toString().padStart(2, '0');
-  const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-  const month = monthNames[now.getMonth()];
-  const hours = now.getHours();
-  const minutes = now.getMinutes().toString().padStart(2, '0');
-  const ampm = hours >= 12 ? 'pm' : 'am';
-  const displayHours = (hours % 12 || 12).toString().padStart(2, '0');
+  if (formName) {
+    // Take first few letters of form name (convert to lowercase, keep only alphanumeric)
+    baseString = formName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 5) || 'form';
+  }
   
-  // Generate random numeric suffix (6 digits)
-  const randomNumeric = Math.floor(100000 + Math.random() * 900000);
+  // Generate timestamp-based number
+  const timestamp = Date.now();
+  const randomNum = Math.floor(Math.random() * 900000) + 100000; // 6-digit number
   
-  // Combine all parts
-  return `${sanitizedName}---${day}-${month}-${displayHours}:${minutes}-${ampm}-${randomNumeric}`;
+  return `${baseString}-${randomNum}`;
 };
 
 /**

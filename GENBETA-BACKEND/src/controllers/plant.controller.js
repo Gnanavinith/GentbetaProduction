@@ -3,7 +3,7 @@ import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import bcrypt from "bcryptjs";
 import { validatePlantCreation } from "../utils/planLimits.js";
-import { sendWelcomeEmail, sendPlantCreatedEmail } from "../services/email.service.js";
+import { sendWelcomeEmail, sendPlantCreatedEmail } from "../services/email/index.js";
 import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
 
 const generatePlantCode = () =>

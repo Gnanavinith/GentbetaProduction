@@ -5,7 +5,7 @@ import FormTemplate from "../models/FormTemplate.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
-import { sendApprovalEmail, sendSubmissionNotificationToApprover } from "../services/email.service.js";
+import { sendApprovalEmail, sendSubmissionNotificationToApprover } from "../services/email/index.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import fs from "fs";
 
@@ -263,7 +263,7 @@ export const createTasks = async (req, res) => {
       if (employee && employee.email) {
         const formNames = forms.map(f => f.formName).join(", ");
         const dashboardLink = `${process.env.FRONTEND_URL}/employee/dashboard`;
-        await sendApprovalEmail(employee.email, `New Assigned Forms: ${formNames}`, dashboardLink, company, plant);
+        await sendApprovalEmail(employee.email, `New Assigned Forms: ${formNames}`, null, dashboardLink, company, plant);
       }
     } catch (emailError) {
       console.error("Failed to notify employee of new tasks:", emailError);

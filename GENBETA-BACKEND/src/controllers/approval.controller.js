@@ -13,7 +13,7 @@ import {
   sendApprovalStatusNotificationToPlant,
   sendRejectionNotificationToSubmitter,
   sendFinalApprovalNotificationToPlant
-} from "../services/email.service.js";
+} from "../services/email/index.js";
 import crypto from "crypto";
 import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
 import mongoose from "mongoose";
@@ -51,7 +51,7 @@ export const createApprovalTask = async (req, res) => {
       if (approver && approver.email) {
         const formNames = forms.map(f => f.formName).join(", ");
         const taskLink = `${process.env.FRONTEND_URL}/employee/tasks`; // Link to their task list
-        await sendApprovalEmail(approver.email, formNames, taskLink, company, plant);
+        await sendApprovalEmail(approver.email, formNames, null, taskLink, company, plant);
       }
     } catch (emailError) {
       console.error("Failed to notify approver of new task:", emailError);
@@ -138,7 +138,7 @@ export const sendLink = async (req, res) => {
     const company = await Company.findById(form.companyId);
     const plant = await Plant.findById(form.plantId);
     
-    await sendApprovalEmail(approverEmail, form.formName, approvalLink, company, plant);
+    await sendApprovalEmail(approverEmail, form.formName, form.formId, approvalLink, company, plant);
 
     res.json({ message: "Approval link sent successfully" });
   } catch (error) {
@@ -179,7 +179,7 @@ export const sendMultiFormLink = async (req, res) => {
     const company = await Company.findById(forms[0].companyId);
     const plant = await Plant.findById(forms[0].plantId);
     
-    await sendApprovalEmail(approverEmail, `${forms.length} Forms: ${formNames}`, approvalLink, company, plant);
+    await sendApprovalEmail(approverEmail, `${forms.length} Forms: ${formNames}`, null, approvalLink, company, plant);
 
     res.json({ message: "Approval link sent successfully for multiple forms" });
   } catch (error) {

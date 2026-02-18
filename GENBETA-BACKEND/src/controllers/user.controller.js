@@ -2,7 +2,7 @@ import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import bcrypt from "bcryptjs";
 import { validateEmployeeCreation } from "../utils/planLimits.js";
-import { sendWelcomeEmail } from "../services/email.service.js";
+import { sendWelcomeEmail } from "../services/email/index.js";
 import Plant from "../models/Plant.model.js";
 import { generateCacheKey, deleteFromCache } from "../utils/cache.js";
 

@@ -5,7 +5,7 @@ import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
 import mongoose from "mongoose";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
-import { sendSubmissionNotificationToApprover } from "../services/email.service.js";
+import { sendSubmissionNotificationToApprover } from "../services/email/index.js";
 import fs from "fs";
 
 /* ======================================================

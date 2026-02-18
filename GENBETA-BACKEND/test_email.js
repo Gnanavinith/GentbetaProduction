@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { sendWelcomeEmail } from "./src/services/email.service.js";
+import { sendWelcomeEmail } from "./src/services/email/index.js";
 
 dotenv.config();
 

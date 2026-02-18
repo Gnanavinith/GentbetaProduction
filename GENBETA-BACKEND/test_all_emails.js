@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { sendPlantCreatedEmail, sendWelcomeEmail } from "./src/services/email.service.js";
+import { sendPlantCreatedEmail, sendWelcomeEmail } from "./src/services/email/index.js";
 import Company from "./src/models/Company.model.js";
 import Plant from "./src/models/Plant.model.js";
 import { connectDB } from "./src/config/db.js";
