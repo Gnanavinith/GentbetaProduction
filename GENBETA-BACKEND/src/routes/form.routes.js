@@ -13,6 +13,7 @@ import { sendLink } from "../controllers/approval.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/role.middleware.js";
 import { enforcePlanLimits } from "../middlewares/planEnforcement.middleware.js";
+import { generateCacheKey, getFromCache, setInCache, deleteFromCache } from "../utils/cache.js";
 
 const router = express.Router();
 

@@ -166,7 +166,7 @@ export const submitTask = async (req, res) => {
                 plant,
                 plant?._id?.toString() || req.user.plantId?.toString() || "",
                 form.formId || form._id?.toString() || "",
-                submission._id?.toString() || "",
+                submission.readableId || submission._id?.toString() || "",
                 form.fields || [], // form fields for filtering
                 submissionData.data || {}, // submission data
                 "PLANT_ADMIN",
@@ -420,7 +420,7 @@ export const submitFormDirectly = async (req, res) => {
                   plant,
                   plant?._id?.toString() || submissionData.plantId?.toString() || "",
                   form.formId || form._id?.toString() || "",
-                  submission._id?.toString() || "",
+                  submission.readableId || submission._id?.toString() || "",
                   form.fields || [], // form fields for filtering
                   submissionData.data || {}, // submission data
                   "PLANT_ADMIN",

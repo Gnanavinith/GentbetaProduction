@@ -273,15 +273,15 @@ export default function Sidebar({ isOpen, onToggle }) {
           <div className={`h-16 flex items-center border-b border-slate-200/60 gap-3 transition-all duration-300 ${
             isOpen ? "px-6" : "justify-center px-0"
           }`}>
-            <div className="w-8 h-8 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-transparent flex items-center justify-center flex-shrink-0 shadow-sm">
               {user?.companyLogo ? (
                 <img 
                   src={user.companyLogo} 
                   alt="Logo" 
-                  className="w-full h-full object-contain p-1 invert"
+                  className="w-full h-full object-contain p-1"
                 />
               ) : (
-                <Factory className="w-5 h-5 text-white" />
+                <Factory className="w-6 h-6 text-slate-700" />
               )}
             </div>
             <div className={`min-w-0 transition-all duration-200 ${isOpen ? "opacity-100 w-auto" : "opacity-0 w-0"}`}>

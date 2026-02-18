@@ -27,6 +27,74 @@ const getBaseUrl = () => {
   );
 };
 
+// Helper function to format field values for email display
+const formatFieldValue = (value, fieldType = "text") => {
+  // Handle null/undefined/empty values
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+  
+  // Handle arrays (checkbox, multiple select)
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "—";
+    return value.join(", ");
+  }
+  
+  // Handle objects (file uploads, complex data)
+  if (typeof value === "object") {
+    // Auto-user object
+    if (fieldType === "auto-user" && value.name) {
+      const userFields = [];
+      if (value.name) userFields.push(`Name: ${value.name}`);
+      if (value.email) userFields.push(`Email: ${value.email}`);
+      if (value.role) userFields.push(`Role: ${value.role}`);
+      if (value.employeeID) userFields.push(`Employee ID: ${value.employeeID}`);
+      if (value.department) userFields.push(`Department: ${value.department}`);
+      if (value.phoneNumber) userFields.push(`Phone: ${value.phoneNumber}`);
+      if (value.position) userFields.push(`Position: ${value.position}`);
+      
+      // Add any other fields that might be present
+      Object.keys(value).forEach(key => {
+        if (!["name", "email", "role", "employeeID", "department", "phoneNumber", "position", "id"].includes(key)) {
+          userFields.push(`${key}: ${value[key]}`);
+        }
+      });
+      
+      return userFields.join(" | ");
+    }
+    
+    // File upload object
+    if (value.url && value.originalName) {
+      return `${value.originalName} (${value.url})`;
+    }
+    
+    // Generic object - convert to JSON string for display
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch (e) {
+      return "[Complex Data]";
+    }
+  }
+  
+  // Handle dates – use formatIST for consistency
+  if (fieldType === "date" && typeof value === "string") {
+    return formatIST(value);
+  }
+  
+  // Handle numbers
+  if (fieldType === "number" && typeof value === "number") {
+    return value.toString();
+  }
+  
+  // Handle booleans
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+  
+  // Default: convert to string
+  return String(value);
+};
+
 const createTransporter = () => {
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     return nodemailer.createTransport({
@@ -57,11 +125,11 @@ const transporter = createTransporter();
  * Resolve the appropriate sender email based on context
  * Implements hierarchical email sending: Super Admin → Company → Plant → Employee
  */
-const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"GenBeta" <no-reply@genbeta.com>' }) => {
+const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"Matapang" <no-reply@matapang.com>' }) => {
   try {
     // Super Admin level - use platform identity
     if (actor === "SUPER_ADMIN") {
-      return process.env.PLATFORM_EMAIL || '"GenBeta Platform" <no-reply@genbeta.com>';
+      return process.env.PLATFORM_EMAIL || '"Matapang Platform" <no-reply@matapang.com>';
     }
 
     // Company Admin level - use company email if available
@@ -77,8 +145,8 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
       const plant = await Plant.findById(plantId).populate("companyId", "email name").select("email name");
       if (plant) {
         // Prefer plant-specific email, then company email, then fallback
-        const fromEmail = plant.email || plant.companyId?.email || process.env.PLATFORM_EMAIL || "no-reply@genbeta.com";
-        const fromName = plant.name || plant.companyId?.name || "GenBeta";
+        const fromEmail = plant.email || plant.companyId?.email || process.env.PLATFORM_EMAIL || "no-reply@matapang.com";
+        const fromName = plant.name || plant.companyId?.name || "Matapang";
         return `"${fromName}" <${fromEmail}>`;
       }
     }
@@ -92,12 +160,13 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
 };
 
 /**
- * Generates a base layout for emails with company and plant details
+ * Generates a base layout for emails with company and plant details.
+ * Optionally includes a login button.
  */
-const getBaseLayout = (content, company = {}, plant = {}) => {
+const getBaseLayout = (content, company = {}, plant = {}, showLoginButton = false) => {
   const logoHtml = company.logoUrl
     ? `<img src="${company.logoUrl}" alt="${company.name}" style="max-height: 60px; margin-bottom: 20px;">`
-    : `<h1 style="color: #4f46e5; margin: 0;">${company.name || 'GenBeta'}</h1>`;
+    : `<h1 style="color: #4f46e5; margin: 0;">${company.name || 'Matapang'}</h1>`;
 
   const plantInfoHtml = (plant && plant.name)
     ? `<div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #4f46e5; margin-bottom: 20px; border-radius: 0 4px 4px 0;">
@@ -108,9 +177,18 @@ const getBaseLayout = (content, company = {}, plant = {}) => {
 
   const companyFooterHtml = `
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
-      <p style="margin: 2px 0;"><strong>${company.name || 'GenBeta'}</strong></p>
+      <p style="margin: 2px 0;"><strong>${company.name || 'Matapang'}</strong></p>
       ${company.address ? `<p style="margin: 2px 0;">${company.address}</p>` : ''}
       ${company.gstNumber ? `<p style="margin: 2px 0;">GST: ${company.gstNumber}</p>` : ''}
+    </div>
+  `;
+
+  const loginButtonHtml = `
+    <div style="text-align: center; margin: 25px 0;">
+      <a href="https://login.matapangtech.com/login" 
+         style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        Go to Login
+      </a>
     </div>
   `;
 
@@ -121,6 +199,7 @@ const getBaseLayout = (content, company = {}, plant = {}) => {
       </div>
       ${plantInfoHtml}
       ${content}
+      ${showLoginButton ? loginButtonHtml : ""}
       ${companyFooterHtml}
       <p style="margin-top: 20px; font-size: 11px; color: #94a3b8; text-align: center;">
         This is an automated notification. Please do not reply to this email.
@@ -138,7 +217,7 @@ export const sendApprovalEmail = async (
   actor = "PLANT_ADMIN",
   companyId = null,
   plantId = null,
-  formId = "" // Added formId parameter
+  formId = ""
 ) => {
   if (!link) {
     throw new Error("Email link is missing");
@@ -161,12 +240,11 @@ export const sendApprovalEmail = async (
     <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">If you were not expecting this email, please ignore it.</p>
   `;
 
-  // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -204,7 +282,13 @@ export const sendWelcomeEmail = async (
   companyId = null,
   plantId = null
 ) => {
-  // No link parameter needed – using loginUrl directly
+  if (!loginUrl) {
+    throw new Error("Login URL is missing");
+  }
+
+  const safeLoginUrl = loginUrl.startsWith("http")
+    ? loginUrl
+    : `${getBaseUrl()}${loginUrl}`;
 
   let roleLabel = "";
   switch (role) {
@@ -236,7 +320,7 @@ export const sendWelcomeEmail = async (
     </div>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${loginUrl}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Login to Your Account</a>
+      <a href="${safeLoginUrl}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Login to Your Account</a>
     </div>
     
     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 20px;">
@@ -270,14 +354,15 @@ export const sendWelcomeEmail = async (
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
     from: fromAddress,
     to,
     subject: `Welcome to ${companyName} - Your Account Has Been Created`,
-    html: getBaseLayout(content, company, plant)
+    // Show login button only in welcome email
+    html: getBaseLayout(content, company, plant, true)
   };
 
   try {
@@ -309,8 +394,6 @@ export const sendPlantCreatedEmail = async (
   companyId = null,
   plantId = null
 ) => {
-  // No link needed in this email
-
   const content = `
     <h1 style="color: #4f46e5; margin: 0 0 20px 0; text-align: center;">New Plant Created</h1>
     
@@ -335,7 +418,7 @@ export const sendPlantCreatedEmail = async (
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -392,10 +475,8 @@ export const sendSubmissionNotificationToApprover = async (
     approvalContext = `<p style="color: #4b5563; font-size: 14px; background-color: #eff6ff; padding: 10px; border-radius: 4px;">${lastApproval.name} has approved this form. Waiting for your approval.</p>`;
   }
 
-  // Filter fields that should be included in approval email
   const approvalFields = formFields.filter(field => field.includeInApprovalEmail);
 
-  // Build approval summary table
   let approvalSummaryHtml = '';
   if (approvalFields.length > 0) {
     const summaryRows = approvalFields.map(field => {
@@ -404,10 +485,12 @@ export const sendSubmissionNotificationToApprover = async (
         submissionData[field.label?.toLowerCase().replace(/\s+/g, '_')] ||
         '—';
 
+      const formattedValue = formatFieldValue(fieldValue, field.type);
+      
       return `
         <tr>
           <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 500; color: #374151;">${field.label}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #4b5563;">${fieldValue}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #4b5563;">${formattedValue}</td>
         </tr>
       `;
     }).join('');
@@ -446,13 +529,13 @@ export const sendSubmissionNotificationToApprover = async (
         actor,
         companyId,
         plantId,
-        fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+        fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
       });
 
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Submitted] ${formId || 'FORM-ID'} – ${formName} | Submitted by ${submitterName}`,
+    subject: `[Form Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -503,7 +586,7 @@ export const sendFormCreatedApproverNotification = async (
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -570,13 +653,13 @@ export const sendSubmissionNotificationToPlant = async (
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Submitted] ${formId || 'FORM-ID'} – ${formName} | Submitted by ${submitterName}`,
+    subject: `[Form Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -637,8 +720,8 @@ export const sendApprovalStatusNotificationToPlant = async (
   `;
 
   const subject = isApproved
-    ? `[Form Approved] ${formId || 'FORM-ID'} – ${formName} | Level ${level} Approved by ${approverName}`
-    : `[Form Rejected] ${formId || 'FORM-ID'} – ${formName} | Level ${level} Rejected by ${approverName}`;
+    ? `[Form Approved] ${submissionId || formId || 'FORM-ID'} | Level ${level} Approved by ${approverName}`
+    : `[Form Rejected] ${submissionId || formId || 'FORM-ID'} | Level ${level} Rejected by ${approverName}`;
 
   const fromAddress = approverEmail
     ? `"${approverName}" <${approverEmail}>`
@@ -646,7 +729,7 @@ export const sendApprovalStatusNotificationToPlant = async (
         actor,
         companyId,
         plantId: plantIdParam || plantId,
-        fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+        fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
       });
 
   const mailOptions = {
@@ -707,13 +790,13 @@ export const sendRejectionNotificationToSubmitter = async (
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Rejected] ${formId || 'FORM-ID'} – ${formName} | Rejected at Level 1`,
+    subject: `[Form Rejected] ${submissionId || formId || 'FORM-ID'} | Rejected at Level 1`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -738,8 +821,6 @@ export const sendProfileUpdateNotification = async (
   companyId = null,
   plantId = null
 ) => {
-  // No link needed in this email
-
   const fieldsHtml = Object.entries(updatedFields)
     .filter(([_, value]) => value !== undefined && value !== null)
     .map(([key, value]) => `<li style="margin: 5px 0;"><strong>${key}:</strong> ${value}</li>`)
@@ -765,7 +846,7 @@ export const sendProfileUpdateNotification = async (
     actor,
     companyId,
     plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
@@ -799,8 +880,6 @@ export const sendFinalApprovalNotificationToSubmitter = async (
   companyId = null,
   plantIdParam = null
 ) => {
-  // No link needed in this email
-
   const historyHtml = approvalHistory.map(h => `
     <li style="margin-bottom: 10px;">
       <strong>${h.name}</strong> - Approved at ${formatIST(h.date)}
@@ -825,13 +904,13 @@ export const sendFinalApprovalNotificationToSubmitter = async (
     actor,
     companyId,
     plantId: plantIdParam,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
   });
 
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Fully Approved] ${formId || 'FORM-ID'} – ${formName} | Final Approval Completed`,
+    subject: `[Form Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -860,8 +939,6 @@ export const sendFinalApprovalNotificationToPlant = async (
   approverEmail = null,
   approverName = null
 ) => {
-  // No link needed in this email
-
   const historyHtml = approvalHistory.map(h => `
     <li style="margin-bottom: 10px;">
       <strong>${h.name}</strong> - Approved at ${formatIST(h.date)}
@@ -888,13 +965,13 @@ export const sendFinalApprovalNotificationToPlant = async (
         actor,
         companyId,
         plantId: plantIdParam,
-        fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+        fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
       });
 
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Fully Approved] ${formId || 'FORM-ID'} – ${formName} | Final Approval Completed`,
+    subject: `[Form Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 

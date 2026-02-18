@@ -161,7 +161,7 @@ export const formatSubmissionsForExport = (submissions) => {
     }
     
     const formId = s.formNumericalId ? `F-${s.formNumericalId.toString().padStart(3, '0')}` : (s.formId?.numericalId ? `F-${s.formId.numericalId.toString().padStart(3, '0')}` : (s.formId?.formId || s.templateId?.numericalId || s.templateId?.formId || s._id));
-    const submissionId = s.numericalId ? `#${s.numericalId.toString().padStart(4, '0')}` : s._id;
+    const submissionId = s.readableId || (s.numericalId ? `#${s.numericalId.toString().padStart(4, '0')}` : s._id);
     
     const row = {
       'Submission ID': submissionId,

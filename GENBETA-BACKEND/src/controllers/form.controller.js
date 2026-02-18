@@ -6,7 +6,26 @@ import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
 import { sendApprovalEmail, sendFormCreatedApproverNotification } from "../services/email.service.js";
-import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
+import { generateCacheKey, getFromCache, setInCache, deleteFromCache, warmCache, getCacheStats } from "../utils/cache.js";
+
+// Helper function to validate layout structure
+function validateLayoutStructure(fields) {
+  if (!fields || !Array.isArray(fields)) return;
+  
+  fields.forEach(field => {
+
+    
+    // For grid-table, ensure it has proper structure
+    if (field.type === "grid-table") {
+      if (field.columns && !Array.isArray(field.columns)) {
+        throw new Error("Grid-table fields must have 'columns' property as an array");
+      }
+      if (field.items && !Array.isArray(field.items)) {
+        throw new Error("Grid-table fields must have 'items' property as an array");
+      }
+    }
+  });
+}
 
 /* ======================================================
    CREATE FORM
@@ -14,6 +33,12 @@ import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
 export const createForm = async (req, res) => {
   try {
     const { formId, formName, fields, sections, approvalFlow, approvalLevels, description, status } = req.body;
+
+    // Validate layout structure - prefer sections fields, fall back to root fields for legacy forms
+    const allFieldsToValidate = (sections && sections.length > 0) 
+      ? sections.flatMap(s => s.fields || [])
+      : (fields || []);
+    validateLayoutStructure(allFieldsToValidate);
 
     // Map approvalLevels from frontend to approvalFlow for backend
     const finalApprovalFlow = (approvalLevels || approvalFlow || []).map((level, index) => ({
@@ -36,6 +61,23 @@ export const createForm = async (req, res) => {
       status: status || "DRAFT",
       isTemplate: req.body.isTemplate || false
     });
+
+    console.log('Created form with status:', form.status, 'and ID:', form._id);
+
+    // Invalidate cache for forms list
+    try {
+      const cacheKey = generateCacheKey('forms', { 
+        page: 1, 
+        limit: 10, 
+        role: req.user.role,
+        plantId: req.user.plantId 
+      });
+      console.log('Invalidating cache key in createForm:', cacheKey);
+      await deleteFromCache(cacheKey);
+      console.log('Cache invalidated successfully in createForm');
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+    }
 
     res.status(201).json({
       success: true,
@@ -113,12 +155,17 @@ export const getForms = async (req, res) => {
     }
     const cacheKey = generateCacheKey('forms', cacheParams);
     
+    console.log('Generated cache key:', cacheKey);
+    console.log('Cache params:', cacheParams);
+    console.log('Filter:', filter);
+    
     // Try to get from cache first
     let cachedResult = await getFromCache(cacheKey);
     if (cachedResult) {
-      console.log('Returning cached result');
+      console.log('Returning cached result for key:', cacheKey);
       return res.json(cachedResult);
     }
+    console.log('No cache hit, fetching from database');
 
     // Count total forms for pagination metadata
     const total = await Form.countDocuments(filter);
@@ -193,10 +240,23 @@ export const getFormById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Form not found" });
     }
     
+    // Log the number of fields to help debug
+    console.log(`Form ${req.params.id} has ${form.fields?.length || 0} top-level fields and ${form.sections?.length || 0} sections`);
+    if (form.sections && form.sections.length > 0) {
+      form.sections.forEach((section, index) => {
+        console.log(`Section ${index} has ${section.fields?.length || 0} fields`);
+      });
+    }
+    
+    // Calculate total fields across all sections and top level
+    const totalFields = (form.fields?.length || 0) + 
+      (form.sections?.reduce((sum, section) => sum + (section.fields?.length || 0), 0) || 0);
+    console.log(`Total fields in form ${req.params.id}: ${totalFields}`);
+    
     res.json({ success: true, data: form });
   } catch (error) {
     console.error("Get form by id error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch form" });
+    res.status(500).json({ success: false, message: "Failed to fetch form: " + error.message });
   }
 };
 
@@ -206,6 +266,12 @@ export const getFormById = async (req, res) => {
 export const updateForm = async (req, res) => {
   try {
     const { formId, formName, fields, sections, approvalFlow, approvalLevels, description } = req.body;
+
+    // Validate layout structure - prefer sections fields, fall back to root fields for legacy forms
+    const allFieldsToValidate = (sections && sections.length > 0) 
+      ? sections.flatMap(s => s.fields || [])
+      : (fields || []);
+    validateLayoutStructure(allFieldsToValidate);
 
     // Map approvalLevels from frontend to approvalFlow for backend if provided
     let finalPayload = { ...req.body };
@@ -231,6 +297,19 @@ export const updateForm = async (req, res) => {
 
     if (!updated) {
       return res.status(404).json({ success: false, message: "Form not found" });
+    }
+
+    // Invalidate cache for forms list
+    try {
+      const cacheKey = generateCacheKey('forms', { 
+        page: 1, 
+        limit: 10, 
+        role: req.user.role,
+        plantId: req.user.plantId 
+      });
+      await deleteFromCache(cacheKey);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
     }
 
     // Send email notifications to approvers when workflow is assigned/updated
@@ -295,6 +374,19 @@ export const archiveForm = async (req, res) => {
     if (!form) {
       return res.status(404).json({ success: false, message: "Form not found" });
     }
+
+    // Invalidate cache for forms list
+    try {
+      const cacheKey = generateCacheKey('forms', { 
+        page: 1, 
+        limit: 10, 
+        role: req.user.role,
+        plantId: req.user.plantId 
+      });
+      await deleteFromCache(cacheKey);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+    }
     
     res.json({ success: true, message: "Form archived successfully", data: form });
   } catch (error) {
@@ -316,6 +408,19 @@ export const restoreForm = async (req, res) => {
     
     if (!form) {
       return res.status(404).json({ success: false, message: "Form not found" });
+    }
+
+    // Invalidate cache for forms list
+    try {
+      const cacheKey = generateCacheKey('forms', { 
+        page: 1, 
+        limit: 10, 
+        role: req.user.role,
+        plantId: req.user.plantId 
+      });
+      await deleteFromCache(cacheKey);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
     }
     
     res.json({ success: true, message: "Form restored successfully", data: form });

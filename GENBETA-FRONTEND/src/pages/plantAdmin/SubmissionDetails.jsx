@@ -144,7 +144,12 @@ export default function SubmissionDetails() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{submission.formName}</h1>
-            <p className="mt-1 text-gray-600">Submission #{submission.numericalId}</p>
+            <p className="mt-1 text-gray-600">
+              {submission.readableId 
+                ? `Submission: ${submission.readableId}` 
+                : `Submission #${submission.numericalId || submission._id}`
+              }
+            </p>
           </div>
           
           <StatusBadge status={submission.status} />

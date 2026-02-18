@@ -17,7 +17,7 @@ const checkAllDatabases = async () => {
     const dbs = await admin.listDatabases();
     console.log('Available databases:', dbs.databases.map(db => db.name));
     
-    // Check each database for Genbeta collections
+    // Check each database for Matapang collections
     for (const dbInfo of dbs.databases) {
       const dbName = dbInfo.name;
       if (['admin', 'local', 'config'].includes(dbName)) continue;
@@ -36,12 +36,12 @@ const checkAllDatabases = async () => {
       const collectionNames = collections.map(c => c.name);
       console.log(`Collections: ${collectionNames.join(', ')}`);
       
-      // Check for key Genbeta collections
-      const genbetaCollections = ['companies', 'plants', 'forms', 'formtemplates'];
-      const foundCollections = genbetaCollections.filter(col => collectionNames.includes(col));
+      // Check for key Matapang collections
+      const matapangCollections = ['companies', 'plants', 'forms', 'formtemplates'];
+      const foundCollections = matapangCollections.filter(col => collectionNames.includes(col));
       
       if (foundCollections.length > 0) {
-        console.log(`✓ Found Genbeta collections: ${foundCollections.join(', ')}`);
+        console.log(`✓ Found Matapang collections: ${foundCollections.join(', ')}`);
         
         // Check companies if collection exists
         if (collectionNames.includes('companies')) {
@@ -59,7 +59,7 @@ const checkAllDatabases = async () => {
           }
         }
       } else {
-        console.log('  No Genbeta collections found');
+        console.log('  No Matapang collections found');
       }
     }
 

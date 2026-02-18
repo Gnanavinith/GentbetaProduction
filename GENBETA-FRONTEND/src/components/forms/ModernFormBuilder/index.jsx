@@ -72,20 +72,25 @@ export default function ModernFormBuilder({ formId }) {
   const initialLoadDone = useRef(false);
 
   // Refs for auto-save and unmount handling
-  const stateRef = useRef({ sections, workflow, formName, description, isDirty, formId });
+  const stateRef = useRef({ sections, workflow, formName, description, isDirty, formId, status });
   const saveInProgress = useRef(false);
 
   // Keep refs in sync with state
   useEffect(() => {
-    stateRef.current = { sections, workflow, formName, description, isDirty, formId };
-  }, [sections, workflow, formName, description, isDirty, formId]);
+    stateRef.current = { sections, workflow, formName, description, isDirty, formId, status };
+  }, [sections, workflow, formName, description, isDirty, formId, status]);
 
-  // Handle auto-save on change and on unmount
+  // Handle auto-save on change and on unmount - ONLY for new forms
   useEffect(() => {
     // 5-second debounce for auto-save during editing
     const timer = setTimeout(() => {
       if (stateRef.current.isDirty && !saveInProgress.current) {
-        handleSave(false, true);
+        const isNew = !stateRef.current.formId || stateRef.current.formId === "new" || stateRef.current.formId === "create";
+        
+        // Only auto-save for NEW forms, not for editing existing forms
+        if (isNew) {
+          handleSave(false, true); // This will create a new draft
+        }
       }
     }, 5000);
 
@@ -94,60 +99,54 @@ export default function ModernFormBuilder({ formId }) {
     };
   }, [sections, workflow, formName, description]);
 
-  // Special effect for saving on unmount
+  // Special effect for saving on unmount - ONLY save drafts for new forms, NOT for edits to published forms
   useEffect(() => {
     return () => {
       if (stateRef.current.isDirty && !saveInProgress.current) {
-        // Create a payload from the latest ref state
-        const { sections, workflow, formName, description, formId } = stateRef.current;
+        const { sections, workflow, formName, description, formId, status: currentStatus } = stateRef.current;
         
         const isNew = !formId || formId === "new" || formId === "create";
         
-        // Generate formId only for new forms, use existing for updates
-        const generatedFormId = isNew 
-          ? `${formName.toLowerCase().replace(/\s+/g, '-')}-${Date.now().toString(36)}`
-          : formId;
+        // Only auto-save drafts for NEW forms, don't modify existing published forms
+        if (isNew) {
+          const generatedFormId = `${formName.toLowerCase().replace(/\s+/g, '-')}-${Math.floor(100000 + Math.random() * 900000)}`;
                 
-        const payload = {
-          formName: formName.trim(),
-          description: description.trim(),
-          formId: generatedFormId,
-          status: "DRAFT",
-          isTemplate: isTemplateMode,
-          sections: sections.map(s => ({
-            sectionId: s.id,
-            title: s.title,
-            fields: s.fields.map(f => {
-              const { id: _id, ...rest } = f;
-              return {
-                ...rest,
-                fieldId: f.fieldId || f.label.toLowerCase().replace(/\s+/g, '_')
-              };
-            })
-          })),
-          fields: sections.flatMap(s => s.fields.map(f => ({
-            ...f,
-            fieldId: f.fieldId || f.label.toLowerCase().replace(/\s+/g, '_')
-          }))),
-          approvalLevels: workflow,
-          plantId: user?.plantId
-        };
+          const payload = {
+            formName: formName.trim(),
+            description: description.trim(),
+            formId: generatedFormId,
+            status: "DRAFT", // Always create new forms as drafts
+            isTemplate: isTemplateMode,
+            sections: sections.map(s => ({
+              sectionId: s.id,
+              title: s.title,
+              fields: s.fields.map(f => {
+                const { id: _id, ...rest } = f;
+                return {
+                  ...rest,
+                  fieldId: f.fieldId || f.label.toLowerCase().replace(/\s+/g, '_')
+                };
+              })
+            })),
+            // Only include root fields for legacy forms that don't use sections
+            // Modern forms should use sections[].fields instead
+            fields: [],
+            approvalLevels: workflow,
+            plantId: user?.plantId
+          };
 
-        // Use a "fire and forget" call on unmount
-        if (!isNew) {
-          formApi.updateForm(formId, payload).catch(e => logError("Unmount save", e));
-        } else {
           formApi.createForm(payload).catch(e => {
             logError("Unmount create", e);
-            // Check if it's a plan limit error
             if (e.response?.data?.overLimit) {
               toast.error("Your form limit is reached. Contact admin");
             }
           });
         }
+        // For existing forms (including published ones), don't auto-save on unmount
+        // This preserves the original published form status
       }
     };
-  }, [user?.plantId]); // Only depends on user context
+  }, [user?.plantId, isTemplateMode]);
 
   useEffect(() => {
     if (initialLoadDone.current) {
@@ -264,7 +263,7 @@ export default function ModernFormBuilder({ formId }) {
     }
   }, [formId]);
 
-  const handleSave = useCallback(async (isPublish = false, silent = false) => {
+  const handleSave = useCallback(async (isPublish = false, silent = false, overrideStatus = null) => {
     if (!formName.trim()) {
       if (!silent) toast.error("Please enter a form name");
       return;
@@ -288,17 +287,21 @@ export default function ModernFormBuilder({ formId }) {
       setSaveStatus("Saving...");
       
       const isNew = !formId || formId === "new" || formId === "create";
+      const isEditingPublished = !isNew && status === "PUBLISHED" && !isPublish;
       
-      // Generate formId only for new forms, use existing for updates
-      const generatedFormId = isNew 
-        ? `${formName.toLowerCase().replace(/\s+/g, '-')}-${Date.now().toString(36)}`
+      // For editing published forms, create a new draft instead of updating the original
+      const shouldCreateNewDraft = isEditingPublished;
+      
+      // Generate formId - always create new ID for drafts of published forms
+      const generatedFormId = shouldCreateNewDraft || isNew 
+        ? `${formName.toLowerCase().replace(/\s+/g, '-')}-${Math.floor(100000 + Math.random() * 900000)}`
         : formId;
             
       const payload = {
         formName: formName.trim(),
         description: description.trim(),
         formId: generatedFormId,
-        status: isPublish ? "PUBLISHED" : "DRAFT",
+        status: overrideStatus || (isPublish ? "PUBLISHED" : "DRAFT"),
         isTemplate: isTemplateMode,
         sections: sections.map(s => ({
           sectionId: s.id,
@@ -321,9 +324,14 @@ export default function ModernFormBuilder({ formId }) {
 
       let response;
       
-      if (!isNew) {
+      if (shouldCreateNewDraft) {
+        // Create new draft version instead of updating published form
+        response = await formApi.createForm(payload);
+      } else if (!isNew) {
+        // Update existing draft/other status forms
         response = await formApi.updateForm(formId, payload);
       } else {
+        // Create new form
         response = await formApi.createForm(payload);
       }
 
@@ -334,8 +342,8 @@ export default function ModernFormBuilder({ formId }) {
         setStatus(isPublish ? "PUBLISHED" : "DRAFT");
         setIsDirty(false);
 
-        // If it was a new form, we need to update the URL to the new ID
-        if (isNew && response.data?._id) {
+        // If it was a new form or new draft from published form, update the URL
+        if ((isNew || shouldCreateNewDraft) && response.data?._id) {
           const newId = response.data._id;
           const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
           navigate(`/plant/forms/${newId}/edit/${activeView}${queryString}`, { replace: true });
@@ -344,7 +352,7 @@ export default function ModernFormBuilder({ formId }) {
         if (!silent) {
           // Check if workflow was assigned/updated
           const hasWorkflow = workflow && workflow.length > 0;
-          const isNewForm = isNew;
+          const isNewForm = isNew || shouldCreateNewDraft;
           
           if (isPublish) {
             if (hasWorkflow) {
@@ -354,7 +362,10 @@ export default function ModernFormBuilder({ formId }) {
             }
             setTimeout(() => navigate("/plant/forms"), 1500);
           } else {
-            if (hasWorkflow && !isNewForm) {
+            if (isEditingPublished) {
+              toast.success("New draft version created successfully! The original published form remains unchanged.");
+              setTimeout(() => navigate("/plant/forms/draft", { state: { shouldRefresh: true } }), 1500);
+            } else if (hasWorkflow && !isNewForm) {
               toast.success("Template draft saved successfully! Emails sent to approvers for workflow assignment.");
             } else {
               toast.success("Template draft saved successfully!");
@@ -382,7 +393,7 @@ export default function ModernFormBuilder({ formId }) {
       saveInProgress.current = false;
       if (!silent) setLoading(false);
     }
-  }, [formName, description, workflow, sections, user?.plantId, formId, activeView, searchParams, navigate, setActiveView]);
+  }, [formName, description, workflow, sections, user?.plantId, formId, activeView, searchParams, navigate, setActiveView, status]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -450,6 +461,7 @@ export default function ModernFormBuilder({ formId }) {
       if (activeSectionId === overSectionId) {
         setSections(prev => prev.map(section => {
           if (section.id === activeSectionId) {
+            // Regular field reordering within section
             const oldIndex = (section.fields || []).findIndex(f => f.id === active.id);
             const newIndex = (section.fields || []).findIndex(f => f.id === over.id);
             if (oldIndex !== -1 && newIndex !== -1) {

@@ -105,18 +105,6 @@ export const getPlants = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     
-    // Generate cache key
-    const cacheParams = { page, limit };
-    if (filter.companyId) cacheParams.companyId = filter.companyId;
-    if (filter._id) cacheParams.plantId = filter._id;
-    const cacheKey = generateCacheKey('plants', cacheParams);
-    
-    // Try to get from cache first
-    let cachedResult = await getFromCache(cacheKey);
-    if (cachedResult) {
-      return res.json(cachedResult);
-    }
-
     // Count total plants for pagination metadata
     const total = await Plant.countDocuments(filter);
 
@@ -127,17 +115,27 @@ export const getPlants = async (req, res) => {
       .skip(skip)
       .limit(limit);
     
-    const data = await Promise.all(
-      plants.map(async (plant) => {
+    // Process plants data without Promise.all to avoid potential issues
+    const data = [];
+    for (const plant of plants) {
+      try {
         const admin = await User.findOne({ plantId: plant._id, role: "PLANT_ADMIN" }).select("name email");
-        return {
+        data.push({
           ...plant.toObject(),
           company: plant.companyId,
           adminName: admin?.name || "N/A",
           adminEmail: admin?.email || "N/A"
-        };
-      })
-    );
+        });
+      } catch (adminError) {
+        console.error("Error fetching admin for plant:", plant._id, adminError);
+        data.push({
+          ...plant.toObject(),
+          company: plant.companyId,
+          adminName: "N/A",
+          adminEmail: "N/A"
+        });
+      }
+    }
     
     const result = {
       data,
@@ -149,14 +147,11 @@ export const getPlants = async (req, res) => {
         hasPrev: page > 1
       }
     };
-    
-    // Cache the result for 5 minutes
-    await setInCache(cacheKey, result, 300);
 
     res.json(result);
   } catch (error) {
     console.error("Get plants error:", error);
-    res.status(500).json({ message: "Failed to fetch plants" });
+    res.status(500).json({ message: "Failed to fetch plants", error: error.message });
   }
 };
 

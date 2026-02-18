@@ -16,7 +16,7 @@ export default function SubmittedSuccess() {
           You can now close this window.
         </div>
         <p className="text-xs text-gray-400">
-          GenBeta &copy; 2025
+          Matapang &copy; 2025
         </p>
       </div>
     </div>

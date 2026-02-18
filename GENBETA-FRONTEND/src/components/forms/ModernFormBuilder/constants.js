@@ -48,17 +48,7 @@ export const FIELD_GROUPS = [
         { type: "grid-table", label: "Grid / Table", icon: TableIcon },
       ]
     },
-  {
-    id: "layout",
-    title: "Layout & Structure",
-    fields: [
-      { type: "section-header", label: "Section Header", icon: Layout },
-      { type: "description", label: "Description Text", icon: AlignLeft },
-      { type: "columns-2", label: "2 Columns", icon: Grid3X3 },
-      { type: "columns-3", label: "3 Columns", icon: Grid3X3 },
-      { type: "spacer", label: "Spacer", icon: Divide },
-    ]
-  },
+
   {
     id: "special",
     title: "Special Fields",
@@ -103,11 +93,7 @@ export const INITIAL_FIELD_CONFIG = {
     width: "100%",
     repeatable: false
   },
-  "section-header": { label: "Section Title", description: "", width: "100%", alignment: "left" },
-  description: { content: "Enter instructional text here...", width: "100%", alignment: "left" },
-  "columns-2": { type: "columns-2", children: [[], []], width: "100%" },
-  "columns-3": { type: "columns-3", children: [[], [], []], width: "100%" },
-  spacer: { height: "20px", width: "100%" },
+
   file: { label: "File Upload", required: false, maxFileSize: 5, width: "100%" },
   image: { label: "Image Upload", required: false, width: "100%" },
   signature: { label: "Signature", required: true, width: "100%" },

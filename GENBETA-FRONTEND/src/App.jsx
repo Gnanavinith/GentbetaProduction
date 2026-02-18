@@ -1,64 +1,74 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
-// Auth
-import Login from "./pages/Login";
+// Loading component
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+);
+
+// Lazy-loaded components
+const Login = lazy(() => import("./pages/Login"));
 
 // Super Admin Pages
-import SuperAdminDashboard from "./pages/superAdmin/Dashboard";
-import CompanyPage from "./pages/CompanyPage";
-import CreateCompany from "./pages/CreateCompany";
-import CompanyDetailPage from "./pages/CompanyDetailPage";
-import EditCompanyPage from "./pages/EditCompanyPage";
-import AddPlantPage from "./pages/superAdmin/AddPlantPage";
+const SuperAdminDashboard = lazy(() => import("./pages/superAdmin/Dashboard"));
+const CompanyPage = lazy(() => import("./pages/CompanyPage"));
+const CreateCompany = lazy(() => import("./pages/CreateCompany"));
+const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
+const EditCompanyPage = lazy(() => import("./pages/EditCompanyPage"));
+const AddPlantPage = lazy(() => import("./pages/superAdmin/AddPlantPage"));
 
 // Company Admin Pages
-import CompanyAdminDashboard from "./pages/companyAdmin/Dashboard";
-import PlantList from "./pages/companyAdmin/PlantList";
-import CreatePlant from "./pages/companyAdmin/CreatePlant";
-import EditPlantPage from "./pages/companyAdmin/EditPlantPage";
-import CompanyProfile from "./pages/companyAdmin/Profile";
-import PlansPage from "./pages/companyAdmin/PlansPage";
+const CompanyAdminDashboard = lazy(() => import("./pages/companyAdmin/Dashboard"));
+const PlantList = lazy(() => import("./pages/companyAdmin/PlantList"));
+const CreatePlant = lazy(() => import("./pages/companyAdmin/CreatePlant"));
+const EditPlantPage = lazy(() => import("./pages/companyAdmin/EditPlantPage"));
+const CompanyProfile = lazy(() => import("./pages/companyAdmin/Profile"));
+const PlansPage = lazy(() => import("./pages/companyAdmin/PlansPage"));
 
-import PlantAssignments from "./pages/plantAdmin/Assignments";
-import EmployeeAssignments from "./pages/employee/Assignments";
+const PlantAssignments = lazy(() => import("./pages/plantAdmin/Assignments"));
+const EmployeeAssignments = lazy(() => import("./pages/employee/Assignments"));
 
 // Plant Admin Pages
-import PlantAdminDashboard from "./pages/plantAdmin/Dashboard";
-import FormsList from "./pages/plantAdmin/FormsList";
-import FormBuilderPage from "./pages/plantAdmin/FormBuilderPage";
-import TemplateSelectionPage from "./pages/plantAdmin/TemplateSelectionPage";
-import PlantSubmissions from "./pages/plantAdmin/Submissions";
-import SubmissionDetails from "./pages/plantAdmin/SubmissionDetails";
-import Employees from "./pages/plantAdmin/Employees";
-import AddEmployee from "./pages/plantAdmin/AddEmployee";
-import PlantProfile from "./pages/plantAdmin/Profile";
+const PlantAdminDashboard = lazy(() => import("./pages/plantAdmin/Dashboard"));
+const FormsList = lazy(() => import("./pages/plantAdmin/FormsList"));
+const FormBuilderPage = lazy(() => import("./pages/plantAdmin/FormBuilderPage"));
+const TemplateSelectionPage = lazy(() => import("./pages/plantAdmin/TemplateSelectionPage"));
+const PlantSubmissions = lazy(() => import("./pages/plantAdmin/Submissions"));
+const SubmissionDetails = lazy(() => import("./pages/plantAdmin/SubmissionDetails"));
+const Employees = lazy(() => import("./pages/plantAdmin/Employees"));
+const AddEmployee = lazy(() => import("./pages/plantAdmin/AddEmployee"));
+const PlantProfile = lazy(() => import("./pages/plantAdmin/Profile"));
 
 // New separate forms pages
-import ActiveFormsPage from "./pages/plantAdmin/ActiveFormsPage";
-import DraftFormsPage from "./pages/plantAdmin/DraftFormsPage";
-import ArchivedFormsPage from "./pages/plantAdmin/ArchivedFormsPage";
-import SavedTemplatesPage from "./pages/plantAdmin/SavedTemplatesPage";
+const ActiveFormsPage = lazy(() => import("./pages/plantAdmin/ActiveFormsPage"));
+const DraftFormsPage = lazy(() => import("./pages/plantAdmin/DraftFormsPage"));
+const ArchivedFormsPage = lazy(() => import("./pages/plantAdmin/ArchivedFormsPage"));
+const SavedTemplatesPage = lazy(() => import("./pages/plantAdmin/SavedTemplatesPage"));
 
 // Employee Pages
-import EmployeeDashboard from "./pages/employee/Dashboard";
-import EmployeeTemplates from "./pages/employee/Templates";
-import FillFormPage from "./pages/employee/FillFormPage";
-import BulkApprovalPage from "./pages/approval/BulkApprovalPage";
-import PendingApprovals from "./pages/approval/PendingApprovals";
-import ApprovalDetail from "./pages/approval/ApprovalDetail";
-import Profile from "./pages/Profile";
-import FormsCardView from "./pages/FormsCardView";
-import EmployeeSubmissions from "./pages/employee/Submissions";
-import EmployeeSubmissionDetails from "./pages/employee/SubmissionDetails";
-import EditSubmission from "./pages/employee/EditSubmission";
+const EmployeeDashboard = lazy(() => import("./pages/employee/Dashboard"));
+const EmployeeTemplates = lazy(() => import("./pages/employee/Templates"));
+const FillFormPage = lazy(() => import("./pages/employee/FillFormPage"));
+const BulkApprovalPage = lazy(() => import("./pages/approval/BulkApprovalPage"));
+const PendingApprovals = lazy(() => import("./pages/approval/PendingApprovals"));
+const ApprovalDetail = lazy(() => import("./pages/approval/ApprovalDetail"));
+const Profile = lazy(() => import("./pages/Profile"));
+const FormsCardView = lazy(() => import("./pages/FormsCardView"));
+const EmployeeSubmissions = lazy(() => import("./pages/employee/Submissions"));
+const EmployeeSubmissionDetails = lazy(() => import("./pages/employee/SubmissionDetails"));
+const EditSubmission = lazy(() => import("./pages/employee/EditSubmission"));
 
 // Public Pages
-import ApprovalPage from "./pages/public/ApprovalPage";
-import SubmittedSuccess from "./pages/public/SubmittedSuccess";
+const ApprovalPage = lazy(() => import("./pages/public/ApprovalPage"));
+const SubmittedSuccess = lazy(() => import("./pages/public/SubmittedSuccess"));
+
+
 
 function getDefaultRoute(role) {
   switch (role) {
@@ -76,7 +86,8 @@ function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Toaster position="top-right" reverseOrder={false} />
-      <Routes>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
         {/* Public Routes */}
         <Route path="/" element={isAuthenticated ? <Navigate to={getDefaultRoute(user?.role)} /> : <Login />} />
         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={getDefaultRoute(user?.role)} />} />
@@ -155,6 +166,7 @@ function App() {
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+    </Suspense>
     </BrowserRouter>
   );
 }
