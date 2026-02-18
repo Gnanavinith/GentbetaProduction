@@ -5,6 +5,28 @@ import Plant from "../models/Plant.model.js";
 
 dotenv.config();
 
+/* ============================
+   GLOBAL HELPERS
+   ============================ */
+
+const formatIST = (date) => {
+  if (!date) return "—";
+  return new Date(date).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+};
+
+const getBaseUrl = () => {
+  return (
+    process.env.FRONTEND_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    "http://localhost:3000"
+  );
+};
+
 const createTransporter = () => {
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     return nodemailer.createTransport({
@@ -17,7 +39,7 @@ const createTransporter = () => {
       }
     });
   }
-  
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
@@ -41,7 +63,7 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
     if (actor === "SUPER_ADMIN") {
       return process.env.PLATFORM_EMAIL || '"GenBeta Platform" <no-reply@genbeta.com>';
     }
-    
+
     // Company Admin level - use company email if available
     if (actor === "COMPANY_ADMIN" && companyId) {
       const company = await Company.findById(companyId).select("email name");
@@ -49,7 +71,7 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
         return `"${company.name} Admin" <${company.email}>`;
       }
     }
-    
+
     // Plant Admin level - use plant email, fallback to company email
     if ((actor === "PLANT_ADMIN" || actor === "EMPLOYEE") && plantId) {
       const plant = await Plant.findById(plantId).populate("companyId", "email name").select("email name");
@@ -60,7 +82,7 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
         return `"${fromName}" <${fromEmail}>`;
       }
     }
-    
+
     // Fallback to default
     return fallbackFrom;
   } catch (error) {
@@ -73,11 +95,11 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
  * Generates a base layout for emails with company and plant details
  */
 const getBaseLayout = (content, company = {}, plant = {}) => {
-  const logoHtml = company.logoUrl 
-    ? `<img src="${company.logoUrl}" alt="${company.name}" style="max-height: 60px; margin-bottom: 20px;">` 
+  const logoHtml = company.logoUrl
+    ? `<img src="${company.logoUrl}" alt="${company.name}" style="max-height: 60px; margin-bottom: 20px;">`
     : `<h1 style="color: #4f46e5; margin: 0;">${company.name || 'GenBeta'}</h1>`;
 
-  const plantInfoHtml = (plant && plant.name) 
+  const plantInfoHtml = (plant && plant.name)
     ? `<div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #4f46e5; margin-bottom: 20px; border-radius: 0 4px 4px 0;">
          <p style="margin: 0; color: #475569; font-size: 14px;"><strong>Plant:</strong> ${plant.name} ${plant.plantNumber ? `(${plant.plantNumber})` : ''}</p>
          ${plant.location ? `<p style="margin: 0; color: #475569; font-size: 14px;"><strong>Location:</strong> ${plant.location}</p>` : ''}
@@ -107,7 +129,25 @@ const getBaseLayout = (content, company = {}, plant = {}) => {
   `;
 };
 
-export const sendApprovalEmail = async (to, formName, link, company = {}, plant = {}, actor = "PLANT_ADMIN", companyId = null, plantId = null) => {
+export const sendApprovalEmail = async (
+  to,
+  formName,
+  link,
+  company = {},
+  plant = {},
+  actor = "PLANT_ADMIN",
+  companyId = null,
+  plantId = null,
+  formId = "" // Added formId parameter
+) => {
+  if (!link) {
+    throw new Error("Email link is missing");
+  }
+
+  const safeLink = link.startsWith("http")
+    ? link
+    : `${getBaseUrl()}${link}`;
+
   const content = `
     <h2 style="color: #4f46e5;">Form Approval Request</h2>
     <p>You have been requested to fill out and approve the following form:</p>
@@ -116,15 +156,11 @@ export const sendApprovalEmail = async (to, formName, link, company = {}, plant 
     </div>
     <p>Please click the button below to open the form and submit your data. This link will expire in 48 hours.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${link}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Open Approval Form</a>
+      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Open Approval Form</a>
     </div>
     <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">If you were not expecting this email, please ignore it.</p>
   `;
 
-  // Extract form ID from formName if it exists
-  const formIdMatch = formName.match(/(\w+-\w+-\d{4}-\w+)/);
-  const formId = formIdMatch ? formIdMatch[1] : 'FORM-ID';
-  
   // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
@@ -136,7 +172,7 @@ export const sendApprovalEmail = async (to, formName, link, company = {}, plant 
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Approval Required] ${formId} – ${formName} | Level 1 Approval`,
+    subject: `[Approval Required] ${formId || 'FORM-ID'} – ${formName} | Level 1 Approval`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -155,9 +191,23 @@ export const sendApprovalEmail = async (to, formName, link, company = {}, plant 
   }
 };
 
-export const sendWelcomeEmail = async (to, name, role, companyName, loginUrl, password, company = {}, plant = {}, actor = "SYSTEM", companyId = null, plantId = null) => {
+export const sendWelcomeEmail = async (
+  to,
+  name,
+  role,
+  companyName,
+  loginUrl,
+  password,
+  company = {},
+  plant = {},
+  actor = "SYSTEM",
+  companyId = null,
+  plantId = null
+) => {
+  // No link parameter needed – using loginUrl directly
+
   let roleLabel = "";
-  switch(role) {
+  switch (role) {
     case "COMPANY_ADMIN":
       roleLabel = "Company Administrator";
       break;
@@ -170,7 +220,7 @@ export const sendWelcomeEmail = async (to, name, role, companyName, loginUrl, pa
     default:
       roleLabel = "User";
   }
-  
+
   const content = `
     <h2 style="color: #1f2937;">Hello ${name}!</h2>
     
@@ -216,7 +266,6 @@ export const sendWelcomeEmail = async (to, name, role, companyName, loginUrl, pa
     </p>
   `;
 
-  // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
     companyId,
@@ -249,7 +298,19 @@ export const sendWelcomeEmail = async (to, name, role, companyName, loginUrl, pa
   }
 };
 
-export const sendPlantCreatedEmail = async (to, plantName, plantCode, companyName, company = {}, plant = {}, actor = "COMPANY_ADMIN", companyId = null, plantId = null) => {
+export const sendPlantCreatedEmail = async (
+  to,
+  plantName,
+  plantCode,
+  companyName,
+  company = {},
+  plant = {},
+  actor = "COMPANY_ADMIN",
+  companyId = null,
+  plantId = null
+) => {
+  // No link needed in this email
+
   const content = `
     <h1 style="color: #4f46e5; margin: 0 0 20px 0; text-align: center;">New Plant Created</h1>
     
@@ -270,7 +331,6 @@ export const sendPlantCreatedEmail = async (to, plantName, plantCode, companyNam
     </p>
   `;
 
-  // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
     companyId,
@@ -300,7 +360,32 @@ export const sendPlantCreatedEmail = async (to, plantName, plantCode, companyNam
   }
 };
 
-export const sendSubmissionNotificationToApprover = async (to, formName, submitterName, submittedAt, link, previousApprovals = [], company = {}, plant = {}, plantId = "", formId = "", submissionId = "", formFields = [], submissionData = {}, actor = "PLANT_ADMIN", companyId = null, submitterEmail = null) => {
+export const sendSubmissionNotificationToApprover = async (
+  to,
+  formName,
+  submitterName,
+  submittedAt,
+  link,
+  previousApprovals = [],
+  company = {},
+  plant = {},
+  plantId = "",
+  formId = "",
+  submissionId = "",
+  formFields = [],
+  submissionData = {},
+  actor = "PLANT_ADMIN",
+  companyId = null,
+  submitterEmail = null
+) => {
+  if (!link) {
+    throw new Error("Email link is missing");
+  }
+
+  const safeLink = link.startsWith("http")
+    ? link
+    : `${getBaseUrl()}${link}`;
+
   let approvalContext = "";
   if (previousApprovals.length > 0) {
     const lastApproval = previousApprovals[previousApprovals.length - 1];
@@ -309,17 +394,16 @@ export const sendSubmissionNotificationToApprover = async (to, formName, submitt
 
   // Filter fields that should be included in approval email
   const approvalFields = formFields.filter(field => field.includeInApprovalEmail);
-  
+
   // Build approval summary table
   let approvalSummaryHtml = '';
   if (approvalFields.length > 0) {
     const summaryRows = approvalFields.map(field => {
-      // The FormRenderer stores data using the field.id as the key
-      const fieldValue = submissionData[field.id] || 
-                        submissionData[field.fieldId] || 
-                        submissionData[field.label?.toLowerCase().replace(/\s+/g, '_')] || 
-                        '—';
-      
+      const fieldValue = submissionData[field.id] ||
+        submissionData[field.fieldId] ||
+        submissionData[field.label?.toLowerCase().replace(/\s+/g, '_')] ||
+        '—';
+
       return `
         <tr>
           <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 500; color: #374151;">${field.label}</td>
@@ -340,12 +424,10 @@ export const sendSubmissionNotificationToApprover = async (to, formName, submitt
     `;
   }
 
-  const identifier = submissionId ? `${plantId}_${formId}_${formName}_${submissionId}` : `${plantId}_${formId}_${formName}`;
-
   const content = `
     <h2 style="color: #4f46e5;">Form Approval Request</h2>
     <p style="color: #1f2937; font-size: 16px;">
-      <strong>${submitterName}</strong> submitted the form <strong>${formName}</strong> at ${new Date(submittedAt).toLocaleString()}.
+      <strong>${submitterName}</strong> submitted the form <strong>${formName}</strong> at ${formatIST(submittedAt)}.
     </p>
     ${approvalContext}
     ${approvalSummaryHtml}
@@ -354,21 +436,19 @@ export const sendSubmissionNotificationToApprover = async (to, formName, submitt
     </div>
     <p>Please click the button below to review and take action on this submission.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${link}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Submission</a>
+      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Submission</a>
     </div>
   `;
 
-  // Use submitter's email as sender if provided, otherwise use resolved sender
-  const fromAddress = submitterEmail 
+  const fromAddress = submitterEmail
     ? `"${submitterName}" <${submitterEmail}>`
     : await resolveEmailSender({
-    actor,
-    companyId,
-    plantId,
-    fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
-  });
+        actor,
+        companyId,
+        plantId,
+        fallbackFrom: `"GenBeta" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@genbeta.com'}>`
+      });
 
-  // Use standardized subject format for employee submission
   const mailOptions = {
     from: fromAddress,
     to,
@@ -385,7 +465,25 @@ export const sendSubmissionNotificationToApprover = async (to, formName, submitt
   }
 };
 
-export const sendFormCreatedApproverNotification = async (to, formName, creatorName, link, company = {}, plant = {}, actor = "PLANT_ADMIN", companyId = null, plantId = null) => {
+export const sendFormCreatedApproverNotification = async (
+  to,
+  formName,
+  creatorName,
+  link,
+  company = {},
+  plant = {},
+  actor = "PLANT_ADMIN",
+  companyId = null,
+  plantId = null
+) => {
+  if (!link) {
+    throw new Error("Email link is missing");
+  }
+
+  const safeLink = link.startsWith("http")
+    ? link
+    : `${getBaseUrl()}${link}`;
+
   const content = `
     <h2 style="color: #4f46e5;">New Form Awaiting Your Approval</h2>
     <p style="color: #1f2937; font-size: 16px;">
@@ -396,12 +494,11 @@ export const sendFormCreatedApproverNotification = async (to, formName, creatorN
     </div>
     <p>You have been assigned as an approver for this form. Please review and take action.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${link}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Form</a>
+      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Form</a>
     </div>
     <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">If you were not expecting this email, please contact your administrator.</p>
   `;
 
-  // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
     companyId,
@@ -432,9 +529,28 @@ export const sendFormCreatedApproverNotification = async (to, formName, creatorN
   }
 };
 
-export const sendSubmissionNotificationToPlant = async (to, formName, submitterName, submittedAt, link, company = {}, plant = {}, plantId = "", formId = "", submissionId = "", actor = "EMPLOYEE", companyId = null) => {
-  const identifier = submissionId ? `${plantId}_${formId}_${formName}_${submissionId}` : `${plantId}_${formId}_${formName}`;
-  
+export const sendSubmissionNotificationToPlant = async (
+  to,
+  formName,
+  submitterName,
+  submittedAt,
+  link,
+  company = {},
+  plant = {},
+  plantId = "",
+  formId = "",
+  submissionId = "",
+  actor = "EMPLOYEE",
+  companyId = null
+) => {
+  if (!link) {
+    throw new Error("Email link is missing");
+  }
+
+  const safeLink = link.startsWith("http")
+    ? link
+    : `${getBaseUrl()}${link}`;
+
   const content = `
     <h2 style="color: #4f46e5;">New Form Submission</h2>
     <p style="color: #1f2937; font-size: 16px;">
@@ -442,15 +558,14 @@ export const sendSubmissionNotificationToPlant = async (to, formName, submitterN
     </p>
     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
       <strong style="font-size: 18px;">${formName}</strong>
-      <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">Submitted at: ${new Date(submittedAt).toLocaleString()}</p>
+      <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">Submitted at: ${formatIST(submittedAt)}</p>
     </div>
     <p>Click below to view the submission details.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${link}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Submission</a>
+      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Submission</a>
     </div>
   `;
 
-  // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
     companyId,
@@ -475,12 +590,37 @@ export const sendSubmissionNotificationToPlant = async (to, formName, submitterN
   }
 };
 
-export const sendApprovalStatusNotificationToPlant = async (to, formName, submitterName, approverName, status, comments, link, company = {}, plant = {}, plantId = "", formId = "", submissionId = "", level = 1, actor = "PLANT_ADMIN", companyId = null, plantIdParam = null, approverEmail = null) => {
+export const sendApprovalStatusNotificationToPlant = async (
+  to,
+  formName,
+  submitterName,
+  approverName,
+  status,
+  comments,
+  link,
+  company = {},
+  plant = {},
+  plantId = "",
+  formId = "",
+  submissionId = "",
+  level = 1,
+  actor = "PLANT_ADMIN",
+  companyId = null,
+  plantIdParam = null,
+  approverEmail = null
+) => {
+  if (!link) {
+    throw new Error("Email link is missing");
+  }
+
+  const safeLink = link.startsWith("http")
+    ? link
+    : `${getBaseUrl()}${link}`;
+
   const isApproved = status.toUpperCase() === "APPROVED";
   const statusColor = isApproved ? "#10b981" : "#ef4444";
   const statusText = isApproved ? "Approved" : "Rejected";
-  const identifier = submissionId ? `${plantId}_${formId}_${formName}_${submissionId}` : `${plantId}_${formId}_${formName}`;
-  
+
   const content = `
     <h2 style="color: ${statusColor};">Form ${statusText}</h2>
     <p style="color: #1f2937; font-size: 16px;">
@@ -492,17 +632,15 @@ export const sendApprovalStatusNotificationToPlant = async (to, formName, submit
       ${comments ? `<p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">Comments: "${comments}"</p>` : ''}
     </div>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${link}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Submission</a>
+      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Submission</a>
     </div>
   `;
 
-  // Use standardized subject format for approval status
-  const subject = isApproved 
+  const subject = isApproved
     ? `[Form Approved] ${formId || 'FORM-ID'} – ${formName} | Level ${level} Approved by ${approverName}`
     : `[Form Rejected] ${formId || 'FORM-ID'} – ${formName} | Level ${level} Rejected by ${approverName}`;
-  
-  // Use approver's email as sender if provided, otherwise use resolved sender
-  const fromAddress = approverEmail 
+
+  const fromAddress = approverEmail
     ? `"${approverName}" <${approverEmail}>`
     : await resolveEmailSender({
         actor,
@@ -528,9 +666,28 @@ export const sendApprovalStatusNotificationToPlant = async (to, formName, submit
   }
 };
 
-export const sendRejectionNotificationToSubmitter = async (to, formName, rejectorName, comments, link, company = {}, plant = {}, plantId = "", formId = "", submissionId = "", actor = "PLANT_ADMIN", companyId = null) => {
-  const identifier = submissionId ? `${plantId}_${formId}_${formName}_${submissionId}` : `${plantId}_${formId}_${formName}`;
-  
+export const sendRejectionNotificationToSubmitter = async (
+  to,
+  formName,
+  rejectorName,
+  comments,
+  link,
+  company = {},
+  plant = {},
+  plantId = "",
+  formId = "",
+  submissionId = "",
+  actor = "PLANT_ADMIN",
+  companyId = null
+) => {
+  if (!link) {
+    throw new Error("Email link is missing");
+  }
+
+  const safeLink = link.startsWith("http")
+    ? link
+    : `${getBaseUrl()}${link}`;
+
   const content = `
     <h2 style="color: #ef4444;">Form Submission Rejected</h2>
     <p style="color: #1f2937; font-size: 16px;">
@@ -542,12 +699,10 @@ export const sendRejectionNotificationToSubmitter = async (to, formName, rejecto
     </div>
     <p>Please review the feedback and make necessary corrections before resubmitting.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${link}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Submission</a>
+      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Submission</a>
     </div>
   `;
 
-  // Use standardized rejection subject format
-  // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
     companyId,
@@ -572,7 +727,19 @@ export const sendRejectionNotificationToSubmitter = async (to, formName, rejecto
   }
 };
 
-export const sendProfileUpdateNotification = async (to, employeeName, updatedFields, updatedBy, company = {}, plant = {}, actor = "COMPANY_ADMIN", companyId = null, plantId = null) => {
+export const sendProfileUpdateNotification = async (
+  to,
+  employeeName,
+  updatedFields,
+  updatedBy,
+  company = {},
+  plant = {},
+  actor = "COMPANY_ADMIN",
+  companyId = null,
+  plantId = null
+) => {
+  // No link needed in this email
+
   const fieldsHtml = Object.entries(updatedFields)
     .filter(([_, value]) => value !== undefined && value !== null)
     .map(([key, value]) => `<li style="margin: 5px 0;"><strong>${key}:</strong> ${value}</li>`)
@@ -594,7 +761,6 @@ export const sendProfileUpdateNotification = async (to, employeeName, updatedFie
     </p>
   `;
 
-  // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
     companyId,
@@ -619,11 +785,25 @@ export const sendProfileUpdateNotification = async (to, employeeName, updatedFie
   }
 };
 
-export const sendFinalApprovalNotificationToSubmitter = async (to, formName, submittedAt, approvalHistory, company = {}, plant = {}, plantId = "", formId = "", submissionId = "", actor = "PLANT_ADMIN", companyId = null, plantIdParam = null) => {
-  const identifier = submissionId ? `${plantId}_${formId}_${formName}_${submissionId}` : `${plantId}_${formId}_${formName}`;
+export const sendFinalApprovalNotificationToSubmitter = async (
+  to,
+  formName,
+  submittedAt,
+  approvalHistory,
+  company = {},
+  plant = {},
+  plantId = "",
+  formId = "",
+  submissionId = "",
+  actor = "PLANT_ADMIN",
+  companyId = null,
+  plantIdParam = null
+) => {
+  // No link needed in this email
+
   const historyHtml = approvalHistory.map(h => `
     <li style="margin-bottom: 10px;">
-      <strong>${h.name}</strong> - Approved at ${new Date(h.date).toLocaleString()}
+      <strong>${h.name}</strong> - Approved at ${formatIST(h.date)}
       ${h.comments ? `<br/><span style="color: #6b7280; font-style: italic;">"${h.comments}"</span>` : ''}
     </li>
   `).join('');
@@ -631,7 +811,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (to, formName, sub
   const content = `
     <h2 style="color: #10b981;">Form Fully Approved</h2>
     <p style="color: #1f2937; font-size: 16px;">
-      Your submission for <strong>${formName}</strong> at ${new Date(submittedAt).toLocaleString()} has been fully verified and approved.
+      Your submission for <strong>${formName}</strong> at ${formatIST(submittedAt)} has been fully verified and approved.
     </p>
     <div style="margin: 25px 0;">
       <h4 style="color: #374151; margin-bottom: 15px;">Approval History:</h4>
@@ -641,8 +821,6 @@ export const sendFinalApprovalNotificationToSubmitter = async (to, formName, sub
     </div>
   `;
 
-  // Use standardized subject format for final approval
-  // Determine the appropriate sender based on context
   const fromAddress = await resolveEmailSender({
     actor,
     companyId,
@@ -666,11 +844,27 @@ export const sendFinalApprovalNotificationToSubmitter = async (to, formName, sub
   }
 };
 
-export const sendFinalApprovalNotificationToPlant = async (to, formName, submittedAt, approvalHistory, company = {}, plant = {}, plantId = "", formId = "", submissionId = "", actor = "PLANT_ADMIN", companyId = null, plantIdParam = null, approverEmail = null, approverName = null) => {
-  const identifier = submissionId ? `${plantId}_${formId}_${formName}_${submissionId}` : `${plantId}_${formId}_${formName}`;
+export const sendFinalApprovalNotificationToPlant = async (
+  to,
+  formName,
+  submittedAt,
+  approvalHistory,
+  company = {},
+  plant = {},
+  plantId = "",
+  formId = "",
+  submissionId = "",
+  actor = "PLANT_ADMIN",
+  companyId = null,
+  plantIdParam = null,
+  approverEmail = null,
+  approverName = null
+) => {
+  // No link needed in this email
+
   const historyHtml = approvalHistory.map(h => `
     <li style="margin-bottom: 10px;">
-      <strong>${h.name}</strong> - Approved at ${new Date(h.date).toLocaleString()}
+      <strong>${h.name}</strong> - Approved at ${formatIST(h.date)}
       ${h.comments ? `<br/><span style="color: #6b7280; font-style: italic;">"${h.comments}"</span>` : ''}
     </li>
   `).join('');
@@ -678,7 +872,7 @@ export const sendFinalApprovalNotificationToPlant = async (to, formName, submitt
   const content = `
     <h2 style="color: #10b981;">Form Fully Approved</h2>
     <p style="color: #1f2937; font-size: 16px;">
-      The submission for <strong>${formName}</strong> at ${new Date(submittedAt).toLocaleString()} has been fully verified and approved.
+      The submission for <strong>${formName}</strong> at ${formatIST(submittedAt)} has been fully verified and approved.
     </p>
     <div style="margin: 25px 0;">
       <h4 style="color: #374151; margin-bottom: 15px;">Approval History:</h4>
@@ -687,8 +881,7 @@ export const sendFinalApprovalNotificationToPlant = async (to, formName, submitt
       </ul>
     </div>
   `;
-  
-  // Use approver's email as sender if provided, otherwise use resolved sender
+
   const fromAddress = approverEmail && approverName
     ? `"${approverName}" <${approverEmail}>`
     : await resolveEmailSender({
@@ -713,4 +906,3 @@ export const sendFinalApprovalNotificationToPlant = async (to, formName, submitt
     return { messageId: "mock-id", skipped: true };
   }
 };
-
