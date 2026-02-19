@@ -8,69 +8,63 @@ import {
   Mail,
   Lock,
   ShieldCheck,
-  ChevronRight,
   Loader2,
-  Building2,
-  Users,
   Eye,
   EyeOff,
-  Sparkles,
-  ArrowRight,
-  Globe,
-  Clock,
-  Activity,
   BarChart3,
   HardHat,
   Factory,
-  CheckCircle,
-  Zap,
-  Server,
+  ArrowRight,
 } from "lucide-react";
 import logo from "../assets/MatapanLogo.png";
+
+const features = [
+  {
+    icon: Factory,
+    title: "Smart Facility Management",
+    description: "AI-powered insights for optimal facility operations",
+    accent: "#FF6B35",
+    bg: "from-orange-400 to-rose-500",
+  },
+  {
+    icon: HardHat,
+    title: "Workforce Coordination",
+    description: "Real-time task allocation and progress tracking",
+    accent: "#00C9A7",
+    bg: "from-emerald-400 to-teal-500",
+  },
+  {
+    icon: BarChart3,
+    title: "Advanced Analytics",
+    description: "Comprehensive dashboards with predictive metrics",
+    accent: "#7C3AED",
+    bg: "from-violet-400 to-purple-500",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Enterprise Security",
+    description: "Bank-level encryption and compliance automation",
+    accent: "#F59E0B",
+    bg: "from-amber-400 to-orange-500",
+  },
+];
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
-  const features = [
-    {
-      icon: Factory,
-      title: "Smart Facility Management",
-      description: "AI-powered insights for optimal facility operations",
-      color: "from-blue-600 to-cyan-600",
-    },
-    {
-      icon: HardHat,
-      title: "Workforce Coordination",
-      description: "Real-time task allocation and progress tracking",
-      color: "from-emerald-600 to-teal-600",
-    },
-    {
-      icon: BarChart3,
-      title: "Advanced Analytics",
-      description: "Comprehensive dashboards with predictive metrics",
-      color: "from-violet-600 to-purple-600",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Enterprise Security",
-      description: "Bank-level encryption and compliance automation",
-      color: "from-amber-600 to-orange-600",
-    },
-  ];
-
-  // Auto-rotate features
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => {
       setActiveFeature((prev) => (prev + 1) % features.length);
-    }, 5000);
+    }, 4000);
     return () => clearInterval(timer);
   }, []);
 
@@ -78,26 +72,17 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       const response = await api.post("/api/auth/login", { email, password });
       const res = response.data;
-
       if (res?.token && res?.user) {
         login(res.token, res.user);
-        toast.success(
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            <span>Welcome back, {res.user.name}!</span>
-          </div>
-        );
-
+        toast.success(`Welcome back, ${res.user.name}!`);
         const dashboardRoutes = {
           SUPER_ADMIN: "/super/dashboard",
           COMPANY_ADMIN: "/company/dashboard",
           PLANT_ADMIN: "/plant/dashboard",
         };
-
         navigate(dashboardRoutes[res.user.role] || "/");
       } else {
         throw new Error("Invalid credentials");
@@ -114,265 +99,356 @@ export default function Login() {
     }
   };
 
+  const current = features[activeFeature];
+  const FeatureIcon = current.icon;
+
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Simple Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-emerald-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10" />
-      </div>
+    <div className="min-h-screen flex flex-col lg:flex-row font-sans" style={{ fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
 
-      {/* LEFT PANEL - Brand & Features */}
-      <motion.div
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6 }}
-        className="hidden lg:flex lg:w-1/2 relative overflow-hidden"
-      >
-        <div className="relative w-full h-full flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-          {/* Simple Pattern Overlay */}
-          <div 
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          />
-          
-          {/* Content */}
-          <div className="relative z-10 flex flex-col h-full p-12 xl:p-16">
-            {/* Logo */}
-            <motion.div
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center gap-3 mb-16"
-            >
-              <img
-                src={logo}
-                alt="Matapan Logo"
-                className="h-12 w-auto object-contain"
-              />
-              <span className="text-3xl font-bold text-white">
-                Matapang
-              </span>
-            </motion.div>
+      {/* ── LEFT PANEL – White/Light so black logo is visible ── */}
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col overflow-hidden bg-white">
 
-            {/* Dynamic Feature Showcase */}
-            <div className="flex-1 flex flex-col justify-center">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeFeature}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="mb-8"
-                >
-                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${features[activeFeature].color} mb-6`}>
-                    <Sparkles className="w-4 h-4 text-white" />
-                    <span className="text-sm font-medium text-white">Featured</span>
-                  </div>
-
-                  <h2 className="text-5xl font-bold text-white mb-4 leading-tight">
-                    {features[activeFeature].title}
-                  </h2>
-                  
-                  <p className="text-xl text-slate-300 mb-6 max-w-lg">
-                    {features[activeFeature].description}
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Feature Navigation Dots */}
-              <div className="flex gap-2 mb-12">
-                {features.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveFeature(index)}
-                    className={`h-1.5 rounded-full transition-all ${
-                      index === activeFeature
-                        ? "w-8 bg-white"
-                        : "w-4 bg-white/30"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Feature Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                {features.map((feature, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                    className="p-4 rounded-xl bg-white/5 border border-white/10"
-                  >
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${feature.color} flex items-center justify-center mb-3`}>
-                      <feature.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="text-white font-semibold text-sm">{feature.title}</h3>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Trust Indicators - Simplified */}
-            <div className="mt-auto pt-12">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span className="text-sm">SOC2 Type II</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Globe className="w-4 h-4" />
-                  <span className="text-sm">99.99% uptime</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Animated gradient blob background */}
+        {/* Static background (no animation) */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-gradient-to-tr from-sky-200 to-blue-300 opacity-25 blur-2xl -translate-x-1/2 translate-y-1/2" />
+          <div className="absolute top-1/2 left-1/2 w-48 h-48 rounded-full bg-gradient-to-br from-violet-200 to-pink-200 opacity-20 blur-2xl -translate-x-1/2 -translate-y-1/2" />
         </div>
-      </motion.div>
 
-      {/* RIGHT PANEL - Login Form - Moved Higher */}
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full lg:w-1/2 flex items-start justify-center p-4 lg:p-8 pt-16 lg:pt-24"
-      >
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
+
+        {/* Subtle grid pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col h-full p-10 xl:p-14">
+
+          {/* Logo – on white bg, black logo is perfectly visible */}
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="lg:hidden flex items-center justify-center gap-2 mb-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : -20 }}
+            transition={{ duration: 0.6 }}
+            className="flex items-center gap-3"
           >
-            <img
-              src={logo}
-              alt="Matapan Logo"
-              className="h-10 w-auto object-contain"
-            />
-            <span className="text-2xl font-bold text-slate-900">
-              Matapang
-            </span>
+            <div className="bg-white rounded-2xl p-2 shadow-lg border border-slate-100">
+              <img src={logo} alt="Matapang" className="h-10 w-auto" />
+            </div>
+            <div>
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">Matapang</span>
+              <p className="text-xs text-slate-500 font-medium tracking-widest uppercase">Enterprise Platform</p>
+            </div>
           </motion.div>
 
-          {/* Login Card */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-3xl p-8 lg:p-10 shadow-xl border border-slate-200"
-          >
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                Welcome back
-              </h1>
-              <p className="text-slate-600">Sign in to your workspace</p>
+          {/* Feature Showcase */}
+          <div className="flex-1 flex flex-col justify-center mt-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeFeature}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.5 }}
+                className="mb-10"
+              >
+                {/* Icon badge */}
+                <div
+                  className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${current.bg} shadow-lg mb-6`}
+                >
+                  <FeatureIcon className="w-8 h-8 text-white" />
+                </div>
+
+                <h2 className="text-3xl xl:text-4xl font-bold text-slate-900 leading-tight mb-3">
+                  {current.title}
+                </h2>
+                <p className="text-slate-500 text-lg leading-relaxed max-w-xs">
+                  {current.description}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Feature dots */}
+            <div className="flex items-center gap-2 mb-10">
+              {features.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveFeature(i)}
+                  className={`h-2 rounded-full transition-all duration-300 ${i === activeFeature
+                      ? "w-8 opacity-100"
+                      : "w-2 opacity-30"
+                    }`}
+                  style={{
+                    background: i === activeFeature ? current.accent : "#94a3b8",
+                  }}
+                />
+              ))}
             </div>
 
-            {/* Error Alert */}
+            {/* Feature cards grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {features.map((feat, i) => {
+                const Icon = feat.icon;
+                const isActive = i === activeFeature;
+                return (
+                  <motion.button
+                    key={i}
+                    onClick={() => setActiveFeature(i)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`text-left p-4 rounded-2xl border transition-all duration-300 ${isActive
+                        ? "border-slate-200 bg-white shadow-md"
+                        : "border-slate-100 bg-slate-50 hover:bg-white hover:shadow-sm"
+                      }`}
+                  >
+                    <div
+                      className={`inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br ${feat.bg} mb-2`}
+                    >
+                      <Icon className="w-4 h-4 text-white" />
+                    </div>
+                    <p className={`text-xs font-semibold leading-tight ${isActive ? "text-slate-800" : "text-slate-500"}`}>
+                      {feat.title}
+                    </p>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+
+        </div>
+      </div>
+
+      {/* ── RIGHT PANEL – Colorful gradient login form ── */}
+      <div
+        className="flex-1 lg:w-1/2 min-h-screen flex items-center justify-center relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
+        }}
+      >
+        {/* Decorative orbs */}
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-20 blur-3xl"
+          style={{ background: "radial-gradient(circle, #7c3aed, transparent)" }} />
+        <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-20 blur-3xl"
+          style={{ background: "radial-gradient(circle, #06b6d4, transparent)" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-10 blur-3xl"
+          style={{ background: "radial-gradient(circle, #f59e0b, transparent)" }} />
+
+        {/* Noise texture overlay */}
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          }}
+        />
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 30 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="relative z-10 w-full max-w-md mx-auto px-6 py-10"
+        >
+
+          {/* Mobile logo */}
+          <div className="flex lg:hidden items-center justify-center gap-3 mb-8">
+            <div className="bg-white rounded-2xl p-2 shadow-lg">
+              <img src={logo} alt="Matapang" className="h-9 w-auto" />
+            </div>
+            <span className="text-2xl font-bold text-white tracking-tight">Matapang</span>
+          </div>
+
+          {/* Card */}
+          <div
+            className="rounded-3xl p-8 xl:p-10 relative"
+            style={{
+              background: "rgba(255,255,255,0.07)",
+              backdropFilter: "blur(24px)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              boxShadow: "0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+            }}
+          >
+            {/* Colourful top accent bar */}
+            <div
+              className="absolute top-0 left-8 right-8 h-0.5 rounded-full"
+              style={{ background: "linear-gradient(90deg, #7c3aed, #06b6d4, #f59e0b)" }}
+            />
+
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">Welcome back</h1>
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                Sign in to your enterprise workspace
+              </p>
+            </div>
+
+            {/* Error */}
             <AnimatePresence>
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+                  initial={{ opacity: 0, y: -10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                  className="mb-5 flex items-start gap-3 rounded-xl p-3.5"
+                  style={{
+                    background: "rgba(239,68,68,0.15)",
+                    border: "1px solid rgba(239,68,68,0.3)",
+                  }}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-red-200 flex items-center justify-center flex-shrink-0">
-                      <span className="text-red-600 text-xs font-bold">!</span>
-                    </div>
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
+                  <span className="text-red-400 text-sm">⚠</span>
+                  <p className="text-red-300 text-sm">{error}</p>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {/* Form */}
-            <form onSubmit={submit} className="space-y-5">
-              {/* Email Field */}
+            <form onSubmit={submit} className="space-y-4">
+
+              {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Email address
+                <label className="block text-xs font-semibold mb-2 tracking-wider uppercase"
+                  style={{ color: "rgba(255,255,255,0.5)" }}>
+                  Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Mail
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#RRGGBBAA]"
+                    style={{width: 18, height: 18 }}
+                  />
                   <input
                     type="email"
-                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
-                    className="w-full pl-12 pr-4 py-4 rounded-xl border border-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition outline-none text-slate-900"
+                    required
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl text-white placeholder-white/30 outline-none transition-all"
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      fontSize: 14,
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.border = "1px solid rgba(124,58,237,0.7)";
+                      e.target.style.background = "rgba(255,255,255,0.09)";
+                      e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.15)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.border = "1px solid rgba(255,255,255,0.12)";
+                      e.target.style.background = "rgba(255,255,255,0.06)";
+                      e.target.style.boxShadow = "none";
+                    }}
                   />
                 </div>
               </div>
 
-              {/* Password Field */}
+              {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-xs font-semibold mb-2 tracking-wider uppercase"
+                  style={{ color: "rgba(255,255,255,0.5)" }}>
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Lock
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#RRGGBBAA]"
+                    style={{width: 18, height: 18 }}
+                  />
                   <input
                     type={showPassword ? "text" : "password"}
-                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full pl-12 pr-12 py-4 rounded-xl border border-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition outline-none text-slate-900"
+                    required
+                    className="w-full pl-11 pr-12 py-3.5 rounded-xl text-white placeholder-white/30 outline-none transition-all"
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      fontSize: 14,
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.border = "1px solid rgba(124,58,237,0.7)";
+                      e.target.style.background = "rgba(255,255,255,0.09)";
+                      e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.15)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.border = "1px solid rgba(255,255,255,0.12)";
+                      e.target.style.background = "rgba(255,255,255,0.06)";
+                      e.target.style.boxShadow = "none";
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors text-[#RRGGBBAA]"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
               {/* Submit Button */}
-              <button
+              <motion.button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-semibold flex justify-center items-center gap-2 transition-all mt-8"
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+                className="w-full mt-2 py-4 rounded-xl font-bold text-sm tracking-wide relative overflow-hidden flex items-center justify-center gap-2 transition-all"
+                style={{
+                  background: loading
+                    ? "rgba(124,58,237,0.5)"
+                    : "linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)",
+                  color: "white",
+                  boxShadow: loading ? "none" : "0 8px 24px rgba(124,58,237,0.4)",
+                  border: "none",
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="animate-spin w-5 h-5" />
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Sign in</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
+                {/* Shimmer effect */}
+                {!loading && (
+                  <motion.div
+                    className="absolute inset-0 opacity-0 hover:opacity-100"
+                    style={{
+                      background: "linear-gradient(135deg, #9333ea 0%, #0e7490 100%)",
+                    }}
+                    animate={{}}
+                  />
                 )}
-              </button>
+                <span className="relative z-10 flex items-center gap-2">
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </span>
+              </motion.button>
             </form>
 
-            {/* Simple Footer */}
-            <div className="mt-8 pt-6 border-t border-slate-200">
-              <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Secure enterprise authentication</span>
+            {/* Footer */}
+            <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <ShieldCheck size={14} style={{ color: "rgba(255,255,255,0.3)" }} />
+                <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  Secure enterprise authentication
+                </span>
               </div>
+              <p className="text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
+                Need help?{" "}
+                <a href="mailto:support@matapang.com"
+                  className="underline underline-offset-2 hover:text-white/50 transition-colors text-amber-50">
+                  Contact your administrator
+                </a>
+              </p>
             </div>
-          </motion.div>
-
-          {/* Support Link */}
-          <p className="text-center text-sm text-slate-500 mt-6">
-            Need help? Contact your system administrator
-          </p>
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
