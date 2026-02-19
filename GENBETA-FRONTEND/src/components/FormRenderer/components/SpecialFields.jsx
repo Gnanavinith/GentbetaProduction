@@ -252,7 +252,9 @@ export default function SpecialFields({
               </div>
               {readOnly && (
                 <a 
-                  href={value} 
+                  href={value.includes('cloudinary.com') && value.toLowerCase().includes('.pdf')
+                    ? value.replace('/upload/', '/upload/f_auto/')
+                    : value}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="block text-xs text-indigo-600 hover:text-indigo-700 font-medium truncate bg-indigo-50 p-3 rounded-lg border border-indigo-200"
@@ -323,7 +325,9 @@ export default function SpecialFields({
                 </div>
               </div>
               <a 
-                href={value} 
+                href={value.includes('cloudinary.com') && value.toLowerCase().includes('.pdf')
+                  ? value.replace('/upload/', '/upload/f_auto/')
+                  : value}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="block text-xs text-indigo-600 hover:text-indigo-700 font-medium truncate bg-indigo-50 p-3 rounded-lg border border-indigo-200"

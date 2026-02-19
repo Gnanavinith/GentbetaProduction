@@ -299,7 +299,9 @@ export default function SubmissionDetails() {
                       </p>
                     </div>
                     <a
-                      href={file.url}
+                      href={file.url.includes('cloudinary.com') && file.mimetype && file.mimetype.startsWith('application/pdf') 
+                        ? file.url.replace('/upload/', '/upload/f_auto/')
+                        : file.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
