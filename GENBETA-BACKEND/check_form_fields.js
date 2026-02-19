@@ -16,7 +16,7 @@ const checkFormFields = async () => {
     if (form) {
       console.log('\n=== FORM DATA STRUCTURE ===');
       console.log('Form ID:', form._id);
-      console.log('Form Name:', form.formName);
+      console.log('Facility Name:', form.formName);
       console.log('Status:', form.status);
       console.log('Is Template:', form.isTemplate);
       

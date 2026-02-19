@@ -16,7 +16,7 @@ const examineSpecificForm = async () => {
     forms.forEach((form, index) => {
       console.log(`\n=== FORM ${index + 1} ===`);
       console.log('Form ID:', form._id);
-      console.log('Form Name:', form.formName);
+      console.log('Facility Name:', form.formName);
       console.log('Status:', form.status);
       console.log('Is Template:', form.isTemplate);
       

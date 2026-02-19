@@ -88,7 +88,7 @@ export default function Forms() {
               onClick={() => navigate("/forms/create")}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-semibold"
             >
-              Create Form
+              Create Facility
             </button>
           </div>
         ) : (

@@ -200,7 +200,7 @@ export default function PlantAdminDashboard() {
             <Download className="w-4 h-4" /> Export
           </button>
           <Link to="/plant/forms/create/select" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md shadow-indigo-100 transition-all text-sm">
-            <Plus className="w-4 h-4" /> Create Form
+            <Plus className="w-4 h-4" /> Create Facility
           </Link>
         </div>
       </div>
@@ -221,7 +221,7 @@ export default function PlantAdminDashboard() {
               <PieChart data={chartData.statusDistribution} title="Submission Status" />
             </div>
             <div className="lg:col-span-2">
-              <BarChart data={chartData.submissionsPerForm} title="Most Submitted Forms" xLabel="Form Name" yLabel="Submissions" />
+              <BarChart data={chartData.submissionsPerForm} title="Most Submitted Forms" xLabel="Facility Name" yLabel="Submissions" />
             </div>
             <div className="lg:col-span-2">
               <BarChart data={chartData.submissionsByUser} title="Top Contributors" xLabel="User" yLabel="Submissions" />
@@ -273,7 +273,7 @@ export default function PlantAdminDashboard() {
             <div className="grid grid-cols-1 gap-1.5">
               <Link to="/plant/forms/create/select" className="flex items-center gap-2 p-2 rounded-md border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all group">
                 <div className="p-1.5 bg-indigo-50 group-hover:bg-white rounded-md transition-colors"><Plus className="w-3.5 h-3.5 text-indigo-600" /></div>
-                <div><p className="font-black text-xs text-gray-900">Create Form</p><p className="text-[9px] font-bold text-gray-400">New form or template</p></div>
+                <div><p className="font-black text-xs text-gray-900">Create Facility</p><p className="text-[9px] font-bold text-gray-400">New form or template</p></div>
               </Link>
               <Link to="/plant/forms" className="flex items-center gap-2 p-2 rounded-md border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all group">
                 <div className="p-1.5 bg-purple-50 group-hover:bg-white rounded-md transition-colors"><FileText className="w-3.5 h-3.5 text-purple-600" /></div>

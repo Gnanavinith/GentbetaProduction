@@ -55,7 +55,7 @@ export const sendSubmissionNotificationToPlant = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
+    subject: `[Facility Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -157,7 +157,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (
   `).join('');
 
   const content = `
-    <h2 style="color: #10b981;">Form Fully Approved</h2>
+    <h2 style="color: #10b981;">Facility Fully Approved</h2>
     <p style="color: #1f2937; font-size: 16px;">
       Your submission for <strong>${cleanFormName}</strong> at ${formatIST(submittedAt)} has been fully verified and approved.
     </p>
@@ -182,7 +182,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
+    subject: `[Facility Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -224,7 +224,7 @@ export const sendFinalApprovalNotificationToPlant = async (
   `).join('');
 
   const content = `
-    <h2 style="color: #10b981;">Form Fully Approved</h2>
+    <h2 style="color: #10b981;">Facility Fully Approved</h2>
     <p style="color: #1f2937; font-size: 16px;">
       The submission for <strong>${cleanFormName}</strong> at ${formatIST(submittedAt)} has been fully verified and approved.
     </p>
@@ -251,7 +251,7 @@ export const sendFinalApprovalNotificationToPlant = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
+    subject: `[Facility Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 

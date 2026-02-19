@@ -90,7 +90,7 @@ export const formatTemplateForExport = (template) => {
   
   data.push({ Section: 'GENERAL INFORMATION', Key: '', Value: '' });
   data.push({ Section: 'General', Key: 'Form ID', Value: template.numericalId || template.formId || template._id });
-  data.push({ Section: 'General', Key: 'Form Name', Value: template.formName || template.templateName });
+  data.push({ Section: 'General', Key: 'Facility Name', Value: template.formName || template.templateName });
   data.push({ Section: 'General', Key: 'Description', Value: template.description || 'N/A' });
   data.push({ Section: 'General', Key: 'Created Date', Value: new Date(template.createdAt).toLocaleDateString() });
   data.push({ Section: 'General', Key: 'Created Time', Value: new Date(template.createdAt).toLocaleTimeString() });
@@ -166,7 +166,7 @@ export const formatSubmissionsForExport = (submissions) => {
     const row = {
       'Submission ID': submissionId,
       'Form ID': formId,
-      'Form Name': s.formName || s.templateName || s.templateId?.templateName || s.templateId?.formName || s.formId?.formName || 'Unknown Form',
+      'Facility Name': s.formName || s.templateName || s.templateId?.templateName || s.templateId?.formName || s.formId?.formName || 'Unknown Form',
       'Submitted By': submittedBy || 'Unknown',
       'Date': new Date(s.createdAt || s.submittedAt).toLocaleString(),
       'Approval Status': approvalStatus,

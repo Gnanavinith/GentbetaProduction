@@ -344,7 +344,7 @@ export default function EmployeeDashboard() {
             <PieChart data={chartData.statusDistribution} title="Submission Status" />
           </div>
           <div className="lg:col-span-2">
-            <BarChart data={chartData.submissionsPerForm} title="Most Submitted Forms" xLabel="Form Name" yLabel="Submissions" />
+            <BarChart data={chartData.submissionsPerForm} title="Most Submitted Forms" xLabel="Facility Name" yLabel="Submissions" />
           </div>
           <div className="lg:col-span-1">
             <BarChart data={chartData.submissionsByUser} title="My Submission Activity" xLabel="User" yLabel="Submissions" />

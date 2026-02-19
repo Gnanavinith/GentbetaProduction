@@ -74,7 +74,7 @@ export default function EmployeeAssignments() {
                   <th className="px-6 py-4 text-left">
                     <span className="text-xs font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                       <FileText size={12} />
-                      Form Name
+                      Facility Name
                     </span>
                   </th>
                   <th className="px-6 py-4 text-left">

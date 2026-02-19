@@ -37,7 +37,7 @@ export default function Sidebar({ isOpen, onToggle }) {
   // Compute submenu items based on template feature status
   const plantSubmenuItems = useMemo(() => {
     const baseItems = [
-      { title: "Active Forms", path: "/plant/forms/active", icon: FileCheck },
+      { title: "Facility Forms", path: "/plant/forms/active", icon: FileCheck },
       { title: "Drafts", path: "/plant/forms/draft", icon: FileEdit },
       { title: "Archived", path: "/plant/forms/archived", icon: Archive }
     ];

@@ -265,7 +265,7 @@ export default function TemplateSelectionPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {isTemplate ? "Template Name" : "Form Name"}
+                    {isTemplate ? "Template Name" : "Facility"}
                   </label>
                   <input
                     type="text"

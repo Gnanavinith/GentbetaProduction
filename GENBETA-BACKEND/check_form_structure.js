@@ -22,7 +22,7 @@ const checkFormStructure = async () => {
     
     console.log('=== FORM STRUCTURE ANALYSIS ===');
     console.log('Form ID:', form._id);
-    console.log('Form Name:', form.formName);
+    console.log('Facility Name:', form.formName);
     console.log('Fields count:', form.fields?.length || 0);
     console.log('Sections count:', form.sections?.length || 0);
     

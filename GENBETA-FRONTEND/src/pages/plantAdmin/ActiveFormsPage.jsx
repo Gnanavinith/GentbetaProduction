@@ -70,7 +70,7 @@ export default function ActiveFormsPage() {
       // Create export data with Form ID and column values
       const exportData = [
         { Field: "Form ID", Value: form.numericalId ? `F-${form.numericalId.toString().padStart(3, '0')}` : (form.formId || form._id) },
-        { Field: "Form Name", Value: form.formName },
+        { Field: "Facility Name", Value: form.formName },
         { Field: "Description", Value: form.description || "" },
         { Field: "Status", Value: form.status },
         { Field: "Created At", Value: formatDate(form.createdAt) },
@@ -469,7 +469,7 @@ export default function ActiveFormsPage() {
     <div className="space-y-3 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Active Forms</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Facility Forms</h1>
           <p className="text-xs text-gray-500">Published forms available for use.</p>
         </div>
         {user?.role === "PLANT_ADMIN" && (
@@ -525,7 +525,7 @@ export default function ActiveFormsPage() {
                       </div>
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Form Name
+                      Facility Name
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Form ID

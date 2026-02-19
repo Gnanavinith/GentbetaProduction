@@ -34,7 +34,7 @@ export default function DraftFormsPage() {
       // Create export data with Form ID and column values
       const exportData = [
         { Field: "Form ID", Value: form.numericalId ? `F-${form.numericalId.toString().padStart(3, '0')}` : (form.formId || form._id) },
-        { Field: "Form Name", Value: form.formName },
+        { Field: "Facility Name", Value: form.formName },
         { Field: "Description", Value: form.description || "" },
         { Field: "Status", Value: form.status },
         { Field: "Created At", Value: formatDate(form.createdAt) },
@@ -363,7 +363,7 @@ export default function DraftFormsPage() {
                       </div>
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Form Name
+                      Facility Name
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Form ID

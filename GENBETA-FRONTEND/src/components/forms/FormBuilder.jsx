@@ -297,7 +297,7 @@ export default function FormBuilder() {
           
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Form Name
+              Facility Name
             </label>
             <input
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 outline-none font-medium"

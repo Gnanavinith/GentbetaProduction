@@ -28,7 +28,7 @@ export const sendApprovalEmail = async (
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
   const content = `
-    <h2 style="color: #4f46e5;">Form Approval Request</h2>
+    <h2 style="color: #4f46e5;">Facility Approval Request</h2>
     <p>You have been requested to fill out and approve the following form:</p>
     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
       <strong style="font-size: 18px;">${formName}</strong>
@@ -134,7 +134,7 @@ export const sendSubmissionNotificationToApprover = async (
   }
 
   const content = `
-    <h2 style="color: #4f46e5;">Form Approval Request</h2>
+    <h2 style="color: #4f46e5;">Facility Approval Request</h2>
     <p style="color: #1f2937; font-size: 16px;">
       <strong>${submitterName}</strong> submitted the form <strong>${cleanFormName}</strong> at ${formatIST(submittedAt)}.
     </p>
@@ -161,7 +161,7 @@ export const sendSubmissionNotificationToApprover = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Form Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
+    subject: `[Facility Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 

@@ -15,7 +15,7 @@ async function checkForm() {
     if (form) {
       console.log('\n=== FORM DETAILS ===');
       console.log('Form ID:', form._id);
-      console.log('Form Name:', form.formName);
+      console.log('Facility Name:', form.formName);
       console.log('Is Template:', form.isTemplate);
       console.log('Status:', form.status);
       

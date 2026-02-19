@@ -238,7 +238,7 @@ export default function FormsCardView() {
 
       const summaryData = [
         { Metric: 'Form ID', Value: form._id },
-        { Metric: 'Form Name', Value: form.formName },
+        { Metric: 'Facility Name', Value: form.formName },
         { Metric: 'Created Date', Value: new Date(form.createdAt).toLocaleString() },
         { Metric: 'Total Submissions', Value: total },
         { Metric: 'Approved', Value: approved },
@@ -370,7 +370,7 @@ export default function FormsCardView() {
 
         allData.push({
           'Form ID': form._id,
-          'Form Name': form.formName,
+          'Facility Name': form.formName,
           'Created Date': new Date(form.createdAt).toLocaleString(),
           'Total Submissions': total,
           'Approved': approved,

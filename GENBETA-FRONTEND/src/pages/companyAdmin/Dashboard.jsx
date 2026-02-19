@@ -171,7 +171,7 @@ export default function CompanyAdminDashboard() {
       subtitle: "Active facilities"
     },
     { 
-      title: "Active Forms", 
+      title: "Facility Forms", 
       value: stats.totalForms, 
       icon: <FileText className="w-7 h-7" />, 
       color: "indigo",
