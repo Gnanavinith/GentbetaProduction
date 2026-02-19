@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Search, 
-  FileText, 
-  ClipboardList, 
-  ChevronRight, 
-  Clock, 
+import {
+  Search,
+  FileText,
+  ClipboardList,
+  ChevronRight,
+  Clock,
   User,
   Users,
   X,
@@ -81,15 +81,15 @@ export default function FormsCardView() {
   };
 
   const getFormSubmissionCount = (formId) => {
-    return submissions.filter(s => 
-      (s.formId?._id === formId || s.formId === formId) || 
+    return submissions.filter(s =>
+      (s.formId?._id === formId || s.formId === formId) ||
       (s.templateId?._id === formId || s.templateId === formId)
     ).length;
   };
 
   const getLatestSubmissionDate = (formId) => {
-    const formSubmissions = submissions.filter(s => 
-      (s.formId?._id === formId || s.formId === formId) || 
+    const formSubmissions = submissions.filter(s =>
+      (s.formId?._id === formId || s.formId === formId) ||
       (s.templateId?._id === formId || s.templateId === formId)
     );
     if (formSubmissions.length === 0) return null;
@@ -107,13 +107,13 @@ export default function FormsCardView() {
     setShowModal(true);
   };
 
-  const filteredForms = forms.filter(f => 
+  const filteredForms = forms.filter(f =>
     (f.formName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.description?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      f.description?.toLowerCase().includes(searchTerm.toLowerCase())) &&
     f.status && f.status.toUpperCase() !== "DRAFT"
   );
 
-  const filteredSubmissions = submissions.filter(s => 
+  const filteredSubmissions = submissions.filter(s =>
     (s.formId?._id === selectedForm?._id || s.formId === selectedForm?._id) ||
     (s.templateId?._id === selectedForm?._id || s.templateId === selectedForm?._id)
   );
@@ -142,10 +142,10 @@ export default function FormsCardView() {
   const getApproverDetails = (submission) => {
     const approvalFlow = selectedForm?.approvalFlow || [];
     const approvalHistory = submission?.approvalHistory || [];
-    
+
     return approvalFlow.map(approver => {
-      const history = approvalHistory.find(h => 
-        h.approverId === approver.approverId || 
+      const history = approvalHistory.find(h =>
+        h.approverId === approver.approverId ||
         h.approverId?._id === approver.approverId ||
         h.level === approver.level
       );
@@ -162,10 +162,10 @@ export default function FormsCardView() {
 
   const isImageUrl = (value) => {
     if (!value || typeof value !== 'string') return false;
-    return value.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || 
-           value.includes('cloudinary.com') || 
-           value.includes('res.cloudinary.com') ||
-           value.startsWith('data:image');
+    return value.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ||
+      value.includes('cloudinary.com') ||
+      value.includes('res.cloudinary.com') ||
+      value.startsWith('data:image');
   };
 
   const getSubmissionData = (submission) => {
@@ -186,7 +186,7 @@ export default function FormsCardView() {
     });
   };
 
-const getStatusColor = (status) => {
+  const getStatusColor = (status) => {
     const statusUpper = status?.toUpperCase();
     switch (statusUpper) {
       case "APPROVED": return "bg-green-100 text-green-700";
@@ -199,238 +199,238 @@ const getStatusColor = (status) => {
   };
 
   const toggleFormSelection = (formId) => {
-    setSelectedForms(prev => 
-      prev.includes(formId) 
+    setSelectedForms(prev =>
+      prev.includes(formId)
         ? prev.filter(id => id !== formId)
         : [...prev, formId]
     );
   };
 
   const toggleSubmissionSelection = (subId) => {
-    setSelectedSubmissions(prev => 
-      prev.includes(subId) 
+    setSelectedSubmissions(prev =>
+      prev.includes(subId)
         ? prev.filter(id => id !== subId)
         : [...prev, subId]
     );
   };
 
-    const handleExportFormSummary = async (form) => {
-      setExportingId(form._id);
-      try {
-        const formSubmissions = submissions.filter(s => 
-          (s.formId?._id === form._id || s.formId === form._id) || 
+  const handleExportFormSummary = async (form) => {
+    setExportingId(form._id);
+    try {
+      const formSubmissions = submissions.filter(s =>
+        (s.formId?._id === form._id || s.formId === form._id) ||
+        (s.templateId?._id === form._id || s.templateId === form._id)
+      );
+
+      const total = formSubmissions.length;
+      const approved = formSubmissions.filter(s => s.status?.toUpperCase() === "APPROVED").length;
+      const rejected = formSubmissions.filter(s => s.status?.toUpperCase() === "REJECTED").length;
+      const pending = total - approved - rejected;
+
+      const approvalFlow = form.approvalFlow || [];
+      const approverLevels = approvalFlow.map((a, i) => ({
+        Level: a.level || i + 1,
+        'Approver Name': a.approverId?.name || a.name || `Approver ${i + 1}`,
+        'Approved Count': formSubmissions.filter(s =>
+          s.approvalHistory?.some(h => h.level === (a.level || i + 1) && h.status === "APPROVED")
+        ).length
+      }));
+
+      const summaryData = [
+        { Metric: 'Form ID', Value: form._id },
+        { Metric: 'Form Name', Value: form.formName },
+        { Metric: 'Created Date', Value: new Date(form.createdAt).toLocaleString() },
+        { Metric: 'Total Submissions', Value: total },
+        { Metric: 'Approved', Value: approved },
+        { Metric: 'Rejected', Value: rejected },
+        { Metric: 'Pending', Value: pending },
+        { Metric: 'Approval Rate', Value: total > 0 ? `${((approved / total) * 100).toFixed(1)}%` : '0%' },
+        { Metric: '', Value: '' },
+        { Metric: 'APPROVER LEVELS', Value: '' },
+        ...approverLevels.map(a => ({ Metric: `Level ${a.Level} - ${a['Approver Name']}`, Value: `${a['Approved Count']} approved` }))
+      ];
+
+      const fileName = `${form.formName}_Summary`;
+      await exportToExcel(summaryData, fileName);
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setExportingId(null);
+      setShowExportMenu(null);
+    }
+  };
+
+
+
+  const handleExportFormData = async (form) => {
+    setExportingId(form._id);
+    try {
+      const formSubmissions = submissions.filter(s =>
+        (s.formId?._id === form._id || s.formId === form._id) ||
+        (s.templateId?._id === form._id || s.templateId === form._id)
+      );
+
+      if (formSubmissions.length === 0) {
+        alert('No submission data found for this form.');
+        return;
+      }
+
+      const fields = getFormFields(form);
+      const exportData = formSubmissions.map(s => {
+        const data = getSubmissionData(s);
+        const approvalFlow = form.approvalFlow || [];
+        const approvalHistory = s.approvalHistory || [];
+
+        const row = {
+          'Submission ID': s._id,
+          'Submitted By': typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy || 'Unknown',
+          'Submitted Date': new Date(s.createdAt).toLocaleString(),
+          'Status': s.status?.replace(/_/g, ' ')
+        };
+
+        fields.forEach(f => {
+          row[f.label] = data[f.fieldId] || '-';
+        });
+
+        approvalFlow.forEach((a, i) => {
+          const history = approvalHistory.find(h => h.level === (a.level || i + 1));
+          row[`Level ${a.level || i + 1} Approver`] = a.approverId?.name || a.name || `Approver ${i + 1}`;
+          row[`Level ${a.level || i + 1} Status`] = history?.status || 'PENDING';
+          row[`Level ${a.level || i + 1} Date`] = history?.actionedAt ? new Date(history.actionedAt).toLocaleString() : '-';
+        });
+
+        return row;
+      });
+
+      const fileName = `${form.formName}_Data`;
+      await exportToExcel(exportData, fileName);
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setExportingId(null);
+      setShowExportMenu(null);
+    }
+  };
+
+  const handleExportSingleSubmission = async (submission) => {
+    setExportingId(submission._id);
+    try {
+      const fields = getFormFields(selectedForm);
+      const data = getSubmissionData(submission);
+      const approvalFlow = selectedForm?.approvalFlow || [];
+      const approvalHistory = submission.approvalHistory || [];
+
+      const exportData = [
+        { Field: 'Submission ID', Value: submission._id },
+        { Field: 'Submitted By', Value: typeof submission.submittedBy === 'object' ? submission.submittedBy?.name : submission.submittedBy || 'Unknown' },
+        { Field: 'Submitted Date', Value: new Date(submission.createdAt).toLocaleString() },
+        { Field: 'Status', Value: submission.status?.replace(/_/g, ' ') },
+        { Field: '', Value: '' },
+        { Field: 'FORM DATA', Value: '' },
+        ...fields.map(f => ({ Field: f.label, Value: data[f.fieldId] || '-' })),
+        { Field: '', Value: '' },
+        { Field: 'APPROVAL HISTORY', Value: '' },
+        ...approvalFlow.map((a, i) => {
+          const history = approvalHistory.find(h => h.level === (a.level || i + 1));
+          return {
+            Field: `Level ${a.level || i + 1} - ${a.approverId?.name || a.name || `Approver ${i + 1}`}`,
+            Value: `${history?.status || 'PENDING'}${history?.actionedAt ? ` (${new Date(history.actionedAt).toLocaleString()})` : ''}`
+          };
+        })
+      ];
+
+      const fileName = `Submission_${submission._id.slice(-6)}`;
+      await exportToExcel(exportData, fileName);
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setExportingId(null);
+      setShowExportMenu(null);
+    }
+  };
+
+  const handleBulkExportForms = async () => {
+    if (selectedForms.length === 0) return;
+    setExportingId('bulk-forms');
+    try {
+      const allData = [];
+      for (const formId of selectedForms) {
+        const form = forms.find(f => f._id === formId);
+        if (!form) continue;
+
+        const formSubmissions = submissions.filter(s =>
+          (s.formId?._id === form._id || s.formId === form._id) ||
           (s.templateId?._id === form._id || s.templateId === form._id)
         );
-        
+
         const total = formSubmissions.length;
         const approved = formSubmissions.filter(s => s.status?.toUpperCase() === "APPROVED").length;
         const rejected = formSubmissions.filter(s => s.status?.toUpperCase() === "REJECTED").length;
         const pending = total - approved - rejected;
-        
-        const approvalFlow = form.approvalFlow || [];
-        const approverLevels = approvalFlow.map((a, i) => ({
-          Level: a.level || i + 1,
-          'Approver Name': a.approverId?.name || a.name || `Approver ${i + 1}`,
-          'Approved Count': formSubmissions.filter(s => 
-            s.approvalHistory?.some(h => h.level === (a.level || i + 1) && h.status === "APPROVED")
-          ).length
-        }));
-  
-        const summaryData = [
-          { Metric: 'Form ID', Value: form._id },
-          { Metric: 'Form Name', Value: form.formName },
-          { Metric: 'Created Date', Value: new Date(form.createdAt).toLocaleString() },
-          { Metric: 'Total Submissions', Value: total },
-          { Metric: 'Approved', Value: approved },
-          { Metric: 'Rejected', Value: rejected },
-          { Metric: 'Pending', Value: pending },
-          { Metric: 'Approval Rate', Value: total > 0 ? `${((approved / total) * 100).toFixed(1)}%` : '0%' },
-          { Metric: '', Value: '' },
-          { Metric: 'APPROVER LEVELS', Value: '' },
-          ...approverLevels.map(a => ({ Metric: `Level ${a.Level} - ${a['Approver Name']}`, Value: `${a['Approved Count']} approved` }))
-        ];
-  
-        const fileName = `${form.formName}_Summary`;
-        await exportToExcel(summaryData, fileName);
-      } catch (err) {
-        console.error('Export failed:', err);
-      } finally {
-        setExportingId(null);
-        setShowExportMenu(null);
-      }
-    };
-  
 
-
-    const handleExportFormData = async (form) => {
-      setExportingId(form._id);
-      try {
-        const formSubmissions = submissions.filter(s => 
-          (s.formId?._id === form._id || s.formId === form._id) || 
-          (s.templateId?._id === form._id || s.templateId === form._id)
-        );
-        
-        if (formSubmissions.length === 0) {
-          alert('No submission data found for this form.');
-          return;
-        }
-  
-        const fields = getFormFields(form);
-        const exportData = formSubmissions.map(s => {
-          const data = getSubmissionData(s);
-          const approvalFlow = form.approvalFlow || [];
-          const approvalHistory = s.approvalHistory || [];
-          
-          const row = {
-            'Submission ID': s._id,
-            'Submitted By': typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy || 'Unknown',
-            'Submitted Date': new Date(s.createdAt).toLocaleString(),
-            'Status': s.status?.replace(/_/g, ' ')
-          };
-  
-          fields.forEach(f => {
-            row[f.label] = data[f.fieldId] || '-';
-          });
-  
-          approvalFlow.forEach((a, i) => {
-            const history = approvalHistory.find(h => h.level === (a.level || i + 1));
-            row[`Level ${a.level || i + 1} Approver`] = a.approverId?.name || a.name || `Approver ${i + 1}`;
-            row[`Level ${a.level || i + 1} Status`] = history?.status || 'PENDING';
-            row[`Level ${a.level || i + 1} Date`] = history?.actionedAt ? new Date(history.actionedAt).toLocaleString() : '-';
-          });
-  
-          return row;
+        allData.push({
+          'Form ID': form._id,
+          'Form Name': form.formName,
+          'Created Date': new Date(form.createdAt).toLocaleString(),
+          'Total Submissions': total,
+          'Approved': approved,
+          'Rejected': rejected,
+          'Pending': pending,
+          'Approval Rate': total > 0 ? `${((approved / total) * 100).toFixed(1)}%` : '0%',
+          'Approvers': (form.approvalFlow || []).map(a => a.approverId?.name || a.name || 'Unknown').join(', ')
         });
-  
-        const fileName = `${form.formName}_Data`;
-        await exportToExcel(exportData, fileName);
-      } catch (err) {
-        console.error('Export failed:', err);
-      } finally {
-        setExportingId(null);
-        setShowExportMenu(null);
       }
-    };
-  
-    const handleExportSingleSubmission = async (submission) => {
-      setExportingId(submission._id);
-      try {
-        const fields = getFormFields(selectedForm);
-        const data = getSubmissionData(submission);
-        const approvalFlow = selectedForm?.approvalFlow || [];
-        const approvalHistory = submission.approvalHistory || [];
-  
-        const exportData = [
-          { Field: 'Submission ID', Value: submission._id },
-          { Field: 'Submitted By', Value: typeof submission.submittedBy === 'object' ? submission.submittedBy?.name : submission.submittedBy || 'Unknown' },
-          { Field: 'Submitted Date', Value: new Date(submission.createdAt).toLocaleString() },
-          { Field: 'Status', Value: submission.status?.replace(/_/g, ' ') },
-          { Field: '', Value: '' },
-          { Field: 'FORM DATA', Value: '' },
-          ...fields.map(f => ({ Field: f.label, Value: data[f.fieldId] || '-' })),
-          { Field: '', Value: '' },
-          { Field: 'APPROVAL HISTORY', Value: '' },
-          ...approvalFlow.map((a, i) => {
-            const history = approvalHistory.find(h => h.level === (a.level || i + 1));
-            return {
-              Field: `Level ${a.level || i + 1} - ${a.approverId?.name || a.name || `Approver ${i + 1}`}`,
-              Value: `${history?.status || 'PENDING'}${history?.actionedAt ? ` (${new Date(history.actionedAt).toLocaleString()})` : ''}`
-            };
-          })
-        ];
-  
-        const fileName = `Submission_${submission._id.slice(-6)}`;
-        await exportToExcel(exportData, fileName);
-      } catch (err) {
-        console.error('Export failed:', err);
-      } finally {
-        setExportingId(null);
-        setShowExportMenu(null);
-      }
-    };
-  
-    const handleBulkExportForms = async () => {
-      if (selectedForms.length === 0) return;
-      setExportingId('bulk-forms');
-      try {
-        const allData = [];
-        for (const formId of selectedForms) {
-          const form = forms.find(f => f._id === formId);
-          if (!form) continue;
-          
-          const formSubmissions = submissions.filter(s => 
-            (s.formId?._id === form._id || s.formId === form._id) || 
-            (s.templateId?._id === form._id || s.templateId === form._id)
-          );
-          
-          const total = formSubmissions.length;
-          const approved = formSubmissions.filter(s => s.status?.toUpperCase() === "APPROVED").length;
-          const rejected = formSubmissions.filter(s => s.status?.toUpperCase() === "REJECTED").length;
-          const pending = total - approved - rejected;
-          
-          allData.push({
-            'Form ID': form._id,
-            'Form Name': form.formName,
-            'Created Date': new Date(form.createdAt).toLocaleString(),
-            'Total Submissions': total,
-            'Approved': approved,
-            'Rejected': rejected,
-            'Pending': pending,
-            'Approval Rate': total > 0 ? `${((approved / total) * 100).toFixed(1)}%` : '0%',
-            'Approvers': (form.approvalFlow || []).map(a => a.approverId?.name || a.name || 'Unknown').join(', ')
-          });
-        }
-  
-        await exportToExcel(allData, 'Bulk_Forms_Summary');
-      } catch (err) {
-        console.error('Bulk export failed:', err);
-      } finally {
-        setExportingId(null);
-      }
-    };
-  
-    const handleBulkExportSubmissions = async () => {
-      if (selectedSubmissions.length === 0) return;
-      setExportingId('bulk-submissions');
-      try {
-        const fields = getFormFields(selectedForm);
-        const approvalFlow = selectedForm?.approvalFlow || [];
-        
-        const exportData = selectedSubmissions.map(subId => {
-          const s = filteredSubmissions.find(sub => sub._id === subId);
-          if (!s) return null;
-          
-          const data = getSubmissionData(s);
-          const approvalHistory = s.approvalHistory || [];
-          
-          const row = {
-            'Submission ID': s._id,
-            'Submitted By': typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy || 'Unknown',
-            'Submitted Date': new Date(s.createdAt).toLocaleString(),
-            'Status': s.status?.replace(/_/g, ' ')
-          };
-  
-          fields.forEach(f => {
-            row[f.label] = data[f.fieldId] || '-';
-          });
-  
-          approvalFlow.forEach((a, i) => {
-            const history = approvalHistory.find(h => h.level === (a.level || i + 1));
-            row[`Level ${a.level || i + 1} Status`] = history?.status || 'PENDING';
-          });
-  
-          return row;
-        }).filter(Boolean);
-  
-        await exportToExcel(exportData, `${selectedForm?.formName}_Bulk_Submissions`);
-      } catch (err) {
-        console.error('Bulk export failed:', err);
-      } finally {
-        setExportingId(null);
-      }
-    };
 
-    return (
+      await exportToExcel(allData, 'Bulk_Forms_Summary');
+    } catch (err) {
+      console.error('Bulk export failed:', err);
+    } finally {
+      setExportingId(null);
+    }
+  };
+
+  const handleBulkExportSubmissions = async () => {
+    if (selectedSubmissions.length === 0) return;
+    setExportingId('bulk-submissions');
+    try {
+      const fields = getFormFields(selectedForm);
+      const approvalFlow = selectedForm?.approvalFlow || [];
+
+      const exportData = selectedSubmissions.map(subId => {
+        const s = filteredSubmissions.find(sub => sub._id === subId);
+        if (!s) return null;
+
+        const data = getSubmissionData(s);
+        const approvalHistory = s.approvalHistory || [];
+
+        const row = {
+          'Submission ID': s._id,
+          'Submitted By': typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy || 'Unknown',
+          'Submitted Date': new Date(s.createdAt).toLocaleString(),
+          'Status': s.status?.replace(/_/g, ' ')
+        };
+
+        fields.forEach(f => {
+          row[f.label] = data[f.fieldId] || '-';
+        });
+
+        approvalFlow.forEach((a, i) => {
+          const history = approvalHistory.find(h => h.level === (a.level || i + 1));
+          row[`Level ${a.level || i + 1} Status`] = history?.status || 'PENDING';
+        });
+
+        return row;
+      }).filter(Boolean);
+
+      await exportToExcel(exportData, `${selectedForm?.formName}_Bulk_Submissions`);
+    } catch (err) {
+      console.error('Bulk export failed:', err);
+    } finally {
+      setExportingId(null);
+    }
+  };
+
+  return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -439,12 +439,12 @@ const getStatusColor = (status) => {
             {viewMode === "submissions" ? `Submissions: ${selectedForm?.formName}` : "Form Templates"}
           </h1>
           <p className="text-[15px] text-gray-500">
-            {viewMode === "submissions" 
+            {viewMode === "submissions"
               ? "Review data collected from this form template."
               : "Browse and view data for all available form templates."}
           </p>
         </div>
-        
+
         {viewMode === "submissions" && (
           <button
             onClick={() => setViewMode("table")}
@@ -495,98 +495,95 @@ const getStatusColor = (status) => {
           </div>
         )}
 
-<div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead className="bg-gray-50/50 sticky top-0 z-10">
-                  {viewMode === "table" ? (
-                    <tr>
-                      <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 w-10">
-                        <div 
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                            selectedForms.length === filteredForms.length && filteredForms.length > 0
-                              ? 'bg-indigo-600 border-indigo-600 text-white' 
-                              : 'bg-white border-gray-300 text-transparent'
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead className="bg-gray-50/50 sticky top-0 z-10">
+                {viewMode === "table" ? (
+                  <tr>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 w-10">
+                      <div
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${selectedForms.length === filteredForms.length && filteredForms.length > 0
+                          ? 'bg-indigo-600 border-indigo-600 text-white'
+                          : 'bg-white border-gray-300 text-transparent'
                           }`}
-                          onClick={() => {
-                            if (selectedForms.length === filteredForms.length) {
-                              setSelectedForms([]);
-                            } else {
-                              setSelectedForms(filteredForms.map(f => f._id));
-                            }
-                          }}
-                        >
-                          <Check className="w-3 h-3" />
-                        </div>
-                      </th>
-                      <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                        Form Template
-                      </th>
-                      <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                        Submissions
-                      </th>
-                      <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                        Latest Activity
-                      </th>
-                      <th className="px-6 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                        Actions
-                      </th>
+                        onClick={() => {
+                          if (selectedForms.length === filteredForms.length) {
+                            setSelectedForms([]);
+                          } else {
+                            setSelectedForms(filteredForms.map(f => f._id));
+                          }
+                        }}
+                      >
+                        <Check className="w-3 h-3" />
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                      Form Template
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                      Submissions
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                      Latest Activity
+                    </th>
+                    <th className="px-6 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                      Actions
+                    </th>
+                  </tr>
+                ) : (
+                  <tr>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 w-10">
+                      <div
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${selectedSubmissions.length === filteredSubmissions.length && filteredSubmissions.length > 0
+                          ? 'bg-indigo-600 border-indigo-600 text-white'
+                          : 'bg-white border-gray-300 text-transparent'
+                          }`}
+                        onClick={() => {
+                          if (selectedSubmissions.length === filteredSubmissions.length) {
+                            setSelectedSubmissions([]);
+                          } else {
+                            setSelectedSubmissions(filteredSubmissions.map(s => s._id));
+                          }
+                        }}
+                      >
+                        <Check className="w-3 h-3" />
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Submitted By</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Date & Time</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Approvers</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
+                    <th className="px-6 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Actions</th>
+                  </tr>
+                )}
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-6 py-4"><div className="h-5 w-5 bg-gray-100 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-48 mb-2"></div><div className="h-3 bg-gray-50 rounded w-32"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-12"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-12 ml-auto"></div></td>
                     </tr>
-                    ) : (
-                      <tr>
-                        <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 w-10">
-                          <div 
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                              selectedSubmissions.length === filteredSubmissions.length && filteredSubmissions.length > 0
-                                ? 'bg-indigo-600 border-indigo-600 text-white' 
-                                : 'bg-white border-gray-300 text-transparent'
-                            }`}
-                            onClick={() => {
-                              if (selectedSubmissions.length === filteredSubmissions.length) {
-                                setSelectedSubmissions([]);
-                              } else {
-                                setSelectedSubmissions(filteredSubmissions.map(s => s._id));
-                              }
-                            }}
-                          >
-                            <Check className="w-3 h-3" />
-                          </div>
-                        </th>
-                        <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Submitted By</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Date & Time</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Approvers</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
-                        <th className="px-6 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Actions</th>
-                      </tr>
-                    )}
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {loading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <tr key={i} className="animate-pulse">
-                        <td className="px-6 py-4"><div className="h-5 w-5 bg-gray-100 rounded"></div></td>
-                        <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-48 mb-2"></div><div className="h-3 bg-gray-50 rounded w-32"></div></td>
-                        <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-12"></div></td>
-                        <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24"></div></td>
-                        <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-12 ml-auto"></div></td>
-                      </tr>
-                    ))
-                  ) : viewMode === "table" ? (
-                    filteredForms.length > 0 ? (
-                      filteredForms.map((form) => {
-                        const isSelected = selectedForms.includes(form._id);
-                        return (
-                        <tr 
-                          key={form._id} 
+                  ))
+                ) : viewMode === "table" ? (
+                  filteredForms.length > 0 ? (
+                    filteredForms.map((form) => {
+                      const isSelected = selectedForms.includes(form._id);
+                      return (
+                        <tr
+                          key={form._id}
                           className={`group hover:bg-gray-50/50 transition-colors cursor-pointer ${isSelected ? 'bg-indigo-50/30' : ''}`}
                         >
                           <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                            <div 
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                                isSelected 
-                                  ? 'bg-indigo-600 border-indigo-600 text-white' 
-                                  : 'bg-white border-gray-300 text-transparent'
-                              }`}
+                            <div
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${isSelected
+                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                : 'bg-white border-gray-300 text-transparent'
+                                }`}
                               onClick={() => toggleFormSelection(form._id)}
                             >
                               <Check className="w-3 h-3" />
@@ -633,21 +630,21 @@ const getStatusColor = (status) => {
                                     <Download className="w-4 h-4" />
                                   )}
                                 </button>
-                                
-                                  {showExportMenu === form._id && (
-                                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-[100] overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                                      <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Summary Report</div>
-                                      <button onClick={() => handleExportFormSummary(form)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
-                                        <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
-                                      </button>
 
-                                      <div className="h-px bg-gray-100 my-1" />
-                                      <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">All Submissions Data</div>
-                                      <button onClick={() => handleExportFormData(form)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
-                                        <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
-                                      </button>
-                                    </div>
-                                  )}
+                                {showExportMenu === form._id && (
+                                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-[100] overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Summary Report</div>
+                                    <button onClick={() => handleExportFormSummary(form)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+                                      <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
+                                    </button>
+
+                                    <div className="h-px bg-gray-100 my-1" />
+                                    <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">All Submissions Data</div>
+                                    <button onClick={() => handleExportFormData(form)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+                                      <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
+                                    </button>
+                                  </div>
+                                )}
                               </div>
 
                               <button
@@ -659,187 +656,199 @@ const getStatusColor = (status) => {
                             </div>
                           </td>
                         </tr>
-                      )})
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="px-6 py-12 text-center">
-                          <div className="flex flex-col items-center justify-center text-gray-500">
-                            <Inbox className="w-10 h-10 text-gray-200 mb-2" />
-                            <p className="text-sm">No forms found matching your search.</p>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  ) : (
-                    filteredSubmissions.map((s) => {
-                      const approversCount = getApproversCount(s);
-                      const isSelected = selectedSubmissions.includes(s._id);
-                      return (
-                        <tr key={s._id} className={`hover:bg-gray-50 transition-colors group ${isSelected ? 'bg-indigo-50/30' : ''}`}>
-                          <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                            <div 
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                                isSelected 
-                                  ? 'bg-indigo-600 border-indigo-600 text-white' 
-                                  : 'bg-white border-gray-300 text-transparent'
-                              }`}
-                              onClick={() => toggleSubmissionSelection(s._id)}
-                            >
-                              <Check className="w-3 h-3" />
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
-                                <User className="w-3.5 h-3.5" />
-                              </div>
-                              <span className="text-sm font-semibold text-gray-900">
-                                {typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy || 'Unknown'}
-                              </span>
-                            </div>
-                          </td>
-                            <td className="px-6 py-4">
-                              <div className="flex flex-col">
-                                <span className="text-[13px] text-gray-900 font-medium">{new Date(s.createdAt).toLocaleDateString()}</span>
-                                <span className="text-[11px] text-gray-400">{new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                              <div className="flex -space-x-1.5">
-                                {Array.from({ length: Math.min(approversCount.total, 3) }).map((_, i) => (
-                                  <div key={i} className={`w-5 h-5 rounded-full border border-white flex items-center justify-center text-[8px] font-bold ${i < approversCount.approved ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                                    {i + 1}
-                                  </div>
-                                ))}
-                              </div>
-                              <span className="text-[12px] font-medium text-gray-500">
-                                {approversCount.approved}/{approversCount.total}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(s.status)} border-current bg-opacity-10`}>
-                              {s.status?.replace(/_/g, ' ')}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1">
-                              <div className="relative">
-                                <button 
-                                  onClick={() => setShowExportMenu(showExportMenu === s._id ? null : s._id)}
-                                  disabled={exportingId === s._id}
-                                  className={`p-1.5 rounded-md transition-colors ${showExportMenu === s._id ? 'bg-indigo-50 text-indigo-600' : 'text-emerald-500 hover:bg-emerald-50'}`}
-                                  title="Export"
-                                >
-                                  {exportingId === s._id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Download className="w-4 h-4" />
-                                  )}
-                                </button>
-                                
-                                {showExportMenu === s._id && (
-                                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-[100] overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <button onClick={() => handleExportSingleSubmission(s, 'excel')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
-                                      <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
-                                    </button>
-                                    <button onClick={() => handleExportSingleSubmission(s, 'pdf')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
-                                      <FileText className="w-3.5 h-3.5 text-red-600" /> PDF Format
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); navigate(`/${user.role.toLowerCase().replace('_admin', '')}/submissions/${s._id}`); }}
-                                className="p-1.5 hover:bg-indigo-50 rounded-md text-gray-400 hover:text-indigo-600 transition-colors"
-                                title="Quick View"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
+                      )
                     })
-                  )}
-                    {!loading && viewMode === "submissions" && filteredSubmissions.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-20 text-center">
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-12 text-center">
                         <div className="flex flex-col items-center justify-center text-gray-500">
-                          <ClipboardList className="w-10 h-10 text-gray-200 mb-2" />
-                          <h3 className="text-sm font-medium">No submissions yet</h3>
-                          <p className="text-xs">Data will appear here once this form is filled out.</p>
+                          <Inbox className="w-10 h-10 text-gray-200 mb-2" />
+                          <p className="text-sm">No forms found matching your search.</p>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  )
+                ) : (
+                  filteredSubmissions.map((s) => {
+                    const approversCount = getApproversCount(s);
+                    const isSelected = selectedSubmissions.includes(s._id);
+                    return (
+                      <tr key={s._id} className={`hover:bg-gray-50 transition-colors group ${isSelected ? 'bg-indigo-50/30' : ''}`}>
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${isSelected
+                              ? 'bg-indigo-600 border-indigo-600 text-white'
+                              : 'bg-white border-gray-300 text-transparent'
+                              }`}
+                            onClick={() => toggleSubmissionSelection(s._id)}
+                          >
+                            <Check className="w-3 h-3" />
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
+                              <User className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900">
+                              {typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy || 'Unknown'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-[13px] text-gray-900 font-medium">{new Date(s.createdAt).toLocaleDateString()}</span>
+                            <span className="text-[11px] text-gray-400">{new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-1.5">
+                              {Array.from({ length: Math.min(approversCount.total, 3) }).map((_, i) => (
+                                <div key={i} className={`w-5 h-5 rounded-full border border-white flex items-center justify-center text-[8px] font-bold ${i < approversCount.approved ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                  {i + 1}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-[12px] font-medium text-gray-500">
+                              {approversCount.approved}/{approversCount.total}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(s.status)} border-current bg-opacity-10`}>
+                            {s.status?.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowExportMenu(showExportMenu === s._id ? null : s._id)}
+                                disabled={exportingId === s._id}
+                                className={`p-1.5 rounded-md transition-colors ${showExportMenu === s._id ? 'bg-indigo-50 text-indigo-600' : 'text-emerald-500 hover:bg-emerald-50'}`}
+                                title="Export"
+                              >
+                                {exportingId === s._id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Download className="w-4 h-4" />
+                                )}
+                              </button>
+
+                              {showExportMenu === s._id && (
+                                <div className="absolute right-8 -mt-9 bg-white rounded-xl shadow-xl border border-gray-100 z-[100] flex items-center gap-1 p-1 animate-in fade-in slide-in-from-top-2 duration-200">
+
+                                  <button
+                                    onClick={() => handleExportSingleSubmission(s, 'excel')}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                                  >
+                                    <Table className="w-4 h-4 text-green-600" />
+                                    Excel
+                                  </button>
+
+                                  {/* <button
+                                    onClick={() => handleExportSingleSubmission(s, 'pdf')}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                                  >
+                                    <FileText className="w-4 h-4 text-red-600" />
+                                    PDF
+                                  </button> */}
+
+                                </div>
+
+                              )}
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigate(`/${user.role.toLowerCase().replace('_admin', '')}/submissions/${s._id}`); }}
+                              className="p-1.5 hover:bg-indigo-50 rounded-md text-gray-400 hover:text-indigo-600 transition-colors"
+                              title="Quick View"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+                {!loading && viewMode === "submissions" && filteredSubmissions.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-20 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500">
+                        <ClipboardList className="w-10 h-10 text-gray-200 mb-2" />
+                        <h3 className="text-sm font-medium">No submissions yet</h3>
+                        <p className="text-xs">Data will appear here once this form is filled out.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
+      </div>
 
-        {/* Bulk Action Bar */}
-        {viewMode === "table" && selectedForms.length > 0 && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <span className="text-sm font-medium">{selectedForms.length} form(s) selected</span>
-            <div className="h-5 w-px bg-gray-700" />
-            <button
-              onClick={() => handleBulkExportForms('excel')}
-              disabled={exportingId === 'bulk-forms'}
-              className="flex items-center gap-2 text-sm font-semibold hover:text-emerald-400 transition-colors"
-            >
-              {exportingId === 'bulk-forms' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Table className="w-4 h-4" />}
-              Export Excel
-            </button>
-            <button
-              onClick={() => handleBulkExportForms('pdf')}
-              disabled={exportingId === 'bulk-forms'}
-              className="flex items-center gap-2 text-sm font-semibold hover:text-red-400 transition-colors"
-            >
-              <FileText className="w-4 h-4" />
-              Export PDF
-            </button>
-            <div className="h-5 w-px bg-gray-700" />
-            <button
-              onClick={() => setSelectedForms([])}
-              className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
-            >
-              Clear
-            </button>
-          </div>
-        )}
+      {/* Bulk Action Bar */}
+      {viewMode === "table" && selectedForms.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <span className="text-sm font-medium">{selectedForms.length} form(s) selected</span>
+          <div className="h-5 w-px bg-gray-700" />
+          <button
+            onClick={() => handleBulkExportForms('excel')}
+            disabled={exportingId === 'bulk-forms'}
+            className="flex items-center gap-2 text-sm font-semibold hover:text-emerald-400 transition-colors"
+          >
+            {exportingId === 'bulk-forms' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Table className="w-4 h-4" />}
+            Export Excel
+          </button>
+          <button
+            onClick={() => handleBulkExportForms('pdf')}
+            disabled={exportingId === 'bulk-forms'}
+            className="flex items-center gap-2 text-sm font-semibold hover:text-red-400 transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            Export PDF
+          </button>
+          <div className="h-5 w-px bg-gray-700" />
+          <button
+            onClick={() => setSelectedForms([])}
+            className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
-        {viewMode === "submissions" && selectedSubmissions.length > 0 && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <span className="text-sm font-medium">{selectedSubmissions.length} submission(s) selected</span>
-            <div className="h-5 w-px bg-gray-700" />
-            <button
-              onClick={() => handleBulkExportSubmissions('excel')}
-              disabled={exportingId === 'bulk-submissions'}
-              className="flex items-center gap-2 text-sm font-semibold hover:text-emerald-400 transition-colors"
-            >
-              {exportingId === 'bulk-submissions' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Table className="w-4 h-4" />}
-              Export Excel
-            </button>
-            <button
-              onClick={() => handleBulkExportSubmissions('pdf')}
-              disabled={exportingId === 'bulk-submissions'}
-              className="flex items-center gap-2 text-sm font-semibold hover:text-red-400 transition-colors"
-            >
-              <FileText className="w-4 h-4" />
-              Export PDF
-            </button>
-            <div className="h-5 w-px bg-gray-700" />
-            <button
-              onClick={() => setSelectedSubmissions([])}
-              className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
-            >
-              Clear
-            </button>
-          </div>
-        )}
+      {viewMode === "submissions" && selectedSubmissions.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <span className="text-sm font-medium">{selectedSubmissions.length} submission(s) selected</span>
+          <div className="h-5 w-px bg-gray-700" />
+          <button
+            onClick={() => handleBulkExportSubmissions('excel')}
+            disabled={exportingId === 'bulk-submissions'}
+            className="flex items-center gap-2 text-sm font-semibold hover:text-emerald-400 transition-colors"
+          >
+            {exportingId === 'bulk-submissions' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Table className="w-4 h-4" />}
+            Export Excel
+          </button>
+          <button
+            onClick={() => handleBulkExportSubmissions('pdf')}
+            disabled={exportingId === 'bulk-submissions'}
+            className="flex items-center gap-2 text-sm font-semibold hover:text-red-400 transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            Export PDF
+          </button>
+          <div className="h-5 w-px bg-gray-700" />
+          <button
+            onClick={() => setSelectedSubmissions([])}
+            className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Quick View Modal */}
       {showModal && selectedSubmission && (
@@ -858,7 +867,7 @@ const getStatusColor = (status) => {
                   </div>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
               >
@@ -885,18 +894,18 @@ const getStatusColor = (status) => {
                 {getFormFields(selectedForm).map((field) => {
                   const data = getSubmissionData(selectedSubmission);
                   const value = data[field.fieldId];
-                  
+
                   return (
                     <div key={field.fieldId} className="space-y-1">
                       <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{field.label}</label>
                       <div className="p-3 bg-white border border-gray-100 rounded-lg text-sm text-gray-900 font-medium shadow-sm">
                         {field.type === 'signature' || isImageUrl(value) ? (
-                          <div 
+                          <div
                             onClick={() => setPreviewImage(value)}
                             className="cursor-pointer group relative inline-block"
                           >
-                            <img 
-                              src={value} 
+                            <img
+                              src={value}
                               alt={field.label}
                               className="max-h-20 rounded border border-gray-100 hover:border-indigo-300 transition-colors"
                             />
@@ -925,23 +934,21 @@ const getStatusColor = (status) => {
                   </h3>
                   <div className="space-y-3">
                     {getApproverDetails(selectedSubmission).map((approver, index) => (
-                      <div 
+                      <div
                         key={index}
-                        className={`flex items-center justify-between p-3 rounded-xl border ${
-                          approver.status === 'APPROVED' ? 'bg-green-50/50 border-green-100' :
+                        className={`flex items-center justify-between p-3 rounded-xl border ${approver.status === 'APPROVED' ? 'bg-green-50/50 border-green-100' :
                           approver.status === 'REJECTED' ? 'bg-red-50/50 border-red-100' :
-                          'bg-gray-50/50 border-gray-100'
-                        }`}
+                            'bg-gray-50/50 border-gray-100'
+                          }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            approver.status === 'APPROVED' ? 'bg-green-100 text-green-600' :
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${approver.status === 'APPROVED' ? 'bg-green-100 text-green-600' :
                             approver.status === 'REJECTED' ? 'bg-red-100 text-red-600' :
-                            'bg-gray-200 text-gray-500'
-                          }`}>
+                              'bg-gray-200 text-gray-500'
+                            }`}>
                             {approver.status === 'APPROVED' ? <CheckCircle className="w-4 h-4" /> :
-                             approver.status === 'REJECTED' ? <XCircle className="w-4 h-4" /> :
-                             <Clock3 className="w-4 h-4" />}
+                              approver.status === 'REJECTED' ? <XCircle className="w-4 h-4" /> :
+                                <Clock3 className="w-4 h-4" />}
                           </div>
                           <div>
                             <p className="font-bold text-gray-900 text-[13px]">{approver.name}</p>
@@ -949,11 +956,10 @@ const getStatusColor = (status) => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
-                            approver.status === 'APPROVED' ? 'bg-green-100 text-green-700 border-green-200' :
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${approver.status === 'APPROVED' ? 'bg-green-100 text-green-700 border-green-200' :
                             approver.status === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200' :
-                            'bg-gray-200 text-gray-600 border-gray-300'
-                          }`}>
+                              'bg-gray-200 text-gray-600 border-gray-300'
+                            }`}>
                             {approver.status}
                           </span>
                         </div>
@@ -988,19 +994,19 @@ const getStatusColor = (status) => {
 
       {/* Image Preview Modal */}
       {previewImage && (
-        <div 
+        <div
           className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
           onClick={() => setPreviewImage(null)}
         >
           <div className="relative max-w-4xl max-h-[90vh]">
-            <button 
+            <button
               onClick={() => setPreviewImage(null)}
               className="absolute -top-12 right-0 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
-            <img 
-              src={previewImage} 
+            <img
+              src={previewImage}
               alt="Preview"
               className="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain"
               onClick={(e) => e.stopPropagation()}
