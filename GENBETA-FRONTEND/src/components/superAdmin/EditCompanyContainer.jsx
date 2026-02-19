@@ -4,9 +4,9 @@ import { toast } from "react-hot-toast";
 import { ArrowLeft, Loader2, Save, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { companyApi } from "../../api/company.api";
-import CompanyProfileFacility from "./CompanyProfileFacility";
-import CompanyAdminsFacility from "./CompanyAdminsFacility";
-import CompanySubscriptionFacility from "./CompanySubscriptionFacility";
+import CompanyProfileFacility from "./CompanyProfileForm";
+import CompanyAdminsFacility from "./CompanyAdminsForm";
+import CompanySubscriptionFacility from "./CompanySubscriptionForm";
 
 export default function EditCompanyContainer() {
   const { id } = useParams();

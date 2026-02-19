@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { approvalApi } from "../../api/approval.api";
 import { submissionApi } from "../../api/submission.api";
-import FacilityRenderer from "../../components/FacilityRenderer/FacilityRenderer";
+import FacilityRenderer from "../../components/FormRenderer/FormRenderer";
 import { 
   ArrowLeft, 
   Loader2, 

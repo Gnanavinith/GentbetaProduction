@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { SortableField } from "./components/SortableField";
 import { DroppableSection } from "./components/DroppableSection";
-import { FacilityCanvasHeader } from "./components/FacilityCanvasHeader";
+import { FacilityCanvasHeader } from "./components/FormCanvasHeader";
 
 const FacilitySection = memo(React.forwardRef(function FacilitySection({ 
   section, 

@@ -1,5 +1,5 @@
-export { AddEmployeeFacility } from './AddEmployeeFacility';
-export { EmployeeFacilityFields } from './EmployeeFacilityFields';
+export { AddEmployeeFacility } from './AddEmployeeForm';
+export { EmployeeFacilityFields } from './EmployeeFormFields';
 export { EmployeeLimitChecker } from './EmployeeLimitChecker';
 export { validateEmployeeFacility, validateEmployeeLimits } from './EmployeeValidation';
 export { EmployeeSearch } from './EmployeeSearch';

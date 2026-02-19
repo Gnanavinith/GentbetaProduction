@@ -7,7 +7,7 @@ import {
   AlertCircle,
   Loader2
 } from "lucide-react";
-import SignaturePad from "../../forms/ModernFacilityBuilder/components/SignaturePad";
+import SignaturePad from "../../forms/ModernFormBuilder/components/SignaturePad";
 import { uploadImage, uploadFile } from "../../../api/upload.api";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";

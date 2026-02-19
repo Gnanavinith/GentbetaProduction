@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { submissionApi } from "../../api/submission.api";
-import FacilityRenderer from "../../components/FacilityRenderer/FacilityRenderer";
+import FacilityRenderer from "../../components/FormRenderer/FormRenderer";
 
 export default function EditSubmission() {
   const { id } = useParams();

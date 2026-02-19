@@ -18,7 +18,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { logError } from "../../../utils/errorHandler";
 
 // Modularized Components
-import { FacilityBuilderHeader } from "./components/FacilityBuilderHeader";
+import { FacilityBuilderHeader } from "./components/FormBuilderHeader";
 import { InitializingOverlay } from "./components/InitializingOverlay";
 import { DesignerView } from "./components/DesignerView";
 import { WorkflowView } from "./components/WorkflowView";

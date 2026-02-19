@@ -5,7 +5,7 @@ import { userApi } from "../../api/user.api";
 import { useAuth } from "../../context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, UserPlus, Loader2, AlertCircle } from "lucide-react";
-import { EmployeeFacilityFields } from "./EmployeeFacilityFields";
+import { EmployeeFacilityFields } from "./EmployeeFormFields";
 import { EmployeeLimitChecker } from "./EmployeeLimitChecker";
 import { validateEmployeeFacility, validateEmployeeLimits } from "./EmployeeValidation";
 

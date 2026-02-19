@@ -36,8 +36,8 @@ const EmployeeAssignments = lazy(() => import("./pages/employee/Assignments"));
 
 // Plant Admin Pages
 const PlantAdminDashboard = lazy(() => import("./pages/plantAdmin/Dashboard"));
-const FacilitysList = lazy(() => import("./pages/plantAdmin/FacilitysList"));
-const FacilityBuilderPage = lazy(() => import("./pages/plantAdmin/FacilityBuilderPage"));
+const FacilitysList = lazy(() => import("./pages/plantAdmin/FormsList"));
+const FacilityBuilderPage = lazy(() => import("./pages/plantAdmin/FormBuilderPage"));
 const TemplateSelectionPage = lazy(() => import("./pages/plantAdmin/TemplateSelectionPage"));
 const PlantSubmissions = lazy(() => import("./pages/plantAdmin/Submissions"));
 const SubmissionDetails = lazy(() => import("./pages/plantAdmin/SubmissionDetails"));
@@ -46,20 +46,20 @@ const AddEmployee = lazy(() => import("./pages/plantAdmin/AddEmployee"));
 const PlantProfile = lazy(() => import("./pages/plantAdmin/Profile"));
 
 // New separate forms pages
-const ActiveFacilitysPage = lazy(() => import("./pages/plantAdmin/ActiveFacilitysPage"));
-const DraftFacilitysPage = lazy(() => import("./pages/plantAdmin/DraftFacilitysPage"));
-const ArchivedFacilitysPage = lazy(() => import("./pages/plantAdmin/ArchivedFacilitysPage"));
+const ActiveFacilitysPage = lazy(() => import("./pages/plantAdmin/ActiveFormsPage"));
+const DraftFacilitysPage = lazy(() => import("./pages/plantAdmin/DraftFormsPage"));
+const ArchivedFacilitysPage = lazy(() => import("./pages/plantAdmin/ArchivedFormsPage"));
 const SavedTemplatesPage = lazy(() => import("./pages/plantAdmin/SavedTemplatesPage"));
 
 // Employee Pages
 const EmployeeDashboard = lazy(() => import("./pages/employee/Dashboard"));
 const EmployeeTemplates = lazy(() => import("./pages/employee/Templates"));
-const FillFacilityPage = lazy(() => import("./pages/employee/FillFacilityPage"));
+const FillFacilityPage = lazy(() => import("./pages/employee/FillFormPage"));
 const BulkApprovalPage = lazy(() => import("./pages/approval/BulkApprovalPage"));
 const PendingApprovals = lazy(() => import("./pages/approval/PendingApprovals"));
 const ApprovalDetail = lazy(() => import("./pages/approval/ApprovalDetail"));
 const Profile = lazy(() => import("./pages/Profile"));
-const FacilitysCardView = lazy(() => import("./pages/FacilitysCardView"));
+const FacilitysCardView = lazy(() => import("./pages/FormsCardView"));
 const EmployeeSubmissions = lazy(() => import("./pages/employee/Submissions"));
 const EmployeeSubmissionDetails = lazy(() => import("./pages/employee/SubmissionDetails"));
 const EditSubmission = lazy(() => import("./pages/employee/EditSubmission"));

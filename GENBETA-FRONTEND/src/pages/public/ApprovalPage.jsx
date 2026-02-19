@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import FacilityRenderer from "../../components/FacilityRenderer/FacilityRenderer";
+import FacilityRenderer from "../../components/FormRenderer/FormRenderer";
 import { CheckCircle2, AlertCircle, Loader2, FileText, ChevronLeft, ChevronRight, Check } from "lucide-react";
 
 export default function ApprovalPage() {

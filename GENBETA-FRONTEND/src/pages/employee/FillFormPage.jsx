@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { assignmentApi } from "../../api/assignment.api";
 import { formApi } from "../../api/form.api";
-import FacilityRenderer from "../../components/FacilityRenderer/FacilityRenderer";
+import FacilityRenderer from "../../components/FormRenderer/FormRenderer";
 import { useAuth } from "../../context/AuthContext";
 import { ArrowLeft, Loader2, FileText, User, Calendar, AlertCircle } from "lucide-react";
 

@@ -1,4 +1,4 @@
-import ModernFacilityBuilder from "../../components/forms/ModernFacilityBuilder";
+import ModernFacilityBuilder from "../../components/forms/ModernFormBuilder";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 

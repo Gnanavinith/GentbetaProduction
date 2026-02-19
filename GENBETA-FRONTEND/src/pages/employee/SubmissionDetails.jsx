@@ -13,7 +13,7 @@ import {
   Trash2
 } from "lucide-react";
 import { submissionApi } from "../../api/submission.api";
-import FacilityRenderer from "../../components/FacilityRenderer/FacilityRenderer";
+import FacilityRenderer from "../../components/FormRenderer/FormRenderer";
 import { format } from "date-fns";
 
 // Helper function to extract all fields from form
