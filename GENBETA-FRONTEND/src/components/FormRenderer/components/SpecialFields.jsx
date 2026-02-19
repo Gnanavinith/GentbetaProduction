@@ -8,7 +8,7 @@ import {
   Loader2
 } from "lucide-react";
 import SignaturePad from "../../forms/ModernFormBuilder/components/SignaturePad";
-import api from "../../../api/api";
+import { uploadImage, uploadFile } from "../../../api/upload.api";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/AuthContext";
@@ -99,15 +99,17 @@ export default function SpecialFields({
           const base64 = e.target.result;
           setUploadProgress(prev => ({ ...prev, [id]: 75 }));
           
-          const uploadResponse = await api.post('/api/upload/image', {
-            base64,
-            folder: 'submissions'
-          });
+          // Use appropriate upload function based on field type
+          const uploadFunction = field.type === 'image' ? uploadImage : uploadFile;
+          const uploadResponse = await uploadFunction(base64, 'submissions');
+          
+          // Debug: Log the upload response structure
+          console.log('[SpecialFields] Upload response:', uploadResponse);
           
           setUploadProgress(prev => ({ ...prev, [id]: 100 }));
           
-          setFiles(prev => ({ ...prev, [id]: { ...file, url: uploadResponse.data.url } }));
-          update(id, uploadResponse.data.url);
+          setFiles(prev => ({ ...prev, [id]: { ...file, url: uploadResponse.url } }));
+          update(id, uploadResponse.url);
           
           setTimeout(() => {
             setUploadProgress(prev => {

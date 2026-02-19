@@ -69,7 +69,7 @@ export const submitTask = async (req, res) => {
             continue;
           }
           
-          const result = await uploadToCloudinary(fs.readFileSync(file.path), 'submissions');
+          const result = await uploadToCloudinary(fs.readFileSync(file.path), 'submissions', file.originalname);
           files.push({
             fieldId: file.fieldname,
             filename: file.filename,
@@ -334,7 +334,7 @@ export const submitFormDirectly = async (req, res) => {
             continue;
           }
           
-          const result = await uploadToCloudinary(fs.readFileSync(file.path), 'submissions');
+          const result = await uploadToCloudinary(fs.readFileSync(file.path), 'submissions', file.originalname);
           files.push({
             fieldId: file.fieldname,
             filename: file.filename,

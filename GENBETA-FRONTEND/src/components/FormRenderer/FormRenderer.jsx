@@ -6,6 +6,7 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
   const [files, setFiles] = useState({});
   const [uploadProgress, setUploadProgress] = useState({});
   const isInitialRender = useRef(true);
+  const lastNotifiedData = useRef({});
 
   // console.log('[FormRenderer] Props received:', { form, formDefinition, fields, sections, initialData, mode });
   // console.log('[FormRenderer] Current formData:', formData);
@@ -13,11 +14,21 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
   // Initialize formData with initialData when it changes
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
-      // console.log('[FormRenderer] Initializing formData with initialData:', initialData);
-      setFormData(prev => ({
-        ...prev,
-        ...initialData
-      }));
+      // Only update if the data is actually different
+      let hasChanges = false;
+      const newData = { ...formData };
+      
+      Object.keys(initialData).forEach(key => {
+        if (JSON.stringify(formData[key]) !== JSON.stringify(initialData[key])) {
+          hasChanges = true;
+          newData[key] = initialData[key];
+        }
+      });
+      
+      if (hasChanges) {
+        // console.log('[FormRenderer] Initializing formData with initialData:', initialData);
+        setFormData(newData);
+      }
     }
   }, [initialData]);
 
@@ -29,8 +40,18 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
       return;
     }
     
+    // Only notify parent if we actually have meaningful data changes
     if (onDataChange && Object.keys(formData).length > 0) {
-      onDataChange(formData);
+      // Check if data has actually changed since last notification
+      const currentDataStr = JSON.stringify(formData);
+      const lastDataStr = JSON.stringify(lastNotifiedData.current);
+      
+      if (currentDataStr !== lastDataStr) {
+        // Create a copy to avoid reference issues
+        const dataCopy = { ...formData };
+        lastNotifiedData.current = dataCopy;
+        onDataChange(dataCopy);
+      }
     }
   }, [formData, onDataChange]);
 
@@ -58,14 +79,8 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
       };
       
       if (onDataChange) {
-        if (hasMounted.current) {
-          console.log('[FormRenderer] handleFileChange onDataChange called for:', fieldId, newData[fieldId]);
-          onDataChange(newData);
-        } else {
-          // Queue the update for later
-          console.log('[FormRenderer] Queuing file update for:', fieldId, newData[fieldId]);
-          pendingUpdates.current.push(() => onDataChange(newData));
-        }
+        console.log('[FormRenderer] handleFileChange onDataChange called for:', fieldId, newData[fieldId]);
+        onDataChange(newData);
       }
       
       return newData;
@@ -75,6 +90,15 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
   const renderField = useCallback((field, index) => {
     const key = field.fieldId || field.id || index;
     const fieldValue = formData[field.fieldId || field.id] || '';
+    
+    // Debug: Log each field being rendered
+    console.log(`[FormRenderer] Rendering field ${index}:`, {
+      label: field.label,
+      type: field.type,
+      fieldId: field.fieldId,
+      key: key
+    });
+    
     const commonProps = {
       field,
       value: fieldValue,
@@ -122,6 +146,7 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
         return <ChecklistAndTables key={key} {...commonProps} />;
             
       case 'file':
+      case 'image':
       case 'signature':
       case 'auto-date':
       case 'terms':
@@ -203,9 +228,65 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
     });
   }
   
-  // Only add root fields if sections don't exist (fallback for legacy forms)
-  if (formToRender.fields && Array.isArray(formToRender.fields) && (!formToRender.sections || formToRender.sections.length === 0)) {
-    allFields = [...allFields, ...formToRender.fields];
+  // Add root fields if they exist (for forms that have both root fields and sections)
+  if (formToRender.fields && Array.isArray(formToRender.fields)) {
+    // For forms with sections, we should prioritize section fields over root fields
+    // But if a field exists in both root and section with same fieldId, we keep the section version
+    // and only add root fields that don't exist in any section
+    
+    if (formToRender.sections && formToRender.sections.length > 0) {
+      // If sections exist, root fields are typically legacy/backwards compatibility
+      // Only add root fields that don't exist in any section
+      const sectionFieldIds = new Set();
+      formToRender.sections.forEach(section => {
+        section.fields?.forEach(field => {
+          if (field.fieldId) {
+            sectionFieldIds.add(field.fieldId);
+          }
+        });
+      });
+      
+      const uniqueRootFields = formToRender.fields.filter(field => 
+        field.fieldId && !sectionFieldIds.has(field.fieldId)
+      );
+      
+      allFields = [...allFields, ...uniqueRootFields];
+    } else {
+      // If no sections exist, use root fields as primary
+      allFields = [...allFields, ...formToRender.fields];
+    }
+  }
+  
+  // Debug: Log the fields being processed
+  console.log('[FormRenderer] Processing fields:', {
+    totalRootFields: formToRender.fields?.length || 0,
+    totalSectionFields: formToRender.sections?.reduce((sum, section) => sum + (section.fields?.length || 0), 0) || 0,
+    combinedFields: allFields.length,
+    fieldDetails: allFields.map(f => ({
+      label: f.label,
+      type: f.type,
+      fieldId: f.fieldId
+    }))
+  });
+  
+  // Debug: Log duplicate field detection
+  if (formToRender.fields && formToRender.sections && formToRender.sections.length > 0) {
+    const sectionFieldIds = new Set();
+    formToRender.sections.forEach(section => {
+      section.fields?.forEach(field => {
+        if (field.fieldId) {
+          sectionFieldIds.add(field.fieldId);
+        }
+      });
+    });
+    
+    const rootFieldsWithSameId = formToRender.fields.filter(field => 
+      field.fieldId && sectionFieldIds.has(field.fieldId)
+    );
+    
+    console.log('[FormRenderer] Duplicate fields (in both root and section):', 
+      rootFieldsWithSameId.map(f => `${f.label} (${f.fieldId})`)
+    );
   }
   
   // Normalize the combined fields to ensure layout containers have their nested fields

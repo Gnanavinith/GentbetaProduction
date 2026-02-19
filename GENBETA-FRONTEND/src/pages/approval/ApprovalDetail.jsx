@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { approvalApi } from "../../api/approval.api";
 import { submissionApi } from "../../api/submission.api";
-import FormRenderer from "../../components/FormRenderer/FormRenderer";
+import FormRenderer from "../../components/FormRenderer/FormRenderer.jsx";
 import { useAuth } from "../../context/AuthContext";
 import {
   ArrowLeft,
@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Send
 } from "lucide-react";
-import Loader from "../../components/common/Loader";
+import Loader from "../../components/common/Loader.jsx";
 
 export default function ApprovalDetail() {
   const { id } = useParams();
@@ -162,7 +162,7 @@ export default function ApprovalDetail() {
 
     if (res.success) {
       toast.success("Approved successfully");
-      navigate("../pending");
+      navigate("/employee/dashboard");
     } else {
       toast.error(res.message || "Failed to approve");
     }
@@ -186,7 +186,7 @@ export default function ApprovalDetail() {
     if (res.success) {
       toast.success("Rejected successfully");
       setShowRejectModal(false);
-      navigate("../pending");
+      navigate("/employee/dashboard");
     } else {
       toast.error(res.message || "Failed to reject");
     }
@@ -205,7 +205,7 @@ export default function ApprovalDetail() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Not Found</h2>
           <p className="text-gray-600 mb-6">The submission you're looking for doesn't exist or you don't have permission to view it.</p>
           <button 
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/employee/dashboard")}
             className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-semibold"
           >
             Go Back
@@ -233,7 +233,7 @@ export default function ApprovalDetail() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <button
-          onClick={() => navigate("../pending")}
+          onClick={() => navigate("/employee/dashboard")}
           className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors mb-6 group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
@@ -295,7 +295,7 @@ export default function ApprovalDetail() {
                   initialData={formData}
                   onDataChange={setFormData}
                   readOnly
-                  key={`form-renderer-${id}`}
+                  key={`form-renderer-${id}-${JSON.stringify(formData).length}`}
                 />
               </div>
             </div>

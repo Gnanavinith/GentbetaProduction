@@ -43,7 +43,7 @@ export const createSubmission = async (req, res) => {
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         try {
-          const result = await uploadToCloudinary(fs.readFileSync(file.path), 'submissions');
+          const result = await uploadToCloudinary(fs.readFileSync(file.path), 'submissions', file.originalname);
           files.push({
             fieldId: file.fieldname,
             filename: file.filename,

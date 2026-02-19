@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { approvalApi } from '../../api/approval.api';
 import { FileText, Clock, ChevronRight, AlertCircle, CheckCircle2, User, Eye, Check, X, Loader2 } from 'lucide-react';
-import { SkeletonTable } from '../../components/common/Skeleton';
+import { SkeletonTable } from '../../components/common/Skeleton.jsx';
 import { toast } from 'react-hot-toast';
 
 export default function PendingApprovals() {
@@ -83,6 +83,15 @@ export default function PendingApprovals() {
                   <p className="text-lg font-bold text-slate-800">{submissions.filter(s => !s.isMyTurn).length}</p>
                 </div>
               </div>
+              <button 
+                onClick={() => navigate("/employee/dashboard")}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-md text-slate-700 hover:bg-slate-50 transition-colors font-medium flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+              </button>
             </div>
           </div>
         </div>
@@ -104,7 +113,13 @@ export default function PendingApprovals() {
                   <CheckCircle2 className="w-8 h-8 text-green-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900 mb-2">All caught up!</h3>
-                <p className="text-slate-600 max-w-md mx-auto">You don't have any forms waiting for your approval.</p>
+                <p className="text-slate-600 max-w-md mx-auto mb-6">You don't have any forms waiting for your approval.</p>
+                <button 
+                  onClick={() => navigate("/employee/dashboard")}
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-semibold"
+                >
+                  Go to Dashboard
+                </button>
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
@@ -124,7 +139,7 @@ export default function PendingApprovals() {
                         <tr 
                           key={sub._id}
                           className="hover:bg-slate-50 cursor-pointer"
-                          onClick={() => navigate(`../approval/detail/${sub._id}`)}
+                          onClick={() => navigate(`/employee/approval/detail/${sub._id}`)}
                         >
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
@@ -190,7 +205,7 @@ export default function PendingApprovals() {
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                               <button 
-                                onClick={() => navigate(`../approval/detail/${sub._id}`)}
+                                onClick={() => navigate(`/employee/approval/detail/${sub._id}`)}
                                 className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                                 title="View Details"
                               >

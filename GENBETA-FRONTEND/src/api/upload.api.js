@@ -9,3 +9,9 @@ export const uploadImage = async (base64, folder = 'profiles') => {
   const response = await api.post("/api/upload/image", { base64, folder });
   return response.data;
 };
+
+// New function for file uploads (PDFs, documents, etc.)
+export const uploadFile = async (base64, folder = 'submissions') => {
+  const response = await api.post("/api/upload/file", { base64, folder });
+  return response.data;
+};
