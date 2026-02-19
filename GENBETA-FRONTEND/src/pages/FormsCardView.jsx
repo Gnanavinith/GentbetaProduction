@@ -236,6 +236,7 @@ export default function FormsCardView() {
         ).length
       }));
 
+      
       const summaryData = [
         { Metric: 'Form ID', Value: form._id },
         { Metric: 'Facility Name', Value: form.formName },
