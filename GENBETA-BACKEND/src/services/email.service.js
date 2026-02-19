@@ -13,16 +13,26 @@ const formatIST = (date) => {
   if (!date) return "—";
 
   const d = date instanceof Date ? date : new Date(date);
+  
+  // Validate date
+  if (isNaN(d.getTime())) {
+    return "Invalid Date";
+  }
 
-  return d.toLocaleString("en-IN", {
+  // Format with timezone indicator for clarity
+  const formattedDate = d.toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
+    weekday: "short",
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
     hour12: true
   });
+  
+  return `${formattedDate} (IST)`;
 };
 
 
@@ -31,7 +41,7 @@ const getBaseUrl = () => {
     process.env.FRONTEND_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.APP_URL ||
-    "http://localhost:3000"
+    "https://login.matapangtech.com"
   );
 };
 

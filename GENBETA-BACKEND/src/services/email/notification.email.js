@@ -235,7 +235,7 @@ export const sendFinalApprovalNotificationToPlant = async (
       </ul>
     </div>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="http://localhost:5173/plant/forms-view" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Summary</a>
+      <a href="https://login.matapangtech.com/plant/forms-view" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Summary</a>
     </div>
   `;
 
