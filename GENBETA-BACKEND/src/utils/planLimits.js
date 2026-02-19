@@ -1,10 +1,10 @@
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
 import User from "../models/User.model.js";
-import FacilityTemplate from "../models/FacilityTemplate.model.js";
+import FacilityTemplate from "../models/FormTemplate.model.js";
 import { getPlanLimits, isUnlimited, checkLimit, getPlanById } from "../config/plans.js";
 
-import Facility from "../models/Facility.model.js";
+import Facility from "../models/Form.model.js";
 
 export const getCompanyUsage = async (companyId) => {
   const [plantsCount, formTemplatesCount, formsCount, employeesCount] = await Promise.all([

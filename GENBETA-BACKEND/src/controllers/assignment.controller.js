@@ -1,6 +1,6 @@
 import Assignment from "../models/Assignment.model.js";
-import FacilityTemplate from "../models/FacilityTemplate.model.js";
-import Facility from "../models/Facility.model.js";
+import FacilityTemplate from "../models/FormTemplate.model.js";
+import Facility from "../models/Form.model.js";
 import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
 
 export const assignTemplateToEmployees = async (req, res) => {

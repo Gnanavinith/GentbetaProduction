@@ -1,5 +1,5 @@
-import FacilityTemplate from "../models/FacilityTemplate.model.js";
-import FacilitySubmission from "../models/FacilitySubmission.model.js";
+import FacilityTemplate from "../models/FormTemplate.model.js";
+import FacilitySubmission from "../models/FormSubmission.model.js";
 import { validateFacilityCreation } from "../utils/planLimits.js";
 
 export const createTemplate = async (req, res) => {

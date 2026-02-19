@@ -1,5 +1,5 @@
-import FacilitySubmission from "../models/FacilitySubmission.model.js";
-import Facility from "../models/Facility.model.js";
+import FacilitySubmission from "../models/FormSubmission.model.js";
+import Facility from "../models/Form.model.js";
 import Plant from "../models/Plant.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
