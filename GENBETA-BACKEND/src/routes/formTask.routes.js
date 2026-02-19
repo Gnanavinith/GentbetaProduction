@@ -5,7 +5,7 @@ import {
   getTaskStats, 
   submitTask, 
   getTaskById,
-  submitFacilityDirectly,
+  submitFormDirectly,
   createTasks
 } from "../controllers/formTask.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
@@ -49,7 +49,7 @@ const upload = multer({
 router.get("/assigned", auth, authorize(["EMPLOYEE"]), getAssignedTasks);
 router.get("/stats", auth, authorize(["EMPLOYEE"]), getTaskStats);
 router.post("/", auth, authorize(["PLANT_ADMIN"]), createTasks);
-router.post("/submit-direct/:formId", auth, authorize(["EMPLOYEE"]), upload.any(), submitFacilityDirectly);
+router.post("/submit-direct/:formId", auth, authorize(["EMPLOYEE"]), upload.any(), submitFormDirectly);
 router.get("/:taskId", auth, authorize(["EMPLOYEE"]), getTaskById);
 router.post("/:taskId/submit", auth, authorize(["EMPLOYEE"]), upload.any(), submitTask);
 

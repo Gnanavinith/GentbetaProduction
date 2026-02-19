@@ -9,7 +9,7 @@ export default function EditCompanyModal({ company, onClose, onSaved }) {
   const { token } = useAuth();
   const fileInputRef = useRef(null);
 
-    const [Facility, setFacility] = useState({
+    const [form, setForm] = useState({
       name: company.name || "",
       industry: company.industry || "",
       contactEmail: company.contactEmail || "",
@@ -41,7 +41,7 @@ export default function EditCompanyModal({ company, onClose, onSaved }) {
   const save = async () => {
     try {
       setLoading(true);
-      const formData = new FacilityData();
+      const formData = new FormData();
       
       // Append all form fields
       Object.keys(form).forEach(key => {
@@ -53,7 +53,7 @@ export default function EditCompanyModal({ company, onClose, onSaved }) {
         formData.append("logo", logo);
       }
 
-      // We use fetch directly or update apiRequest to handle FacilityData
+      // We use fetch directly or update apiRequest to handle FormData
       const response = await fetch(`/api/companies/${company._id}`, {
         method: "PUT",
         headers: {
@@ -124,13 +124,13 @@ export default function EditCompanyModal({ company, onClose, onSaved }) {
               <Input
                 label="Company Name"
                 value={form.name}
-                onChange={v => setFacility({ ...form, name: v })}
+                onChange={v => setForm({ ...form, name: v })}
               />
               <Input
                 label="Industry Type"
                 value={form.industry}
                 placeholder="e.g. Manufacturing, IT"
-                onChange={v => setFacility({ ...form, industry: v })}
+                onChange={v => setForm({ ...form, industry: v })}
               />
             </div>
           </Section>
@@ -142,14 +142,14 @@ export default function EditCompanyModal({ company, onClose, onSaved }) {
                 label="GST Number"
                 value={form.gstNumber}
                 placeholder="22AAAAA0000A1Z5"
-                onChange={v => setFacility({ ...form, gstNumber: v })}
+                onChange={v => setForm({ ...form, gstNumber: v })}
               />
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Office Address</label>
                 <textarea
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm min-h-[80px]"
                   value={form.address}
-                  onChange={e => setFacility({ ...form, address: e.target.value })}
+                  onChange={e => setForm({ ...form, address: e.target.value })}
                   placeholder="Street address, Building, Suite..."
                 />
               </div>
@@ -162,13 +162,13 @@ export default function EditCompanyModal({ company, onClose, onSaved }) {
               <Input
                 label="Contact Phone"
                 value={form.contactPhone}
-                onChange={v => setFacility({ ...form, contactPhone: v })}
+                onChange={v => setForm({ ...form, contactPhone: v })}
               />
               <div className="md:col-span-2">
                 <Input
                   label="Official Email"
                   value={form.contactEmail}
-                  onChange={v => setFacility({ ...form, contactEmail: v })}
+                  onChange={v => setForm({ ...form, contactEmail: v })}
                 />
               </div>
             </div>

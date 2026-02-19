@@ -17,7 +17,7 @@ export default function TemplateSelectionPage() {
 
   useEffect(() => {
     if (user?.role !== "PLANT_ADMIN") {
-      toast.error("Access denied. Facility creation is only available to plant admins.");
+      toast.error("Access denied. Form creation is only available to plant admins.");
       navigate("/plant/forms");
       return;
     }
@@ -58,7 +58,7 @@ export default function TemplateSelectionPage() {
     try {
       const [templatesRes, formsRes] = await Promise.all([
         templateApi.getTemplates(),
-        formApi.getFacilitys()
+        formApi.getForms()
       ]);
 
       const legacyTemplates = templatesRes.success ? templatesRes.data : (Array.isArray(templatesRes) ? templatesRes : []);
@@ -93,7 +93,7 @@ export default function TemplateSelectionPage() {
   };
 
   const [showNameModal, setShowNameModal] = useState(false);
-  const [newFacilityName, setNewFacilityName] = useState("");
+  const [newFormName, setNewFormName] = useState("");
   const [isTemplate, setIsTemplate] = useState(false);
 
   const handleCreateBlank = () => {
@@ -107,20 +107,20 @@ export default function TemplateSelectionPage() {
   };
 
   const handleConfirmCreate = () => {
-    if (!newFacilityName.trim()) {
+    if (!newFormName.trim()) {
       toast.error("Please enter a form name");
       return;
     }
     
-    const encodedName = encodeURIComponent(newFacilityName.trim());
+    const encodedName = encodeURIComponent(newFormName.trim());
     navigate(`/plant/forms/create?name=${encodedName}${isTemplate ? '&isTemplate=true' : ''}`);
     setShowNameModal(false);
-    setNewFacilityName("");
+    setNewFormName("");
   };
 
   const handleCancelCreate = () => {
     setShowNameModal(false);
-    setNewFacilityName("");
+    setNewFormName("");
   };
 
   return (
@@ -134,7 +134,7 @@ export default function TemplateSelectionPage() {
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Facilitys
+              Back to Forms
             </button>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">New</h1>
             <p className="text-gray-600">
@@ -254,7 +254,7 @@ export default function TemplateSelectionPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 overflow-hidden">
             <div className="p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-2">
-                {isTemplate ? "Create New Template" : "Create New Facility"}
+                {isTemplate ? "Create New Template" : "Create New Form"}
               </h3>
               <p className="text-gray-500 text-sm mb-6">
                 {isTemplate 
@@ -265,12 +265,12 @@ export default function TemplateSelectionPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {isTemplate ? "Template Name" : "Facility Name"}
+                    {isTemplate ? "Template Name" : "Form Name"}
                   </label>
                   <input
                     type="text"
-                    value={newFacilityName}
-                    onChange={(e) => setNewFacilityName(e.target.value)}
+                    value={newFormName}
+                    onChange={(e) => setNewFormName(e.target.value)}
                     placeholder={isTemplate ? "e.g., Safety Inspection Template" : "e.g., Daily Safety Checklist"}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm font-medium"
                     autoFocus
@@ -290,7 +290,7 @@ export default function TemplateSelectionPage() {
                   onClick={handleConfirmCreate}
                   className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
                 >
-                  Create {isTemplate ? "Template" : "Facility"}
+                  Create {isTemplate ? "Template" : "Form"}
                 </button>
               </div>
             </div>

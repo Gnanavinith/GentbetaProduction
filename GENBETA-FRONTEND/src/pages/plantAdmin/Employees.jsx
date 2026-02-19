@@ -21,7 +21,7 @@ export default function Employees() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editModal, setEditModal] = useState({ open: false, employee: null });
   const [deleteModal, setDeleteModal] = useState({ open: false, employee: null });
-  const [editFacility, setEditFacility] = useState({ name: "", email: "", position: "", phoneNumber: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", position: "", phoneNumber: "" });
 
   // Fetch employees using React Query
   const {
@@ -97,7 +97,7 @@ export default function Employees() {
   });
 
   const openEditModal = (emp) => {
-    setEditFacility({
+    setEditForm({
       name: emp.name || "",
       email: emp.email || "",
       position: emp.position || "",
@@ -110,7 +110,7 @@ export default function Employees() {
     e.preventDefault();
     updateEmployeeMutation.mutate({
       employeeId: editModal.employee._id,
-      updateData: editFacility
+      updateData: editForm
     });
   };
 
@@ -171,8 +171,8 @@ export default function Employees() {
         setEditModal={setEditModal}
         deleteModal={deleteModal}
         setDeleteModal={setDeleteModal}
-        editFacility={editFacility}
-        setEditFacility={setEditFacility}
+        editForm={editForm}
+        setEditForm={setEditForm}
         onRefresh={refetch}
         saving={updateEmployeeMutation.isPending || deleteEmployeeMutation.isPending}
         handleEditSubmit={handleEditSubmit}

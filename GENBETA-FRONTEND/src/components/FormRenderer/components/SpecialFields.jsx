@@ -404,7 +404,7 @@ export default function SpecialFields({
           update(fieldId, userData);
           // Also notify parent directly to ensure data propagation
           if (typeof update === 'function') {
-            // This should trigger the FacilityRenderer's handleChange which calls onDataChange
+            // This should trigger the FormRenderer's handleChange which calls onDataChange
           }
         }, 0);
       }

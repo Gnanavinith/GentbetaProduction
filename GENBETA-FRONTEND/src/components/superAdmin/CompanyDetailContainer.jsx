@@ -25,7 +25,7 @@ export default function CompanyDetailContainer() {
   const [selectedPlan, setSelectedPlan] = useState("");
   const [customLimits, setCustomLimits] = useState({
     maxPlants: 1,
-    maxFacilitysPerPlant: 1,
+    maxFormsPerPlant: 1,
     maxEmployeesPerPlant: 1,
     approvalLevels: 1
   });

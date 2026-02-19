@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import Facility from "../src/models/Facility.model.js";
-import FacilityTemplate from "../src/models/FacilityTemplate.model.js";
+import Form from "../src/models/Form.model.js";
+import FormTemplate from "../src/models/FormTemplate.model.js";
 
 dotenv.config();
 
@@ -14,14 +14,14 @@ async function addApprovalEmailFlag() {
     // Update all existing form fields to have includeInApprovalEmail: false by default
     console.log("Updating existing forms...");
     
-    const formResult = await Facility.updateMany(
+    const formResult = await Form.updateMany(
       { "fields.includeInApprovalEmail": { $exists: false } },
       { $set: { "fields.$[].includeInApprovalEmail": false } }
     );
     
     console.log(`Updated ${formResult.modifiedCount} forms`);
 
-    const templateResult = await FacilityTemplate.updateMany(
+    const templateResult = await FormTemplate.updateMany(
       { "fields.includeInApprovalEmail": { $exists: false } },
       { $set: { "fields.$[].includeInApprovalEmail": false } }
     );
@@ -29,14 +29,14 @@ async function addApprovalEmailFlag() {
     console.log(`Updated ${templateResult.modifiedCount} form templates`);
 
     // Also update sections
-    const sectionFacilityResult = await Facility.updateMany(
+    const sectionFormResult = await Form.updateMany(
       { "sections.fields.includeInApprovalEmail": { $exists: false } },
       { $set: { "sections.$[].fields.$[].includeInApprovalEmail": false } }
     );
     
-    console.log(`Updated ${sectionFacilityResult.modifiedCount} forms with section fields`);
+    console.log(`Updated ${sectionFormResult.modifiedCount} forms with section fields`);
 
-    const sectionTemplateResult = await FacilityTemplate.updateMany(
+    const sectionTemplateResult = await FormTemplate.updateMany(
       { "sections.fields.includeInApprovalEmail": { $exists: false } },
       { $set: { "sections.$[].fields.$[].includeInApprovalEmail": false } }
     );

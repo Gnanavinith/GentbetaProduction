@@ -21,9 +21,9 @@ export default function ReviewSubmitStep({
 
   const getPlanDetails = (planKey) => {
     const planMap = {
-      "SILVER": { name: "Silver", limits: { maxPlants: 1, maxFacilitysPerPlant: 10, maxEmployeesPerPlant: 20, approvalLevels: 3 } },
-      "GOLD": { name: "Gold", limits: { maxPlants: 5, maxFacilitysPerPlant: 50, maxEmployeesPerPlant: 100, approvalLevels: 5 } },
-      "PREMIUM": { name: "Premium", limits: { maxPlants: -1, maxFacilitysPerPlant: -1, maxEmployeesPerPlant: -1, approvalLevels: -1 } },
+      "SILVER": { name: "Silver", limits: { maxPlants: 1, maxFormsPerPlant: 10, maxEmployeesPerPlant: 20, approvalLevels: 3 } },
+      "GOLD": { name: "Gold", limits: { maxPlants: 5, maxFormsPerPlant: 50, maxEmployeesPerPlant: 100, approvalLevels: 5 } },
+      "PREMIUM": { name: "Premium", limits: { maxPlants: -1, maxFormsPerPlant: -1, maxEmployeesPerPlant: -1, approvalLevels: -1 } },
       "CUSTOM": { name: "Custom", limits: customLimits }
     };
     return planMap[planKey] || planMap.SILVER;
@@ -164,9 +164,9 @@ export default function ReviewSubmitStep({
               </div>
             </div>
             <div className="bg-white rounded-lg p-3 border border-slate-200">
-              <div className="text-xs text-slate-500 mb-1">Facilitys per Plant</div>
+              <div className="text-xs text-slate-500 mb-1">Forms per Plant</div>
               <div className="font-bold text-slate-900">
-                {planDetails.limits.maxFacilitysPerPlant === -1 ? '∞ Unlimited' : planDetails.limits.maxFacilitysPerPlant}
+                {planDetails.limits.maxFormsPerPlant === -1 ? '∞ Unlimited' : planDetails.limits.maxFormsPerPlant}
               </div>
             </div>
             <div className="bg-white rounded-lg p-3 border border-slate-200">

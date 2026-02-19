@@ -4,15 +4,15 @@ import { toast } from "react-hot-toast";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { plantApi } from "../../api/plant.api";
-import PlantInfoFacility from "./PlantInfoFacility";
-import PlantAdminFacility from "./PlantAdminFacility";
+import PlantInfoForm from "./PlantInfoForm";
+import PlantAdminForm from "./PlantAdminForm";
 
 export default function AddPlantContainer() {
   const { companyId } = useParams();
   const navigate = useNavigate();
   const { token } = useAuth();
   
-  const [FacilityData, setFacilityData] = useState({
+  const [formData, setFormData] = useState({
     plantName: "",
     location: "",
     plantNumber: ""
@@ -114,12 +114,12 @@ export default function AddPlantContainer() {
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="space-y-8">
-          <PlantInfoFacility 
+          <PlantInfoForm 
             formData={formData}
-            setFacilityData={setFacilityData}
+            setFormData={setFormData}
           />
           
-          <PlantAdminFacility 
+          <PlantAdminForm 
             adminData={adminData}
             setAdminData={setAdminData}
           />

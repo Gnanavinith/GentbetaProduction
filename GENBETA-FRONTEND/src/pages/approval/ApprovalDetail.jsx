@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { approvalApi } from "../../api/approval.api";
 import { submissionApi } from "../../api/submission.api";
-import FacilityRenderer from "../../components/FormRenderer/FormRenderer.jsx";
+import FormRenderer from "../../components/FormRenderer/FormRenderer.jsx";
 import { useAuth } from "../../context/AuthContext";
 import {
   ArrowLeft,
@@ -25,7 +25,7 @@ export default function ApprovalDetail() {
   const { user } = useAuth();
 
   const [submission, setSubmission] = useState(null);
-  const [FacilityData, setFacilityData] = useState({});
+  const [formData, setFormData] = useState({});
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -101,12 +101,12 @@ export default function ApprovalDetail() {
           });
         }
         
-        setFacilityData(formData);
+        setFormData(formData);
         
         // Debug: Log the data structure
         console.log('Submission data:', res.data);
-        console.log('Facility data:', formData);
-        console.log('Facility data keys:', Object.keys(formData || {}));
+        console.log('Form data:', formData);
+        console.log('Form data keys:', Object.keys(formData || {}));
         console.log('Files in submission:', res.data.files);
         console.log('Template:', template);
         console.log('Template fields:', template?.fields);
@@ -287,13 +287,13 @@ export default function ApprovalDetail() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <FileCheck size={18} className="text-slate-400" />
-                <h2 className="text-lg font-semibold text-slate-800">Facility Details</h2>
+                <h2 className="text-lg font-semibold text-slate-800">Form Details</h2>
               </div>
               <div className="bg-slate-50/50 rounded-xl border border-slate-100 p-5">
-                <FacilityRenderer
+                <FormRenderer
                   form={template}
                   initialData={formData}
-                  onDataChange={setFacilityData}
+                  onDataChange={setFormData}
                   readOnly
                   key={`form-renderer-${id}-${JSON.stringify(formData).length}`}
                 />

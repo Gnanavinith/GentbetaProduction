@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Facility from './src/models/Facility.model.js';
+import Form from './src/models/Form.model.js';
 
 // Connect directly without buffering
 await mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://aravind:Aravind123@cluster0.x2c1o.mongodb.net/?appName=Cluster0', {
@@ -10,12 +10,12 @@ await mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://aravind:Aravind12
   bufferCommands: false // Disable buffering
 });
 
-const migrateFacilitys = async () => {
+const migrateForms = async () => {
   try {
     console.log('🔍 Finding forms with duplicated fields...');
     
     // Find forms that have both root fields and section fields
-    const formsWithDuplication = await Facility.find({
+    const formsWithDuplication = await Form.find({
       $and: [
         { 'fields.0': { $exists: true } }, // Has root fields
         { 'sections.0': { $exists: true } }, // Has sections
@@ -28,7 +28,7 @@ const migrateFacilitys = async () => {
     let migratedCount = 0;
     
     for (const form of formsWithDuplication) {
-      console.log(`\n--- Processing Facility: ${form.formName} (${form._id}) ---`);
+      console.log(`\n--- Processing Form: ${form.formName} (${form._id}) ---`);
       
       // Check if root fields are duplicated in sections
       const rootFieldIds = form.fields.map(f => f.fieldId || f.label).filter(Boolean);
@@ -61,7 +61,7 @@ const migrateFacilitys = async () => {
         await form.save();
         migratedCount++;
         
-        console.log('  ✅ Facility updated successfully');
+        console.log('  ✅ Form updated successfully');
       } else {
         console.log('  No duplication found - skipping');
       }
@@ -76,4 +76,4 @@ const migrateFacilitys = async () => {
   }
 };
 
-migrateFacilitys();
+migrateForms();

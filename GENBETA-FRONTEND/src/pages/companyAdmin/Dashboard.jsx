@@ -15,7 +15,7 @@ export default function CompanyAdminDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState({
     totalPlants: 0,
-    totalFacilitys: 0,
+    totalForms: 0,
     totalSubmissions: 0,
     pendingSubmissions: 0
   });
@@ -27,7 +27,7 @@ export default function CompanyAdminDashboard() {
       statusDistribution: {},
       plantDistribution: [],
       submissionTrend: [],
-      topFacilitys: [],
+      topForms: [],
       topContributors: [],
       approvalDistribution: {}
     });
@@ -53,7 +53,7 @@ export default function CompanyAdminDashboard() {
 
       setStats({
         totalPlants: plantsData.length,
-        totalFacilitys: formsData.length,
+        totalForms: formsData.length,
         totalSubmissions: subsData.length,
         pendingSubmissions: subsData.filter(s => s.status === "submitted" || s.status === "PENDING_APPROVAL").length
       });
@@ -95,13 +95,13 @@ export default function CompanyAdminDashboard() {
         count: submissions.filter(s => s.createdAt?.toString().startsWith(date)).length
       }));
 
-      // Top Facilitys
+      // Top Forms
       const formCounts = {};
       submissions.forEach(s => {
         const name = s.formId?.formName || s.templateName || "Unknown";
         formCounts[name] = (formCounts[name] || 0) + 1;
       });
-      const topFacilitys = Object.entries(formCounts).map(([label, value]) => ({ label, value })).sort((a,b) => b.value - a.value).slice(0, 5);
+      const topForms = Object.entries(formCounts).map(([label, value]) => ({ label, value })).sort((a,b) => b.value - a.value).slice(0, 5);
 
       // Top Contributors
       const userCounts = {};
@@ -126,7 +126,7 @@ export default function CompanyAdminDashboard() {
         statusDistribution: statusMap,
         plantDistribution: plantDist,
         submissionTrend: trend,
-        topFacilitys,
+        topForms,
         topContributors,
         monthlyVolume: monthlyTrend
       });
@@ -171,8 +171,8 @@ export default function CompanyAdminDashboard() {
       subtitle: "Active facilities"
     },
     { 
-      title: "Active Facilitys", 
-      value: stats.totalFacilitys, 
+      title: "Active Forms", 
+      value: stats.totalForms, 
       icon: <FileText className="w-7 h-7" />, 
       color: "indigo",
       subtitle: "Available templates"
@@ -320,7 +320,7 @@ export default function CompanyAdminDashboard() {
         <div>
           <BarChart 
             title="Top Templates" 
-            data={chartData.topFacilitys} 
+            data={chartData.topForms} 
             yLabel="Usage"
           />
         </div>
@@ -349,7 +349,7 @@ export default function CompanyAdminDashboard() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Facility Template</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Form Template</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Origin Plant</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Timestamp</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
@@ -438,7 +438,7 @@ export default function CompanyAdminDashboard() {
                 <div className="space-y-5">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">
-                      <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Facilitys Pool</span>
+                      <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Forms Pool</span>
                       <span className="text-emerald-600">{plant.forms} <span className="text-gray-300">/ {plant.formsLimit}</span></span>
                     </div>
                     <div className="w-full bg-gray-200/50 rounded-full h-1.5 overflow-hidden">

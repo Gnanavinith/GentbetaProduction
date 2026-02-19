@@ -38,8 +38,8 @@ export default function SubscriptionPlanCard({ company, PLANS, setPlanModalOpen,
                     <div className="text-[10px] uppercase opacity-80 font-bold tracking-wider">Plants</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-black mb-1">{cl.maxFacilitysPerPlant}</div>
-                    <div className="text-[10px] uppercase opacity-80 font-bold tracking-wider">Facilitys/Plant</div>
+                    <div className="text-2xl font-black mb-1">{cl.maxFormsPerPlant}</div>
+                    <div className="text-[10px] uppercase opacity-80 font-bold tracking-wider">Forms/Plant</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-black mb-1">{cl.maxEmployeesPerPlant}</div>
@@ -56,8 +56,8 @@ export default function SubscriptionPlanCard({ company, PLANS, setPlanModalOpen,
                   <div className="text-[10px] uppercase opacity-80 font-bold tracking-wider">Plants</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-black mb-1">{plan?.limits?.maxFacilitysPerPlant === -1 ? "∞" : plan?.limits?.maxFacilitysPerPlant}</div>
-                  <div className="text-[10px] uppercase opacity-80 font-bold tracking-wider">Facilitys/Plant</div>
+                  <div className="text-2xl font-black mb-1">{plan?.limits?.maxFormsPerPlant === -1 ? "∞" : plan?.limits?.maxFormsPerPlant}</div>
+                  <div className="text-[10px] uppercase opacity-80 font-bold tracking-wider">Forms/Plant</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-black mb-1">{plan?.limits?.maxEmployeesPerPlant === -1 ? "∞" : plan?.limits?.maxEmployeesPerPlant}</div>

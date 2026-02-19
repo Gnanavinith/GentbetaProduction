@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const formTaskSchema = new mongoose.Schema({
-  formId: { type: mongoose.Schema.Types.ObjectId, ref: "Facility", required: true },
+  formId: { type: mongoose.Schema.Types.ObjectId, ref: "Form", required: true },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   plantId: { type: mongoose.Schema.Types.ObjectId, ref: "Plant", required: true },
@@ -12,10 +12,10 @@ const formTaskSchema = new mongoose.Schema({
     default: "pending" 
   },
   completedAt: { type: Date },
-  submissionId: { type: mongoose.Schema.Types.ObjectId, ref: "FacilitySubmission" }
+  submissionId: { type: mongoose.Schema.Types.ObjectId, ref: "FormSubmission" }
 }, { timestamps: true });
 
 formTaskSchema.index({ assignedTo: 1, status: 1 });
 formTaskSchema.index({ formId: 1 });
 
-export default mongoose.model("FacilityTask", formTaskSchema);
+export default mongoose.model("FormTask", formTaskSchema);

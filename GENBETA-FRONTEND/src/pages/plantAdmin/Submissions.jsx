@@ -122,11 +122,11 @@ export default function Submissions() {
   const groupedSubmissions = useMemo(() => {
     const grouped = {};
     submissions.forEach(submission => {
-      const formName = submission.formName || "Untitled Facility";
-      if (!grouped[FacilityName]) {
-        grouped[FacilityName] = [];
+      const formName = submission.formName || "Untitled Form";
+      if (!grouped[formName]) {
+        grouped[formName] = [];
       }
-      grouped[FacilityName].push(submission);
+      grouped[formName].push(submission);
     });
     return grouped;
   }, [submissions]);
@@ -134,7 +134,7 @@ export default function Submissions() {
   // Filter submissions within each group
   const filteredGroupedSubmissions = useMemo(() => {
     const filtered = {};
-    Object.entries(groupedSubmissions).forEach(([FacilityName, subs]) => {
+    Object.entries(groupedSubmissions).forEach(([formName, subs]) => {
       const filteredSubs = subs.filter(submission => {
         const matchesSearch = submission.formName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                              submission.submittedByName?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -146,7 +146,7 @@ export default function Submissions() {
       });
       
       if (filteredSubs.length > 0) {
-        filtered[FacilityName] = filteredSubs;
+        filtered[formName] = filteredSubs;
       }
     });
     return filtered;
@@ -277,7 +277,7 @@ export default function Submissions() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {Object.entries(filteredGroupedSubmissions).map(([FacilityName, submissionsInFolder]) => (
+            {Object.entries(filteredGroupedSubmissions).map(([formName, submissionsInFolder]) => (
               <div key={formName}>
                 {/* Folder Header */}
                 <div 
@@ -287,7 +287,7 @@ export default function Submissions() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="text-gray-600">
-                        {expandedFolders[FacilityName] ? 
+                        {expandedFolders[formName] ? 
                           <ChevronDown className="w-5 h-5" /> : 
                           <ChevronRight className="w-5 h-5" />
                         }
@@ -308,7 +308,7 @@ export default function Submissions() {
                 </div>
 
                 {/* Submissions in folder */}
-                {expandedFolders[FacilityName] && (
+                {expandedFolders[formName] && (
                   <div className="pl-8 divide-y divide-gray-200">
                     {submissionsInFolder.map((submission) => (
                       <div key={submission._id} className="p-4 hover:bg-gray-50 transition-colors">

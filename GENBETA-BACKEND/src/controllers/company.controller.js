@@ -24,7 +24,7 @@ export const createCompanyWithPlantsAdmin = async (req, res) => {
     console.log("Request files:", req.file);
     console.log("Content-Type header:", req.get('Content-Type'));
     
-    // Handle the case where data might be sent as JSON strings in FacilityData
+    // Handle the case where data might be sent as JSON strings in FormData
     let parsedBody = req.body;
     if (req.body && req.body.company && typeof req.body.company === 'string') {
       try {
@@ -388,7 +388,7 @@ export const getCompanyById = async (req, res) => {
 ====================================================== */
 export const updateCompany = async (req, res) => {
   try {
-    // Handle the case where admin data might be sent as a JSON string in FacilityData
+    // Handle the case where admin data might be sent as a JSON string in FormData
     let parsedBody = req.body;
     if (typeof req.body.admin === 'string') {
       try {

@@ -4,9 +4,9 @@ import { toast } from "react-hot-toast";
 import { ArrowLeft, Loader2, Save, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { companyApi } from "../../api/company.api";
-import CompanyProfileFacility from "./CompanyProfileForm";
-import CompanyAdminsFacility from "./CompanyAdminsForm";
-import CompanySubscriptionFacility from "./CompanySubscriptionForm";
+import CompanyProfileForm from "./CompanyProfileForm";
+import CompanyAdminsForm from "./CompanyAdminsForm";
+import CompanySubscriptionForm from "./CompanySubscriptionForm";
 
 export default function EditCompanyContainer() {
   const { id } = useParams();
@@ -18,7 +18,7 @@ export default function EditCompanyContainer() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [FacilityData, setFacilityData] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     industry: "",
     contactEmail: "",
@@ -48,7 +48,7 @@ export default function EditCompanyContainer() {
       setCompany(data);
       
       // Initialize form data
-      setFacilityData({
+      setFormData({
         name: data.name || "",
         industry: data.industry || "",
         contactEmail: data.contactEmail || "",
@@ -176,19 +176,19 @@ export default function EditCompanyContainer() {
 
       <div className="px-6 py-8">
         <div className="space-y-8">
-          <CompanyProfileFacility 
+          <CompanyProfileForm 
             formData={formData}
-            setFacilityData={setFacilityData}
+            setFormData={setFormData}
             company={company}
           />
           
-          <CompanyAdminsFacility 
+          <CompanyAdminsForm 
             adminData={adminData}
             setAdminData={setAdminData}
             company={company}
           />
           
-          <CompanySubscriptionFacility company={company} />
+          <CompanySubscriptionForm company={company} />
         </div>
       </div>
     </div>

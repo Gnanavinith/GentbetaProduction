@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Facility from './src/models/Facility.model.js';
+import Form from './src/models/Form.model.js';
 
 await mongoose.connect('mongodb+srv://aravind:Aravind123@cluster0.x2c1o.mongodb.net/?appName=Cluster0', {
   maxPoolSize: 10,
@@ -9,7 +9,7 @@ await mongoose.connect('mongodb+srv://aravind:Aravind123@cluster0.x2c1o.mongodb.
   bufferCommands: false
 });
 
-const form = await Facility.findById('698f322d931f8c8b82015ef2');
+const form = await Form.findById('698f322d931f8c8b82015ef2');
 console.log('=== FIELD PROPERTIES ===');
 form.sections[0].fields.forEach((field, i) => {
   console.log(`${i + 1}. ${field.type}:`);

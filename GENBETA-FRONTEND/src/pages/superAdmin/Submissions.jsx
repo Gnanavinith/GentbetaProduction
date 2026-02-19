@@ -102,7 +102,7 @@ export default function SuperAdminSubmissions() {
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Facility Name</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Form Name</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Company/Plant</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Submitted By</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>

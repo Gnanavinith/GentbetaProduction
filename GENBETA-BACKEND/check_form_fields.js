@@ -1,22 +1,22 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Facility from './src/models/Facility.model.js';
+import Form from './src/models/Form.model.js';
 
 dotenv.config();
 
-const checkFacilityFields = async () => {
+const checkFormFields = async () => {
   try {
     console.log('Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to MongoDB');
     
     // Find the specific form mentioned in the issue
-    const form = await Facility.findById('698dd4de4fd390b4106d655b');
+    const form = await Form.findById('698dd4de4fd390b4106d655b');
     
     if (form) {
       console.log('\n=== FORM DATA STRUCTURE ===');
-      console.log('Facility ID:', form._id);
-      console.log('Facility Name:', form.formName);
+      console.log('Form ID:', form._id);
+      console.log('Form Name:', form.formName);
       console.log('Status:', form.status);
       console.log('Is Template:', form.isTemplate);
       
@@ -47,12 +47,12 @@ const checkFacilityFields = async () => {
       console.log('Total calculated fields:', totalFields);
       
     } else {
-      console.log('Facility not found');
+      console.log('Form not found');
       
       // List all forms to see what's available
-      const allFacilitys = await Facility.find({}, 'formName fields sections status isTemplate');
+      const allForms = await Form.find({}, 'formName fields sections status isTemplate');
       console.log('\n=== ALL FORMS ===');
-      allFacilitys.forEach(f => {
+      allForms.forEach(f => {
         const topLevel = f.fields?.length || 0;
         const sectionFields = f.sections?.reduce((total, section) => 
           total + (section.fields?.length || 0), 0) || 0;
@@ -69,4 +69,4 @@ const checkFacilityFields = async () => {
   }
 };
 
-checkFacilityFields();
+checkFormFields();

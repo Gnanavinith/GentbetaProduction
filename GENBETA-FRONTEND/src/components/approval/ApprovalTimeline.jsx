@@ -11,7 +11,7 @@ export default function ApproverSelectionModal({
   isOpen,
   onClose,
   onConfirm,
-  selectedFacilitys = []
+  selectedForms = []
 }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,10 +54,10 @@ export default function ApproverSelectionModal({
         <div className="px-8 py-6 border-b bg-slate-50 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-black text-slate-900">
-              Assign Facility
+              Assign Form
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              Choose an employee to receive {selectedFacilitys.length} form(s)
+              Choose an employee to receive {selectedForms.length} form(s)
             </p>
           </div>
           <button
@@ -74,11 +74,11 @@ export default function ApproverSelectionModal({
           {/* LEFT – SUMMARY */}
           <div>
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">
-              Selected Facilitys
+              Selected Forms
             </h4>
 
             <div className="space-y-3 max-h-[260px] overflow-y-auto pr-2">
-              {selectedFacilitys.map((form, i) => (
+              {selectedForms.map((form, i) => (
                 <div
                   key={i}
                   className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border"

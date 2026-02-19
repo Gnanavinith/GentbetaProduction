@@ -303,7 +303,7 @@ export default function Login() {
               )}
             </AnimatePresence>
 
-            {/* Facility */}
+            {/* Form */}
             <form onSubmit={submit} className="space-y-4">
 
               {/* Email */}

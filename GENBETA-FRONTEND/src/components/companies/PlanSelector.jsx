@@ -81,9 +81,9 @@ export function PlanSelector({
                 </div>
                 <div>
                   <div className="font-bold text-slate-900">
-                    {plan.limits.maxFacilitysPerPlant === -1 ? "∞" : plan.limits.maxFacilitysPerPlant}
+                    {plan.limits.maxFormsPerPlant === -1 ? "∞" : plan.limits.maxFormsPerPlant}
                   </div>
-                  <div className="text-slate-500">Facilitys</div>
+                  <div className="text-slate-500">Forms</div>
                 </div>
                 <div>
                   <div className="font-bold text-slate-900">
@@ -119,8 +119,8 @@ export function PlanSelector({
                     <div className="text-slate-500 uppercase">Plants</div>
                   </div>
                   <div className="bg-white/50 rounded-lg p-2 border border-indigo-100">
-                    <div className="font-bold text-slate-900">{customLimits.maxFacilitysPerPlant}</div>
-                    <div className="text-slate-500 uppercase">Facilitys</div>
+                    <div className="font-bold text-slate-900">{customLimits.maxFormsPerPlant}</div>
+                    <div className="text-slate-500 uppercase">Forms</div>
                   </div>
                   <div className="bg-white/50 rounded-lg p-2 border border-indigo-100">
                     <div className="font-bold text-slate-900">{customLimits.maxEmployeesPerPlant}</div>

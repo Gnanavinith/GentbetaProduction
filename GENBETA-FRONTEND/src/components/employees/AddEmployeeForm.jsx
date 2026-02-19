@@ -5,11 +5,11 @@ import { userApi } from "../../api/user.api";
 import { useAuth } from "../../context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, UserPlus, Loader2, AlertCircle } from "lucide-react";
-import { EmployeeFacilityFields } from "./EmployeeFormFields";
+import { EmployeeFormFields } from "./EmployeeFormFields";
 import { EmployeeLimitChecker } from "./EmployeeLimitChecker";
-import { validateEmployeeFacility, validateEmployeeLimits } from "./EmployeeValidation";
+import { validateEmployeeForm, validateEmployeeLimits } from "./EmployeeValidation";
 
-export const AddEmployeeFacility = () => {
+export const AddEmployeeForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -17,7 +17,7 @@ export const AddEmployeeFacility = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   
-  const [FacilityData, setFacilityData] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
@@ -78,8 +78,8 @@ export const AddEmployeeFacility = () => {
     const toastId = toast.loading("Creating new employee account...");
 
     try {
-      // Facility validation
-      const formValidation = validateEmployeeFacility(formData);
+      // Form validation
+      const formValidation = validateEmployeeForm(formData);
       if (!formValidation.isValid) {
         setError(formValidation.errors[0]);
         toast.error(formValidation.errors[0], { id: toastId });
@@ -137,9 +137,9 @@ export const AddEmployeeFacility = () => {
 
       <div className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden ${limitReached ? 'opacity-50 pointer-events-none' : ''}`}>
         <form onSubmit={handleCreateEmployee} className="p-8 space-y-6">
-          <EmployeeFacilityFields 
+          <EmployeeFormFields 
             formData={formData}
-            setFacilityData={setFacilityData}
+            setFormData={setFormData}
             showPassword={showPassword}
             setShowPassword={setShowPassword}
           />

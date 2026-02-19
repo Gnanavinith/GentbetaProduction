@@ -12,7 +12,7 @@ export default function EditPlantPage() {
   const [limitReached, setLimitReached] = useState(false);
   const [usageInfo, setUsageInfo] = useState(null);
   const [error, setError] = useState("");
-  const [FacilityData, setFacilityData] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     location: "",
     admin: {
@@ -47,7 +47,7 @@ export default function EditPlantPage() {
       const res = await api.get(`/api/plants/${plantId}`);
       const plant = res.data;
       
-      setFacilityData({
+      setFormData({
         name: plant.name || "",
         location: plant.location || "",
         admin: {
@@ -157,7 +157,7 @@ export default function EditPlantPage() {
                 placeholder="e.g. Pune Manufacturing Unit"
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 value={formData.name}
-                onChange={(e) => setFacilityData({ ...formData, name: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
             <div className="space-y-1">
@@ -170,7 +170,7 @@ export default function EditPlantPage() {
                   placeholder="e.g. Chakan, Pune"
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   value={formData.location}
-                  onChange={(e) => setFacilityData({ ...formData, location: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 />
               </div>
             </div>
@@ -191,7 +191,7 @@ export default function EditPlantPage() {
                 placeholder="Full Name"
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 value={formData.admin.name}
-                onChange={(e) => setFacilityData({ 
+                onChange={(e) => setFormData({ 
                   ...formData, 
                   admin: { ...formData.admin, name: e.target.value } 
                 })}
@@ -207,7 +207,7 @@ export default function EditPlantPage() {
                   placeholder="email@example.com"
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   value={formData.admin.email}
-                  onChange={(e) => setFacilityData({ 
+                  onChange={(e) => setFormData({ 
                     ...formData, 
                     admin: { ...formData.admin, email: e.target.value } 
                   })}
@@ -232,7 +232,7 @@ export default function EditPlantPage() {
                   placeholder="Leave blank to keep current password"
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   value={formData.admin.password}
-                  onChange={(e) => setFacilityData({ 
+                  onChange={(e) => setFormData({ 
                     ...formData, 
                     admin: { ...formData.admin, password: e.target.value } 
                   })}

@@ -6,14 +6,14 @@ import { toast } from "react-hot-toast";
 
 export default function EditPlantModal({ plant, onClose, onSaved }) {
   const [loading, setLoading] = useState(false);
-  const [FacilityData, setFacilityData] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     location: ""
   });
 
   useEffect(() => {
     if (plant) {
-      setFacilityData({
+      setFormData({
         name: plant.name || "",
         location: plant.location || ""
       });
@@ -57,14 +57,14 @@ export default function EditPlantModal({ plant, onClose, onSaved }) {
             <Input
               label="Plant Name"
               value={formData.name}
-              onChange={(v) => setFacilityData({ ...formData, name: v })}
+              onChange={(v) => setFormData({ ...formData, name: v })}
             />
           </div>
           <div className="md:col-span-2">
             <Input
               label="Location"
               value={formData.location}
-              onChange={(v) => setFacilityData({ ...formData, location: v })}
+              onChange={(v) => setFormData({ ...formData, location: v })}
             />
           </div>
         </Section>

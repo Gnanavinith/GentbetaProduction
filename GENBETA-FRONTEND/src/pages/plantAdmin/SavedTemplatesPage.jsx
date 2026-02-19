@@ -17,16 +17,16 @@ import { ActionBar } from "../../components/common/ActionBar";
 export default function SavedTemplatesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [Facilitys, setFacilitys] = useState([]);
+  const [forms, setForms] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFacilitys, setSelectedFacilitys] = useState([]);
-  const [selectedFacility, setSelectedFacility] = useState(null);
-  const [showFacilityActionsModal, setShowFacilityActionsModal] = useState(false);
+  const [selectedForms, setSelectedForms] = useState([]);
+  const [selectedForm, setSelectedForm] = useState(null);
+  const [showFormActionsModal, setShowFormActionsModal] = useState(false);
   const [isApproverModalOpen, setIsApproverModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newFacilityName, setNewFacilityName] = useState("");
+  const [newFormName, setNewFormName] = useState("");
   const [exportingId, setExportingId] = useState(null);
   const [showExportOptions, setShowExportOptions] = useState(null);
   const [templateFeatureEnabled, setTemplateFeatureEnabled] = useState(false);
@@ -99,12 +99,12 @@ export default function SavedTemplatesPage() {
   };
 
   const handleBulkExport = async () => {
-    if (selectedFacilitys.length === 0) return;
+    if (selectedForms.length === 0) return;
     
     setExportingId("bulk");
     try {
       let allSubmissions = [];
-      for (const id of selectedFacilitys) {
+      for (const id of selectedForms) {
         const item = allTemplates.find(t => t._id === id);
         if (!item) continue;
         
@@ -119,7 +119,7 @@ export default function SavedTemplatesPage() {
       
       if (allSubmissions.length > 0) {
         const formattedData = formatSubmissionsForExport(allSubmissions);
-        exportToExcel(formattedData, `Bulk_Facility_Export`);
+        exportToExcel(formattedData, `Bulk_Form_Export`);
       } else {
         toast.error("No submission data found for selected templates.");
       }
@@ -182,15 +182,15 @@ export default function SavedTemplatesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [FacilitysRes, templatesRes] = await Promise.all([
-        formApi.getFacilitys(),
+      const [formsRes, templatesRes] = await Promise.all([
+        formApi.getForms(),
         templateApi.getTemplates()
       ]);
       
       if (formsRes.success) {
-        setFacilitys(formsRes.data);
+        setForms(formsRes.data);
       } else {
-        setFacilitys(formsRes || []);
+        setForms(formsRes || []);
       }
 
       if (templatesRes.success) {
@@ -203,8 +203,8 @@ export default function SavedTemplatesPage() {
     }
   };
 
-  const handleSendMultiFacilityLink = async () => {
-    if (selectedFacilitys.length === 0) {
+  const handleSendMultiFormLink = async () => {
+    if (selectedForms.length === 0) {
       toast.error("Please select at least one template");
       return;
     }
@@ -214,13 +214,13 @@ export default function SavedTemplatesPage() {
   const onConfirmApproval = async (approverId) => {
     try {
       const response = await assignmentApi.createTasks({
-        formIds: selectedFacilitys,
+        formIds: selectedForms,
         assignedTo: approverId
       });
 
       if (response.success) {
-        toast.success(`Facility(s) assigned successfully to the employee!`);
-        setSelectedFacilitys([]);
+        toast.success(`Form(s) assigned successfully to the employee!`);
+        setSelectedForms([]);
         setIsApproverModalOpen(false);
       } else {
         toast.error(response.message || "Failed to assign forms");
@@ -231,8 +231,8 @@ export default function SavedTemplatesPage() {
     }
   };
 
-  const toggleFacilitySelection = (formId) => {
-    setSelectedFacilitys(prev => 
+  const toggleFormSelection = (formId) => {
+    setSelectedForms(prev => 
       prev.includes(formId) 
         ? prev.filter(id => id !== formId)
         : [...prev, formId]
@@ -240,67 +240,67 @@ export default function SavedTemplatesPage() {
   };
 
   const handleClearSelection = () => {
-    setSelectedFacilitys([]);
+    setSelectedForms([]);
   };
 
   const handleDeleteTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isFacility = forms.some(f => f._id === itemId);
+    const isForm = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Are you sure you want to delete ${itemName}?`)) return;
     
     try {
-      if (isFacility) {
-        await formApi.deleteFacility(itemId);
+      if (isForm) {
+        await formApi.deleteForm(itemId);
       } else {
         await templateApi.deleteTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Delete ${isFacility ? 'form' : 'template'}`, err);
-      const errorMessage = err.response?.data?.message || `Failed to delete ${isFacility ? 'form' : 'template'}`;
+      logError(`Delete ${isForm ? 'form' : 'template'}`, err);
+      const errorMessage = err.response?.data?.message || `Failed to delete ${isForm ? 'form' : 'template'}`;
       toast.error(errorMessage);
     }
   };
 
   const handleArchiveTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isFacility = forms.some(f => f._id === itemId);
+    const isForm = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Archive ${itemName}? It will be hidden from employees but history is preserved.`)) return;
     
     try {
-      if (isFacility) {
-        await formApi.archiveFacility(itemId);
+      if (isForm) {
+        await formApi.archiveForm(itemId);
       } else {
         await templateApi.archiveTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Archive ${isFacility ? 'form' : 'template'}`, err);
-      toast.error(`Failed to archive ${isFacility ? 'form' : 'template'}`);
+      logError(`Archive ${isForm ? 'form' : 'template'}`, err);
+      toast.error(`Failed to archive ${isForm ? 'form' : 'template'}`);
     }
   };
 
   const handleRestoreTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isFacility = forms.some(f => f._id === itemId);
+    const isForm = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Restore ${itemName}? It will become available for use again.`)) return;
     
     try {
-      if (isFacility) {
-        await formApi.restoreFacility(itemId);
+      if (isForm) {
+        await formApi.restoreForm(itemId);
       } else {
         await templateApi.restoreTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Restore ${isFacility ? 'form' : 'template'}`, err);
-      toast.error(`Failed to restore ${isFacility ? 'form' : 'template'}`);
+      logError(`Restore ${isForm ? 'form' : 'template'}`, err);
+      toast.error(`Failed to restore ${isForm ? 'form' : 'template'}`);
     }
   };
 
@@ -322,11 +322,11 @@ export default function SavedTemplatesPage() {
   };
 
   // Separate regular forms from templates
-  const regularFacilitys = forms.filter(f => !f.isTemplate);
-  const templateFacilitys = forms.filter(f => f.isTemplate);
+  const regularForms = forms.filter(f => !f.isTemplate);
+  const templateForms = forms.filter(f => f.isTemplate);
   const allTemplates = [
     ...templates.map(t => ({ ...t, isLegacy: true })),
-    ...templateFacilitys
+    ...templateForms
   ];
 
   // Filter for templates only
@@ -388,15 +388,15 @@ export default function SavedTemplatesPage() {
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider w-10">
                       <div 
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                          selectedFacilitys.length === filteredItems.length && filteredItems.length > 0
+                          selectedForms.length === filteredItems.length && filteredItems.length > 0
                             ? 'bg-indigo-600 border-indigo-600 text-white' 
                             : 'bg-white border-gray-300 text-transparent'
                         }`}
                         onClick={() => {
-                          if (selectedFacilitys.length === filteredItems.length) {
-                            setSelectedFacilitys([]);
+                          if (selectedForms.length === filteredItems.length) {
+                            setSelectedForms([]);
                           } else {
-                            setSelectedFacilitys(filteredItems.map(f => f._id));
+                            setSelectedForms(filteredItems.map(f => f._id));
                           }
                         }}
                       >
@@ -422,7 +422,7 @@ export default function SavedTemplatesPage() {
                 </thead>
               <tbody className="divide-y divide-gray-100">
                   {filteredItems.map((item) => {
-                    const isSelected = selectedFacilitys.includes(item._id);
+                    const isSelected = selectedForms.includes(item._id);
                     const isArchived = item.status === "ARCHIVED";
                     const name = item.templateName || item.formName;
                     const fieldCount = (item.fields?.length || item.sections?.reduce((acc, s) => acc + (s.fields?.length || 0), 0)) || 0;
@@ -433,7 +433,7 @@ export default function SavedTemplatesPage() {
                         className={`hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? 'bg-indigo-50/30' : ''} ${isArchived ? 'opacity-60 bg-gray-50/50' : ''}`}
                         onClick={() => {
                           if (!isArchived) {
-                            toggleFacilitySelection(item._id);
+                            toggleFormSelection(item._id);
                           }
                         }}
                       >
@@ -445,7 +445,7 @@ export default function SavedTemplatesPage() {
                                 ? 'bg-indigo-600 border-indigo-600 text-white' 
                                 : 'bg-white border-gray-300 text-transparent'
                             }`}
-                            onClick={() => !isArchived && toggleFacilitySelection(item._id)}
+                            onClick={() => !isArchived && toggleFormSelection(item._id)}
                           >
                             <Check className="w-3 h-3" />
                           </div>
@@ -508,17 +508,17 @@ export default function SavedTemplatesPage() {
                                       <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 z-[100] overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2 duration-200">
                                         <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Template Details</div>
                                         <button onClick={() => handleExportTemplateDetails(item)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                                          <Table className="w-3.5 h-3.5 text-green-600" /> Excel Facilityat
+                                          <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
                                         </button>
                                         <div className="h-px bg-gray-100 my-1" />
                                         <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Submission Data</div>
                                         <button onClick={() => handleExportTemplateData(item)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                                          <Table className="w-3.5 h-3.5 text-green-600" /> Excel Facilityat
+                                          <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
                                         </button>
                                         <div className="h-px bg-gray-100 my-1" />
                                         <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Statistics</div>
                                         <button onClick={() => handleExportStats(item)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                                          <Table className="w-3.5 h-3.5 text-green-600" /> Excel Facilityat
+                                          <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
                                         </button>
                                       </div>
                                     )}
@@ -534,7 +534,7 @@ export default function SavedTemplatesPage() {
                                       </Link>
                                       <button
                                         onClick={() => {
-                                          setSelectedFacilitys([item._id]);
+                                          setSelectedForms([item._id]);
                                           setIsApproverModalOpen(true);
                                         }}
                                         className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
@@ -609,28 +609,28 @@ export default function SavedTemplatesPage() {
       )}
 
       <ActionBar 
-        selectedCount={selectedFacilitys.length}
+        selectedCount={selectedForms.length}
         onClear={handleClearSelection}
         onExport={handleBulkExport}
-        onAssign={handleSendMultiFacilityLink}
+        onAssign={handleSendMultiFormLink}
       />
 
       <ApproverSelectionModal 
         isOpen={isApproverModalOpen}
         onClose={() => setIsApproverModalOpen(false)}
         onConfirm={onConfirmApproval}
-        selectedFacilitys={
-          [...templates.map(t => ({...t, isLegacy: true})), ...templateFacilitys]
-            .filter(f => selectedFacilitys.includes(f._id))
+        selectedForms={
+          [...templates.map(t => ({...t, isLegacy: true})), ...templateForms]
+            .filter(f => selectedForms.includes(f._id))
         }
       />
 
-      {showFacilityActionsModal && selectedFacility && (
+      {showFormActionsModal && selectedForm && (
         <Modal 
-          title={`Actions: ${selectedFacility.formName}`}
+          title={`Actions: ${selectedForm.formName}`}
           onClose={() => {
-            setShowFacilityActionsModal(false);
-            setSelectedFacility(null);
+            setShowFormActionsModal(false);
+            setSelectedForm(null);
           }}
         >
           <div className="space-y-3">
@@ -652,21 +652,21 @@ export default function SavedTemplatesPage() {
           title="Create New Template" 
           onClose={() => {
             setIsCreateModalOpen(false);
-            setNewFacilityName("");
+            setNewFormName("");
           }}
         >
           <div className="space-y-4">
             <Input 
               label="Template Name" 
-              value={newFacilityName} 
-              onChange={setNewFacilityName} 
+              value={newFormName} 
+              onChange={setNewFormName} 
               placeholder="Enter template name..."
             />
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => {
                   setIsCreateModalOpen(false);
-                  setNewFacilityName("");
+                  setNewFormName("");
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
               >
@@ -674,11 +674,11 @@ export default function SavedTemplatesPage() {
               </button>
               <button
                 onClick={() => {
-                  if (!newFacilityName.trim()) {
+                  if (!newFormName.trim()) {
                     toast.error("Please enter a template name");
                     return;
                   }
-                  navigate(`/plant/forms/create?name=${encodeURIComponent(newFacilityName.trim())}&isTemplate=true`);
+                  navigate(`/plant/forms/create?name=${encodeURIComponent(newFormName.trim())}&isTemplate=true`);
                 }}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold transition-all shadow-lg shadow-indigo-100"
               >

@@ -65,7 +65,7 @@ export default function CompanyAnalyticsTable({ data, onExport }) {
               {[
                 { label: "Company", key: "companyName" },
                 { label: "Plants", key: "plantsCount" },
-                { label: "Facilitys", key: "formsCount" },
+                { label: "Forms", key: "formsCount" },
                 { label: "Submissions", key: "submissionsCount" },
                 { label: "Approved %", key: "approvedPercent" },
                 { label: "Rejected %", key: "rejectedPercent" },

@@ -1,13 +1,13 @@
-import Facility from "../models/Form.model.js";
-import FacilityTemplate from "../models/FormTemplate.model.js";
-import FacilitySubmission from "../models/FormSubmission.model.js";
+import Form from "../models/Form.model.js";
+import FormTemplate from "../models/FormTemplate.model.js";
+import FormSubmission from "../models/FormSubmission.model.js";
 import Assignment from "../models/Assignment.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
-import { sendApprovalEmail, sendFacilityCreatedApproverNotification } from "../services/email/index.js";
+import { sendApprovalEmail, sendFormCreatedApproverNotification } from "../services/email/index.js";
 import { generateCacheKey, getFromCache, setInCache, deleteFromCache, warmCache, getCacheStats } from "../utils/cache.js";
-import { generateFacilityId } from "../utils/formIdGenerator.js";
+import { generateFormId } from "../utils/formIdGenerator.js";
 
 // Helper function to validate layout structure
 function validateLayoutStructure(fields) {
@@ -31,9 +31,9 @@ function validateLayoutStructure(fields) {
 /* ======================================================
    CREATE FORM
 ====================================================== */
-export const createFacility = async (req, res) => {
+export const createForm = async (req, res) => {
   try {
-    const { formId: providedFacilityId, formName, fields, sections, approvalFlow, approvalLevels, description, status } = req.body;
+    const { formId: providedFormId, formName, fields, sections, approvalFlow, approvalLevels, description, status } = req.body;
 
     // Validate layout structure - prefer sections fields, fall back to root fields for legacy forms
     const allFieldsToValidate = (sections && sections.length > 0) 
@@ -42,22 +42,22 @@ export const createFacility = async (req, res) => {
     validateLayoutStructure(allFieldsToValidate);
 
     // Generate formId if not provided
-    let finalFacilityId = providedFacilityId || generateFacilityId(formName);
+    let finalFormId = providedFormId || generateFormId(formName);
     
     // Ensure the formId is unique
-    if (!providedFacilityId) { // Only check uniqueness if we generated the ID
+    if (!providedFormId) { // Only check uniqueness if we generated the ID
       let isUnique = false;
       let attempts = 0;
       const maxAttempts = 5;
       
       while (!isUnique && attempts < maxAttempts) {
         try {
-          const existingFacility = await Facility.findOne({ formId: finalFacilityId });
-          if (!existingFacility) {
+          const existingForm = await Form.findOne({ formId: finalFormId });
+          if (!existingForm) {
             isUnique = true;
           } else {
             // Generate a new ID with additional randomness
-            finalFacilityId = generateFacilityId(formName + Date.now().toString());
+            finalFormId = generateFormId(formName + Date.now().toString());
             attempts++;
           }
         } catch (error) {
@@ -66,7 +66,7 @@ export const createFacility = async (req, res) => {
         }
       }
     } else {
-      finalFacilityId = providedFacilityId; // Use the provided ID
+      finalFormId = providedFormId; // Use the provided ID
     }
 
     // Map approvalLevels from frontend to approvalFlow for backend
@@ -77,8 +77,8 @@ export const createFacility = async (req, res) => {
       description: level.description || ""
     }));
 
-    const form = await Facility.create({
-      formId: finalFacilityId,
+    const form = await Form.create({
+      formId: finalFormId,
       formName,
       description,
       fields: fields || [],
@@ -101,16 +101,16 @@ export const createFacility = async (req, res) => {
         role: req.user.role,
         plantId: req.user.plantId 
       });
-      console.log('Invalidating cache key in createFacility:', cacheKey);
+      console.log('Invalidating cache key in createForm:', cacheKey);
       await deleteFromCache(cacheKey);
-      console.log('Cache invalidated successfully in createFacility');
+      console.log('Cache invalidated successfully in createForm');
     } catch (cacheError) {
       console.error('Cache invalidation error:', cacheError);
     }
 
     res.status(201).json({
       success: true,
-      message: "Facility created successfully",
+      message: "Form created successfully",
       form
     });
 
@@ -126,7 +126,7 @@ export const createFacility = async (req, res) => {
             const approver = await User.findById(level.approverId);
             if (approver && approver.email) {
               const reviewLink = `${process.env.FRONTEND_URL}/plant/forms/${form._id}`;
-              await sendFacilityCreatedApproverNotification(
+              await sendFormCreatedApproverNotification(
                 approver.email,
                 form.formName,
                 form.formId, // Pass the formId
@@ -151,7 +151,7 @@ export const createFacility = async (req, res) => {
 /* ======================================================
    GET FORMS (LIST)
 ====================================================== */
-export const getFacilitys = async (req, res) => {
+export const getForms = async (req, res) => {
   try {
     const filter = { isActive: true };
 
@@ -198,11 +198,11 @@ export const getFacilitys = async (req, res) => {
     console.log('No cache hit, fetching from database');
 
     // Count total forms for pagination metadata
-    const total = await Facility.countDocuments(filter);
+    const total = await Form.countDocuments(filter);
     console.log(`Total forms matching filter: ${total}`);
 
     // Get paginated forms
-    const forms = await Facility.find(filter)
+    const forms = await Form.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -219,7 +219,7 @@ export const getFacilitys = async (req, res) => {
       forms.map(async (form) => {
         let submissionCount = 0;
         try {
-          submissionCount = await FacilitySubmission.countDocuments({ formId: form._id });
+          submissionCount = await FormSubmission.countDocuments({ formId: form._id });
         } catch (err) {
           console.error(`Error counting submissions for form ${form._id}:`, err);
         }
@@ -256,22 +256,22 @@ export const getFacilitys = async (req, res) => {
 /* ======================================================
 GET SINGLE FORM
 ====================================================== */
-export const getFacilityById = async (req, res) => {
+export const getFormById = async (req, res) => {
   try {
-    // First, try to find in Facility model
-    let form = await Facility.findById(req.params.id).populate("approvalFlow.approverId", "name email");
+    // First, try to find in Form model
+    let form = await Form.findById(req.params.id).populate("approvalFlow.approverId", "name email");
     
     if (!form) {
-      // If not found in Facility model, try FacilityTemplate model
-      form = await FacilityTemplate.findById(req.params.id).populate("workflow.approverId", "name email");
+      // If not found in Form model, try FormTemplate model
+      form = await FormTemplate.findById(req.params.id).populate("workflow.approverId", "name email");
     }
     
     if (!form) {
-      return res.status(404).json({ success: false, message: "Facility not found" });
+      return res.status(404).json({ success: false, message: "Form not found" });
     }
     
     // Log the number of fields to help debug
-    console.log(`Facility ${req.params.id} has ${form.fields?.length || 0} top-level fields and ${form.sections?.length || 0} sections`);
+    console.log(`Form ${req.params.id} has ${form.fields?.length || 0} top-level fields and ${form.sections?.length || 0} sections`);
     if (form.sections && form.sections.length > 0) {
       form.sections.forEach((section, index) => {
         console.log(`Section ${index} has ${section.fields?.length || 0} fields`);
@@ -293,7 +293,7 @@ export const getFacilityById = async (req, res) => {
 /* ======================================================
    UPDATE FORM
 ====================================================== */
-export const updateFacility = async (req, res) => {
+export const updateForm = async (req, res) => {
   try {
     const { formId, formName, fields, sections, approvalFlow, approvalLevels, description } = req.body;
 
@@ -317,16 +317,16 @@ export const updateFacility = async (req, res) => {
     }
 
     // Get the original form to check if approval workflow is being added/changed
-    const originalFacility = await Facility.findById(req.params.id);
+    const originalForm = await Form.findById(req.params.id);
     
-    const updated = await Facility.findByIdAndUpdate(
+    const updated = await Form.findByIdAndUpdate(
       req.params.id,
       finalPayload,
       { new: true }
     );
 
     if (!updated) {
-      return res.status(404).json({ success: false, message: "Facility not found" });
+      return res.status(404).json({ success: false, message: "Form not found" });
     }
 
     // Invalidate cache for forms list
@@ -345,8 +345,8 @@ export const updateFacility = async (req, res) => {
     // Send email notifications to approvers when workflow is assigned/updated
     if (finalPayload.approvalFlow && finalPayload.approvalFlow.length > 0) {
       // Check if this is a new workflow assignment or an update
-      const isWorkflowUpdate = !originalFacility.approvalFlow || originalFacility.approvalFlow.length === 0 || 
-                              JSON.stringify(originalFacility.approvalFlow) !== JSON.stringify(finalPayload.approvalFlow);
+      const isWorkflowUpdate = !originalForm.approvalFlow || originalForm.approvalFlow.length === 0 || 
+                              JSON.stringify(originalForm.approvalFlow) !== JSON.stringify(finalPayload.approvalFlow);
       
       if (isWorkflowUpdate) {
         (async () => {
@@ -359,7 +359,7 @@ export const updateFacility = async (req, res) => {
               const approver = await User.findById(level.approverId);
               if (approver && approver.email) {
                 const reviewLink = `${process.env.FRONTEND_URL}/plant/forms/${updated._id}`;
-                await sendFacilityCreatedApproverNotification(
+                await sendFormCreatedApproverNotification(
                   approver.email,
                   updated.formName,
                   updater?.name || "A plant admin",
@@ -381,7 +381,7 @@ export const updateFacility = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Facility updated successfully",
+      message: "Form updated successfully",
       updated
     });
   } catch (error) {
@@ -393,16 +393,16 @@ export const updateFacility = async (req, res) => {
 /* ======================================================
    ARCHIVE FORM
 ====================================================== */
-export const archiveFacility = async (req, res) => {
+export const archiveForm = async (req, res) => {
   try {
-    const form = await Facility.findByIdAndUpdate(
+    const form = await Form.findByIdAndUpdate(
       req.params.id,
       { status: "ARCHIVED", archivedAt: new Date() },
       { new: true }
     );
     
     if (!form) {
-      return res.status(404).json({ success: false, message: "Facility not found" });
+      return res.status(404).json({ success: false, message: "Form not found" });
     }
 
     // Invalidate cache for forms list
@@ -418,7 +418,7 @@ export const archiveFacility = async (req, res) => {
       console.error('Cache invalidation error:', cacheError);
     }
     
-    res.json({ success: true, message: "Facility archived successfully", data: form });
+    res.json({ success: true, message: "Form archived successfully", data: form });
   } catch (error) {
     console.error("Archive form error:", error);
     res.status(500).json({ success: false, message: "Archive failed" });
@@ -428,16 +428,16 @@ export const archiveFacility = async (req, res) => {
 /* ======================================================
    RESTORE FORM
 ====================================================== */
-export const restoreFacility = async (req, res) => {
+export const restoreForm = async (req, res) => {
   try {
-    const form = await Facility.findByIdAndUpdate(
+    const form = await Form.findByIdAndUpdate(
       req.params.id,
       { status: "PUBLISHED", archivedAt: null },
       { new: true }
     );
     
     if (!form) {
-      return res.status(404).json({ success: false, message: "Facility not found" });
+      return res.status(404).json({ success: false, message: "Form not found" });
     }
 
     // Invalidate cache for forms list
@@ -453,7 +453,7 @@ export const restoreFacility = async (req, res) => {
       console.error('Cache invalidation error:', cacheError);
     }
     
-    res.json({ success: true, message: "Facility restored successfully", data: form });
+    res.json({ success: true, message: "Form restored successfully", data: form });
   } catch (error) {
     console.error("Restore form error:", error);
     res.status(500).json({ success: false, message: "Restore failed" });
@@ -467,9 +467,9 @@ export const toggleTemplateStatus = async (req, res) => {
   try {
     const { isTemplate } = req.body;
     
-    const form = await Facility.findById(req.params.id);
+    const form = await Form.findById(req.params.id);
     if (!form) {
-      return res.status(404).json({ success: false, message: "Facility not found" });
+      return res.status(404).json({ success: false, message: "Form not found" });
     }
     
     // Only allow toggling if the form belongs to the same plant
@@ -477,7 +477,7 @@ export const toggleTemplateStatus = async (req, res) => {
       return res.status(403).json({ success: false, message: "Not authorized to update this form" });
     }
     
-    const updated = await Facility.findByIdAndUpdate(
+    const updated = await Form.findByIdAndUpdate(
       req.params.id,
       { isTemplate },
       { new: true }
@@ -485,7 +485,7 @@ export const toggleTemplateStatus = async (req, res) => {
     
     res.json({
       success: true,
-      message: `Facility ${isTemplate ? 'saved as' : 'removed from'} template successfully`,
+      message: `Form ${isTemplate ? 'saved as' : 'removed from'} template successfully`,
       updated
     });
   } catch (error) {
@@ -497,13 +497,13 @@ export const toggleTemplateStatus = async (req, res) => {
 /* ======================================================
    DELETE FORM (SOFT DELETE)
 ====================================================== */
-export const deleteFacility = async (req, res) => {
+export const deleteForm = async (req, res) => {
   try {
-    await Facility.findByIdAndUpdate(req.params.id, {
+    await Form.findByIdAndUpdate(req.params.id, {
       isActive: false
     });
 
-    res.json({ message: "Facility removed successfully" });
+    res.json({ message: "Form removed successfully" });
   } catch (error) {
     console.error("Delete form error:", error);
     res.status(500).json({ message: "Delete failed" });

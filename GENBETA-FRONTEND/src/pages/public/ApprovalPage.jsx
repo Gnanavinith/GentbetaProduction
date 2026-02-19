@@ -1,36 +1,36 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import FacilityRenderer from "../../components/FormRenderer/FormRenderer";
+import FormRenderer from "../../components/FormRenderer/FormRenderer";
 import { CheckCircle2, AlertCircle, Loader2, FileText, ChevronLeft, ChevronRight, Check } from "lucide-react";
 
 export default function ApprovalPage() {
   const { token } = useParams();
   const navigate = useNavigate();
-  const [Facilitys, setFacilitys] = useState([]);
-  const [completedFacilitys, setCompletedFacilitys] = useState([]);
-  const [currentFacilityIndex, setCurrentFacilityIndex] = useState(0);
+  const [forms, setForms] = useState([]);
+  const [completedForms, setCompletedForms] = useState([]);
+  const [currentFormIndex, setCurrentFormIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [isMultiFacility, setIsMultiFacility] = useState(false);
+  const [isMultiForm, setIsMultiForm] = useState(false);
 
   useEffect(() => {
-    fetchFacilitys();
+    fetchForms();
   }, [token]);
 
-  const fetchFacilitys = async () => {
+  const fetchForms = async () => {
     try {
       const res = await axios.get(`/api/approve/${token}`);
       const formsData = res.data.forms || [res.data.form];
-      setFacilitys(formsData);
-      setCompletedFacilitys(res.data.completedFacilitys || []);
-      setIsMultiFacility(res.data.isMultiFacility || formsData.length > 1);
+      setForms(formsData);
+      setCompletedForms(res.data.completedForms || []);
+      setIsMultiForm(res.data.isMultiForm || formsData.length > 1);
       
       const firstPendingIndex = formsData.findIndex(
-        f => !res.data.completedFacilitys?.includes(f._id)
+        f => !res.data.completedForms?.includes(f._id)
       );
-      setCurrentFacilityIndex(firstPendingIndex >= 0 ? firstPendingIndex : 0);
+      setCurrentFormIndex(firstPendingIndex >= 0 ? firstPendingIndex : 0);
     } catch (err) {
       setError(err.response?.data?.message || "Invalid or expired approval link");
     } finally {
@@ -41,28 +41,28 @@ export default function ApprovalPage() {
   const handleSubmit = async (formData) => {
     setSubmitting(true);
     try {
-      const currentFacility = forms[currentFacilityIndex];
+      const currentForm = forms[currentFormIndex];
       const res = await axios.post(`/api/approve/${token}`, { 
-        formId: currentFacility._id,
+        formId: currentForm._id,
         data: formData 
       });
       
-      setCompletedFacilitys(prev => [...prev, currentFacility._id]);
+      setCompletedForms(prev => [...prev, currentForm._id]);
       
-      if (res.data.allFacilitysCompleted) {
+      if (res.data.allFormsCompleted) {
         navigate("/submitted");
       } else {
         const nextPendingIndex = forms.findIndex(
-          (f, idx) => idx > currentFacilityIndex && !completedFacilitys.includes(f._id) && f._id !== currentFacility._id
+          (f, idx) => idx > currentFormIndex && !completedForms.includes(f._id) && f._id !== currentForm._id
         );
         if (nextPendingIndex >= 0) {
-          setCurrentFacilityIndex(nextPendingIndex);
+          setCurrentFormIndex(nextPendingIndex);
         } else {
           const firstPending = forms.findIndex(
-            f => !completedFacilitys.includes(f._id) && f._id !== currentFacility._id
+            f => !completedForms.includes(f._id) && f._id !== currentForm._id
           );
           if (firstPending >= 0) {
-            setCurrentFacilityIndex(firstPending);
+            setCurrentFormIndex(firstPending);
           } else {
             navigate("/submitted");
           }
@@ -98,14 +98,14 @@ export default function ApprovalPage() {
     );
   }
 
-  const currentFacility = forms[currentFacilityIndex];
-  const isCurrentFacilityCompleted = completedFacilitys.includes(currentFacility?._id);
-  const pendingCount = forms.filter(f => !completedFacilitys.includes(f._id)).length;
+  const currentForm = forms[currentFormIndex];
+  const isCurrentFormCompleted = completedForms.includes(currentForm?._id);
+  const pendingCount = forms.filter(f => !completedForms.includes(f._id)).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        {isMultiFacility && (
+        {isMultiForm && (
           <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-700">
@@ -113,15 +113,15 @@ export default function ApprovalPage() {
               </h3>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setCurrentFacilityIndex(prev => Math.max(0, prev - 1))}
-                  disabled={currentFacilityIndex === 0}
+                  onClick={() => setCurrentFormIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentFormIndex === 0}
                   className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setCurrentFacilityIndex(prev => Math.min(forms.length - 1, prev + 1))}
-                  disabled={currentFacilityIndex === forms.length - 1}
+                  onClick={() => setCurrentFormIndex(prev => Math.min(forms.length - 1, prev + 1))}
+                  disabled={currentFormIndex === forms.length - 1}
                   className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -132,16 +132,16 @@ export default function ApprovalPage() {
               {forms.map((form, idx) => (
                 <button
                   key={form._id}
-                  onClick={() => setCurrentFacilityIndex(idx)}
+                  onClick={() => setCurrentFormIndex(idx)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                    idx === currentFacilityIndex
+                    idx === currentFormIndex
                       ? 'bg-indigo-600 text-white'
-                      : completedFacilitys.includes(form._id)
+                      : completedForms.includes(form._id)
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {completedFacilitys.includes(form._id) && (
+                  {completedForms.includes(form._id) && (
                     <Check className="w-4 h-4" />
                   )}
                   {form.formName}
@@ -158,25 +158,25 @@ export default function ApprovalPage() {
                 <FileText className="w-6 h-6 text-white" />
               </div>
               <span className="font-semibold tracking-wider uppercase text-sm opacity-80">
-                {isMultiFacility ? `Facility ${currentFacilityIndex + 1} of ${forms.length}` : 'Approval Required'}
+                {isMultiForm ? `Form ${currentFormIndex + 1} of ${forms.length}` : 'Approval Required'}
               </span>
             </div>
-            <h1 className="text-3xl font-bold">{currentFacility?.formName}</h1>
+            <h1 className="text-3xl font-bold">{currentForm?.formName}</h1>
             <p className="mt-2 text-indigo-100 opacity-90">Please review the details below and provide your input.</p>
           </div>
           
           <div className="p-8 md:p-12">
-            {isCurrentFacilityCompleted ? (
+            {isCurrentFormCompleted ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Facility Already Submitted</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Form Already Submitted</h3>
                 <p className="text-gray-500">This form has already been completed. Please select another form from the list above.</p>
               </div>
             ) : (
-              <FacilityRenderer 
-                fields={currentFacility?.fields || []} 
+              <FormRenderer 
+                fields={currentForm?.fields || []} 
                 onSubmit={handleSubmit}
                 submitting={submitting}
               />

@@ -65,7 +65,7 @@ export default function Assignments() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div><h1 className="text-3xl font-bold text-gray-900">Facility Assignments</h1><p className="text-sm text-gray-500">Track and manage templates assigned to employees.</p></div>
+        <div><h1 className="text-3xl font-bold text-gray-900">Form Assignments</h1><p className="text-sm text-gray-500">Track and manage templates assigned to employees.</p></div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
@@ -135,7 +135,7 @@ export default function Assignments() {
         <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
           <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mx-auto mb-6"><ClipboardList className="w-10 h-10 text-gray-300" /></div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">No assignments found</h3>
-          <p className="text-gray-500 max-w-sm mx-auto">Try adjusting your search or filters, or assign a template to an employee from the Facility Templates page.</p>
+          <p className="text-gray-500 max-w-sm mx-auto">Try adjusting your search or filters, or assign a template to an employee from the Form Templates page.</p>
         </div>
       )}
     </div>

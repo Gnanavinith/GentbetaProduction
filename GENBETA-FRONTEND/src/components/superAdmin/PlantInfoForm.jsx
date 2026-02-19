@@ -1,6 +1,6 @@
 import { Factory, Hash, MapPin } from "lucide-react";
 
-export default function PlantInfoFacility({ formData, setFacilityData }) {
+export default function PlantInfoForm({ formData, setFormData }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg shadow-slate-200/50 overflow-hidden">
       <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 px-6 py-4 border-b border-slate-200">
@@ -20,7 +20,7 @@ export default function PlantInfoFacility({ formData, setFacilityData }) {
             <input
               type="text"
               value={formData.plantName}
-              onChange={(e) => setFacilityData({...formData, plantName: e.target.value})}
+              onChange={(e) => setFormData({...formData, plantName: e.target.value})}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
               placeholder="Enter plant name"
               required
@@ -35,7 +35,7 @@ export default function PlantInfoFacility({ formData, setFacilityData }) {
             <input
               type="text"
               value={formData.plantNumber}
-              onChange={(e) => setFacilityData({...formData, plantNumber: e.target.value})}
+              onChange={(e) => setFormData({...formData, plantNumber: e.target.value})}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
               placeholder="Enter plant number (optional)"
             />
@@ -50,7 +50,7 @@ export default function PlantInfoFacility({ formData, setFacilityData }) {
           <input
             type="text"
             value={formData.location}
-            onChange={(e) => setFacilityData({...formData, location: e.target.value})}
+            onChange={(e) => setFormData({...formData, location: e.target.value})}
             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
             placeholder="Enter plant location/address"
             required

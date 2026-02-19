@@ -1,5 +1,5 @@
-import FacilitySubmission from "../models/FormSubmission.model.js";
-import Facility from "../models/Form.model.js";
+import FormSubmission from "../models/FormSubmission.model.js";
+import Form from "../models/Form.model.js";
 import Plant from "../models/Plant.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
@@ -80,7 +80,7 @@ export const getApprovalsByEmployee = async (req, res) => {
       { $sort: { count: -1 } }
     );
 
-    const results = await FacilitySubmission.aggregate(aggregation);
+    const results = await FormSubmission.aggregate(aggregation);
 
     sendResponse(res, 200, "Approvals by employee retrieved", results);
   } catch (error) {
@@ -172,7 +172,7 @@ export const getApproversPerformance = async (req, res) => {
       { $sort: { totalActions: -1 } }
     );
 
-    const results = await FacilitySubmission.aggregate(aggregation);
+    const results = await FormSubmission.aggregate(aggregation);
 
     // Cache the result for 10 minutes
     await setInCache(cacheKey, results, 600);
@@ -205,7 +205,7 @@ export const getApproversWorkload = async (req, res) => {
     if (plantId) formFilter.plantId = plantId;
     if (companyId) formFilter.companyId = companyId;
     
-    const forms = await Facility.find(formFilter).select("approvalFlow").lean();
+    const forms = await Form.find(formFilter).select("approvalFlow").lean();
     
     // Extract all approvers from all forms
     const allApprovers = [];
@@ -228,7 +228,7 @@ export const getApproversWorkload = async (req, res) => {
     
     for (const approverId of uniqueApproverIds) {
       // Count submissions where this approver is in the approval flow and it's their turn
-      const count = await FacilitySubmission.aggregate([
+      const count = await FormSubmission.aggregate([
         {
           $lookup: {
             from: "forms",
@@ -304,7 +304,7 @@ export const getSubmissionsPerDay = async (req, res) => {
       query.submittedBy = { $in: users.map(u => u._id) };
     }
 
-    const submissions = await FacilitySubmission.find(query)
+    const submissions = await FormSubmission.find(query)
       .select("submittedAt")
       .lean();
 
@@ -315,7 +315,7 @@ export const getSubmissionsPerDay = async (req, res) => {
       dailyData[date] = (dailyData[date] || 0) + 1;
     });
 
-    // Facilityat for chart
+    // Format for chart
     const chartData = Object.keys(dailyData)
       .sort()
       .map(date => ({
@@ -354,7 +354,7 @@ export const getAverageApprovalTime = async (req, res) => {
       query.submittedBy = { $in: users.map(u => u._id) };
     }
 
-    const submissions = await FacilitySubmission.find(query)
+    const submissions = await FormSubmission.find(query)
       .select("submittedAt approvedAt rejectedAt status")
       .lean();
 
@@ -406,9 +406,9 @@ export const getRejectionRate = async (req, res) => {
     }
 
     const [approved, rejected, total] = await Promise.all([
-      FacilitySubmission.countDocuments({ ...query, status: "approved" }),
-      FacilitySubmission.countDocuments({ ...query, status: "rejected" }),
-      FacilitySubmission.countDocuments(query)
+      FormSubmission.countDocuments({ ...query, status: "approved" }),
+      FormSubmission.countDocuments({ ...query, status: "rejected" }),
+      FormSubmission.countDocuments(query)
     ]);
 
     const rejectionRate = total > 0 ? ((rejected / total) * 100).toFixed(2) : 0;
@@ -444,9 +444,9 @@ export const getPendingByStage = async (req, res) => {
     }
 
     const [pending, approved, rejected] = await Promise.all([
-      FacilitySubmission.countDocuments({ ...query, status: "pending" }),
-      FacilitySubmission.countDocuments({ ...query, status: "approved" }),
-      FacilitySubmission.countDocuments({ ...query, status: "rejected" })
+      FormSubmission.countDocuments({ ...query, status: "pending" }),
+      FormSubmission.countDocuments({ ...query, status: "approved" }),
+      FormSubmission.countDocuments({ ...query, status: "rejected" })
     ]);
 
     sendResponse(res, 200, "Pending by stage retrieved", {
@@ -502,7 +502,7 @@ export const getPlantWiseStats = async (req, res) => {
     });
 
     // Pre-aggregate submission counts by plant
-    const submissionAggregation = await FacilitySubmission.aggregate([
+    const submissionAggregation = await FormSubmission.aggregate([
       { $match: { submittedBy: { $in: users.map(u => u._id) } } },
       {
         $group: {
@@ -605,7 +605,7 @@ export const getDashboardAnalytics = async (req, res) => {
           query.submittedBy = { $in: userIds };
         }
 
-        const submissions = await FacilitySubmission.find(query).select("submittedAt").lean();
+        const submissions = await FormSubmission.find(query).select("submittedAt").lean();
         const dailyData = {};
         submissions.forEach(sub => {
           const date = dayjs(sub.submittedAt).format("YYYY-MM-DD");
@@ -634,7 +634,7 @@ export const getDashboardAnalytics = async (req, res) => {
           query.submittedBy = { $in: userIds };
         }
 
-        const submissions = await FacilitySubmission.find(query)
+        const submissions = await FormSubmission.find(query)
           .select("submittedAt approvedAt rejectedAt")
           .lean();
 
@@ -671,9 +671,9 @@ export const getDashboardAnalytics = async (req, res) => {
         }
 
         const [approved, rejected, total] = await Promise.all([
-          FacilitySubmission.countDocuments({ ...query, status: "approved" }),
-          FacilitySubmission.countDocuments({ ...query, status: "rejected" }),
-          FacilitySubmission.countDocuments(query)
+          FormSubmission.countDocuments({ ...query, status: "approved" }),
+          FormSubmission.countDocuments({ ...query, status: "rejected" }),
+          FormSubmission.countDocuments(query)
         ]);
 
         return {
@@ -701,9 +701,9 @@ export const getDashboardAnalytics = async (req, res) => {
         }
 
         const [pending, approved, rejected] = await Promise.all([
-          FacilitySubmission.countDocuments({ ...query, status: "pending" }),
-          FacilitySubmission.countDocuments({ ...query, status: "approved" }),
-          FacilitySubmission.countDocuments({ ...query, status: "rejected" })
+          FormSubmission.countDocuments({ ...query, status: "pending" }),
+          FormSubmission.countDocuments({ ...query, status: "approved" }),
+          FormSubmission.countDocuments({ ...query, status: "rejected" })
         ]);
 
         return { pending, approved, rejected, total: pending + approved + rejected };
@@ -738,7 +738,7 @@ export const getDashboardAnalytics = async (req, res) => {
         });
 
         // Pre-aggregate submission counts by plant
-        const submissionAggregation = await FacilitySubmission.aggregate([
+        const submissionAggregation = await FormSubmission.aggregate([
           { $match: { submittedBy: { $in: users.map(u => u._id) } } },
           {
             $group: {
@@ -827,7 +827,7 @@ export const getDashboardAnalytics = async (req, res) => {
           { $sort: { value: -1 } }
         );
 
-        return await FacilitySubmission.aggregate(aggregation);
+        return await FormSubmission.aggregate(aggregation);
       })()
     ]);
 
@@ -875,7 +875,7 @@ export const getSuperAdminAnalytics = async (req, res) => {
     const [
       totalCompanies,
       totalPlants,
-      totalFacilitys,
+      totalForms,
       totalSubmissions,
       approvedCount,
       rejectedCount,
@@ -885,11 +885,11 @@ export const getSuperAdminAnalytics = async (req, res) => {
     ] = await Promise.all([
       Company.countDocuments(companyFilter),
       Plant.countDocuments(plantFilter),
-      Facility.countDocuments(formFilter),
-      FacilitySubmission.countDocuments(submissionFilter),
-      FacilitySubmission.countDocuments({ ...submissionFilter, status: "APPROVED" }),
-      FacilitySubmission.countDocuments({ ...submissionFilter, status: "REJECTED" }),
-      FacilitySubmission.countDocuments({ ...submissionFilter, status: "PENDING_APPROVAL" }),
+      Form.countDocuments(formFilter),
+      FormSubmission.countDocuments(submissionFilter),
+      FormSubmission.countDocuments({ ...submissionFilter, status: "APPROVED" }),
+      FormSubmission.countDocuments({ ...submissionFilter, status: "REJECTED" }),
+      FormSubmission.countDocuments({ ...submissionFilter, status: "PENDING_APPROVAL" }),
       // Company breakdown for table
       (async () => {
         const companies = await Company.find().lean();
@@ -903,11 +903,11 @@ export const getSuperAdminAnalytics = async (req, res) => {
           { $group: { _id: "$companyId", count: { $sum: 1 } } }
         ]);
         
-        const formCounts = await Facility.aggregate([
+        const formCounts = await Form.aggregate([
           { $group: { _id: "$companyId", count: { $sum: 1 } } }
         ]);
         
-        const submissionCounts = await FacilitySubmission.aggregate([
+        const submissionCounts = await FormSubmission.aggregate([
           { $group: {
             _id: "$companyId",
             total: { $sum: 1 },
@@ -966,7 +966,7 @@ export const getSuperAdminAnalytics = async (req, res) => {
       })(),
       // Submissions over time
       (async () => {
-        const submissions = await FacilitySubmission.find(submissionFilter).select("submittedAt").lean();
+        const submissions = await FormSubmission.find(submissionFilter).select("submittedAt").lean();
         const dailyData = {};
         submissions.forEach(sub => {
           const date = dayjs(sub.submittedAt).format("YYYY-MM-DD");
@@ -990,7 +990,7 @@ export const getSuperAdminAnalytics = async (req, res) => {
       kpi: {
         totalCompanies,
         totalPlants,
-        totalFacilitys,
+        totalForms,
         totalSubmissions,
         totalApproved: approvedCount,
         totalRejected: rejectedCount,

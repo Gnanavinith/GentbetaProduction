@@ -13,8 +13,8 @@ export default function OverLimitWarningBanner({
     if (overLimitDetails?.isOverPlantLimit) {
       return `You currently have ${overLimitDetails.usage.plants} plants, but your ${overLimitDetails.planId} plan allows only ${overLimitDetails.limits.maxPlants}.`;
     }
-    if (overLimitDetails?.isOverFacilityLimit) {
-      return `You currently have ${overLimitDetails.usage.forms} forms, but your ${overLimitDetails.planId} plan allows only ${overLimitDetails.limits.maxFacilitysPerPlant}.`;
+    if (overLimitDetails?.isOverFormLimit) {
+      return `You currently have ${overLimitDetails.usage.forms} forms, but your ${overLimitDetails.planId} plan allows only ${overLimitDetails.limits.maxFormsPerPlant}.`;
     }
     if (overLimitDetails?.isOverEmployeeLimit) {
       return `You currently have ${overLimitDetails.usage.employees} employees, but your ${overLimitDetails.planId} plan allows only ${overLimitDetails.limits.maxEmployeesPerPlant}.`;

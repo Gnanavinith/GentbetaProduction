@@ -8,8 +8,8 @@ export const EmployeeActions = ({
   setEditModal, 
   deleteModal, 
   setDeleteModal, 
-  editFacility, 
-  setEditFacility,
+  editForm, 
+  setEditForm,
   onRefresh,
   saving = false,
   handleEditSubmit,
@@ -35,8 +35,8 @@ export const EmployeeActions = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <input 
                   type="text" 
-                  value={editFacility.name} 
-                  onChange={(e) => setEditFacility({ ...editFacility, name: e.target.value })} 
+                  value={editForm.name} 
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" 
                   required 
                 />
@@ -45,8 +45,8 @@ export const EmployeeActions = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input 
                   type="email" 
-                  value={editFacility.email} 
-                  onChange={(e) => setEditFacility({ ...editFacility, email: e.target.value })} 
+                  value={editForm.email} 
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" 
                   required 
                 />
@@ -55,8 +55,8 @@ export const EmployeeActions = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
                 <input 
                   type="text" 
-                  value={editFacility.position} 
-                  onChange={(e) => setEditFacility({ ...editFacility, position: e.target.value })} 
+                  value={editForm.position} 
+                  onChange={(e) => setEditForm({ ...editForm, position: e.target.value })} 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" 
                 />
               </div>
@@ -64,8 +64,8 @@ export const EmployeeActions = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 <input 
                   type="text" 
-                  value={editFacility.phoneNumber} 
-                  onChange={(e) => setEditFacility({ ...editFacility, phoneNumber: e.target.value })} 
+                  value={editForm.phoneNumber} 
+                  onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })} 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" 
                 />
               </div>

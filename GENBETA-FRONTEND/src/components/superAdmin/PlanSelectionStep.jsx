@@ -63,8 +63,8 @@ export default function PlanSelectionStep({
                     <span className="font-bold">{plan.limits.maxPlants === -1 ? '∞ Unlimited' : plan.limits.maxPlants}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Facilitys per Plant:</span>
-                    <span className="font-bold">{plan.limits.maxFacilitysPerPlant === -1 ? '∞ Unlimited' : plan.limits.maxFacilitysPerPlant}</span>
+                    <span className="text-slate-500">Forms per Plant:</span>
+                    <span className="font-bold">{plan.limits.maxFormsPerPlant === -1 ? '∞ Unlimited' : plan.limits.maxFormsPerPlant}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Employees per Plant:</span>

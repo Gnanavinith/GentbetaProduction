@@ -11,30 +11,30 @@ import { logError } from "../../utils/errorHandler";
 import { Modal } from "../../components/modals/Modal";
 import { ActionBar } from "../../components/common/ActionBar";
 
-export default function DraftFacilitysPage() {
+export default function DraftFormsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [Facilitys, setFacilitys] = useState([]);
+  const [forms, setForms] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFacilitys, setSelectedFacilitys] = useState([]);
-  const [selectedFacility, setSelectedFacility] = useState(null);
-  const [showFacilityActionsModal, setShowFacilityActionsModal] = useState(false);
+  const [selectedForms, setSelectedForms] = useState([]);
+  const [selectedForm, setSelectedForm] = useState(null);
+  const [showFormActionsModal, setShowFormActionsModal] = useState(false);
   const [exportingId, setExportingId] = useState(null);
   const [showExportOptions, setShowExportOptions] = useState(null);
 
-  const handleExportFacilityDetails = async (form) => {
+  const handleExportFormDetails = async (form) => {
     try {
       setExportingId(form._id);
       
       // Get form fields/sections
       const fields = form.sections?.flatMap(s => s.fields || []) || form.fields || [];
       
-      // Create export data with Facility ID and column values
+      // Create export data with Form ID and column values
       const exportData = [
-        { Field: "Facility ID", Value: form.numericalId ? `F-${form.numericalId.toString().padStart(3, '0')}` : (form.formId || form._id) },
-        { Field: "Facility Name", Value: form.formName },
+        { Field: "Form ID", Value: form.numericalId ? `F-${form.numericalId.toString().padStart(3, '0')}` : (form.formId || form._id) },
+        { Field: "Form Name", Value: form.formName },
         { Field: "Description", Value: form.description || "" },
         { Field: "Status", Value: form.status },
         { Field: "Created At", Value: formatDate(form.createdAt) },
@@ -48,8 +48,8 @@ export default function DraftFacilitysPage() {
       
       const fileName = `${form.formName}_Details`;
       exportToExcel(exportData, fileName);
-      setShowFacilityActionsModal(false);
-      setSelectedFacility(null);
+      setShowFormActionsModal(false);
+      setSelectedForm(null);
     } catch (err) {
       logError("Export form details", err);
       toast.error("Failed to export form details");
@@ -126,12 +126,12 @@ export default function DraftFacilitysPage() {
   };
 
   const handleBulkExport = async () => {
-    if (selectedFacilitys.length === 0) return;
+    if (selectedForms.length === 0) return;
     
     setExportingId("bulk");
     try {
       let allSubmissions = [];
-      for (const id of selectedFacilitys) {
+      for (const id of selectedForms) {
         const item = allTemplates.find(t => t._id === id);
         if (!item) continue;
         
@@ -146,7 +146,7 @@ export default function DraftFacilitysPage() {
       
       if (allSubmissions.length > 0) {
         const formattedData = formatSubmissionsForExport(allSubmissions);
-        exportToExcel(formattedData, `Bulk_Facility_Export`);
+        exportToExcel(formattedData, `Bulk_Form_Export`);
       } else {
         toast.error("No submission data found for selected templates.");
       }
@@ -187,15 +187,15 @@ export default function DraftFacilitysPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [FacilitysRes, templatesRes] = await Promise.all([
-        formApi.getFacilitys(),
+      const [formsRes, templatesRes] = await Promise.all([
+        formApi.getForms(),
         templateApi.getTemplates()
       ]);
       
       if (formsRes.success) {
-        setFacilitys(formsRes.data);
+        setForms(formsRes.data);
       } else {
-        setFacilitys(formsRes || []);
+        setForms(formsRes || []);
       }
 
       if (templatesRes.success) {
@@ -208,8 +208,8 @@ export default function DraftFacilitysPage() {
     }
   };
 
-  const toggleFacilitySelection = (formId) => {
-    setSelectedFacilitys(prev => 
+  const toggleFormSelection = (formId) => {
+    setSelectedForms(prev => 
       prev.includes(formId) 
         ? prev.filter(id => id !== formId)
         : [...prev, formId]
@@ -217,81 +217,81 @@ export default function DraftFacilitysPage() {
   };
 
   const handleClearSelection = () => {
-    setSelectedFacilitys([]);
+    setSelectedForms([]);
   };
 
   const handleDeleteTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isFacility = forms.some(f => f._id === itemId);
+    const isForm = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Are you sure you want to delete ${itemName}?`)) return;
     
     try {
-      if (isFacility) {
-        await formApi.deleteFacility(itemId);
+      if (isForm) {
+        await formApi.deleteForm(itemId);
       } else {
         await templateApi.deleteTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Delete ${isFacility ? 'form' : 'template'}`, err);
-      const errorMessage = err.response?.data?.message || `Failed to delete ${isFacility ? 'form' : 'template'}`;
+      logError(`Delete ${isForm ? 'form' : 'template'}`, err);
+      const errorMessage = err.response?.data?.message || `Failed to delete ${isForm ? 'form' : 'template'}`;
       toast.error(errorMessage);
     }
   };
 
   const handleArchiveTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isFacility = forms.some(f => f._id === itemId);
+    const isForm = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Archive ${itemName}? It will be hidden from employees but history is preserved.`)) return;
     
     try {
-      if (isFacility) {
-        await formApi.archiveFacility(itemId);
+      if (isForm) {
+        await formApi.archiveForm(itemId);
       } else {
         await templateApi.archiveTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Archive ${isFacility ? 'form' : 'template'}`, err);
-      toast.error(`Failed to archive ${isFacility ? 'form' : 'template'}`);
+      logError(`Archive ${isForm ? 'form' : 'template'}`, err);
+      toast.error(`Failed to archive ${isForm ? 'form' : 'template'}`);
     }
   };
 
   const handleRestoreTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isFacility = forms.some(f => f._id === itemId);
+    const isForm = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Restore ${itemName}? It will become available for use again.`)) return;
     
     try {
-      if (isFacility) {
-        await formApi.restoreFacility(itemId);
+      if (isForm) {
+        await formApi.restoreForm(itemId);
       } else {
         await templateApi.restoreTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Restore ${isFacility ? 'form' : 'template'}`, err);
-      toast.error(`Failed to restore ${isFacility ? 'form' : 'template'}`);
+      logError(`Restore ${isForm ? 'form' : 'template'}`, err);
+      toast.error(`Failed to restore ${isForm ? 'form' : 'template'}`);
     }
   };
 
   // Separate regular forms from templates
-  const regularFacilitys = forms.filter(f => !f.isTemplate);
-  const templateFacilitys = forms.filter(f => f.isTemplate);
+  const regularForms = forms.filter(f => !f.isTemplate);
+  const templateForms = forms.filter(f => f.isTemplate);
   const allTemplates = [
     ...templates.map(t => ({ ...t, isLegacy: true })),
-    ...templateFacilitys
+    ...templateForms
   ];
 
   // Filter for draft forms only
-  const filteredItems = [...regularFacilitys.filter(f => f.status === "DRAFT"), 
-                        ...templateFacilitys.filter(t => t.status === "DRAFT")]
+  const filteredItems = [...regularForms.filter(f => f.status === "DRAFT"), 
+                        ...templateForms.filter(t => t.status === "DRAFT")]
                       .filter(f => f.formName.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const getStatusBadge = (status) => {
@@ -316,7 +316,7 @@ export default function DraftFacilitysPage() {
     <div className="space-y-3 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Draft Facilitys</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Draft Forms</h1>
           <p className="text-xs text-gray-500">Unpublished forms in progress.</p>
         </div>
         </div>
@@ -347,15 +347,15 @@ export default function DraftFacilitysPage() {
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider w-10">
                       <div 
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                          selectedFacilitys.length === filteredItems.length && filteredItems.length > 0
+                          selectedForms.length === filteredItems.length && filteredItems.length > 0
                             ? 'bg-indigo-600 border-indigo-600 text-white' 
                             : 'bg-white border-gray-300 text-transparent'
                         }`}
                         onClick={() => {
-                          if (selectedFacilitys.length === filteredItems.length) {
-                            setSelectedFacilitys([]);
+                          if (selectedForms.length === filteredItems.length) {
+                            setSelectedForms([]);
                           } else {
-                            setSelectedFacilitys(filteredItems.map(f => f._id));
+                            setSelectedForms(filteredItems.map(f => f._id));
                           }
                         }}
                       >
@@ -363,10 +363,10 @@ export default function DraftFacilitysPage() {
                       </div>
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Facility Name
+                      Form Name
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Facility ID
+                      Form ID
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Details
@@ -384,7 +384,7 @@ export default function DraftFacilitysPage() {
                 </thead>
               <tbody className="divide-y divide-gray-100">
                   {filteredItems.map((item) => {
-                    const isSelected = selectedFacilitys.includes(item._id);
+                    const isSelected = selectedForms.includes(item._id);
                     const isArchived = item.status === "ARCHIVED";
                     const name = item.formName;
                     const fieldCount = (item.fields?.length || item.sections?.reduce((acc, s) => acc + (s.fields?.length || 0), 0)) || 0;
@@ -395,10 +395,10 @@ export default function DraftFacilitysPage() {
                         className={`hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? 'bg-indigo-50/30' : ''} ${isArchived ? 'opacity-60 bg-gray-50/50' : ''}`}
                         onClick={() => {
                           if (!item.isTemplate && !isArchived) {
-                            setSelectedFacility(item);
-                            setShowFacilityActionsModal(true);
+                            setSelectedForm(item);
+                            setShowFormActionsModal(true);
                           } else if (!isArchived) {
-                            toggleFacilitySelection(item._id);
+                            toggleFormSelection(item._id);
                           }
                         }}
                       >
@@ -410,7 +410,7 @@ export default function DraftFacilitysPage() {
                                 ? 'bg-indigo-600 border-indigo-600 text-white' 
                                 : 'bg-white border-gray-300 text-transparent'
                             }`}
-                            onClick={() => !isArchived && toggleFacilitySelection(item._id)}
+                            onClick={() => !isArchived && toggleFormSelection(item._id)}
                           >
                             <Check className="w-3 h-3" />
                           </div>
@@ -466,7 +466,7 @@ export default function DraftFacilitysPage() {
                                   <Link
                                     to={`/plant/forms/${item._id}/edit`}
                                     className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                    title="Edit Facility"
+                                    title="Edit Form"
                                   >
                                     <Edit className="w-4 h-4" />
                                   </Link>
@@ -518,31 +518,31 @@ export default function DraftFacilitysPage() {
       )}
 
       <ActionBar 
-        selectedCount={selectedFacilitys.length}
+        selectedCount={selectedForms.length}
         onClear={handleClearSelection}
         onExport={handleBulkExport}
       />
 
-      {showFacilityActionsModal && selectedFacility && (
+      {showFormActionsModal && selectedForm && (
         <Modal 
-          title={`Actions: ${selectedFacility.formName}`}
+          title={`Actions: ${selectedForm.formName}`}
           onClose={() => {
-            setShowFacilityActionsModal(false);
-            setSelectedFacility(null);
+            setShowFormActionsModal(false);
+            setSelectedForm(null);
           }}
         >
           <div className="space-y-3">
             <button
-              onClick={() => handleExportFacilityDetails(selectedFacility)}
-              disabled={exportingId === selectedFacility._id}
+              onClick={() => handleExportFormDetails(selectedForm)}
+              disabled={exportingId === selectedForm._id}
               className="w-full flex items-center gap-3 px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors font-semibold disabled:opacity-50"
             >
-              {exportingId === selectedFacility._id ? (
+              {exportingId === selectedForm._id ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <Download className="w-5 h-5" />
               )}
-              Export Facility Details (Excel)
+              Export Form Details (Excel)
             </button>
           </div>
         </Modal>

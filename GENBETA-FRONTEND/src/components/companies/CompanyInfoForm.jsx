@@ -10,7 +10,7 @@ import {
   Loader2
 } from "lucide-react";
 
-export function CompanyInfoFacility({ company, setCompany, uploading, handleLogoUpload }) {
+export function CompanyInfoForm({ company, setCompany, uploading, handleLogoUpload }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
       <div className="h-1.5 bg-indigo-500" />

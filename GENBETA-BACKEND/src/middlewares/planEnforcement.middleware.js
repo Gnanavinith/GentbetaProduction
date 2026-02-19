@@ -1,4 +1,4 @@
-import { isCompanyOverLimit, validateFacilityCreation } from "../utils/planLimits.js";
+import { isCompanyOverLimit, validateFormCreation } from "../utils/planLimits.js";
 
 /**
  * Middleware to check if company is over plan limits
@@ -52,7 +52,7 @@ export const enforcePlanLimits = (resourceType) => {
           });
         }
         
-        const validationResult = await validateFacilityCreation(companyId, plantId);
+        const validationResult = await validateFormCreation(companyId, plantId);
         
         if (!validationResult.allowed) {
           return res.status(403).json({

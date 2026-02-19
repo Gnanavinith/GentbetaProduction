@@ -22,7 +22,7 @@ export default function Sidebar() {
           to="/forms"
           className={`${navClass} hover:bg-white/10`}
         >
-          Facilitys
+          Forms
         </NavLink>
 
         <NavLink

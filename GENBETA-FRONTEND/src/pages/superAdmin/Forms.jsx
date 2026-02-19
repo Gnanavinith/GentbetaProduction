@@ -1,7 +1,7 @@
-import Facilitys from "../../components/forms/Facilitys";
+import Forms from "../../components/forms/Forms";
 
-export default function SuperAdminFacilitys() {
-  return <Facilitys />;
+export default function SuperAdminForms() {
+  return <Forms />;
 }
 
 

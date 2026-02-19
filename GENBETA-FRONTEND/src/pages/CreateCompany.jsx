@@ -14,10 +14,10 @@ import { getAllPlans } from "../config/plans";
 import CustomPlanModal from "../components/modals/CustomPlanModal";
 
 // Sub-components
-import { CompanyInfoFacility } from "../components/companies/CompanyInfoForm";
+import { CompanyInfoForm } from "../components/companies/CompanyInfoForm";
 import { PlantManager } from "../components/companies/PlantManager";
 import { PlanSelector } from "../components/companies/PlanSelector";
-import { AdminCredentialsFacility } from "../components/companies/AdminCredentialsForm";
+import { AdminCredentialsForm } from "../components/companies/AdminCredentialsForm";
 
 import CreateCompanyWizard from "../components/superAdmin/CreateCompanyWizard";
 

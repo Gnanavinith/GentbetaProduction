@@ -33,7 +33,7 @@ export default function EmployeeTemplates() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const formsRes = await formApi.getFacilitys();
+      const formsRes = await formApi.getForms();
 
       if (formsRes.success) {
         // Add field count calculation to each template (count only top-level fields)
@@ -118,8 +118,8 @@ export default function EmployeeTemplates() {
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Facility Name</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Facility ID</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Form Name</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Form ID</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Top-level Fields</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Approval Levels</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Created At</th>
@@ -138,7 +138,7 @@ export default function EmployeeTemplates() {
                           <td className="px-6 py-4 text-sm text-gray-600">
                             <span 
                               className="font-mono text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200 cursor-help"
-                              title={`Raw ID: ${template._id}${template.formId ? ` | Facility Code: ${template.formId}` : ''}${template.numericalId ? ` | Display: F-${template.numericalId.toString().padStart(3, '0')}` : ''}`}
+                              title={`Raw ID: ${template._id}${template.formId ? ` | Form Code: ${template.formId}` : ''}${template.numericalId ? ` | Display: F-${template.numericalId.toString().padStart(3, '0')}` : ''}`}
                             >
                               {template.numericalId ? `F-${template.numericalId.toString().padStart(3, '0')}` : (template.formId || template._id || "—")}
                             </span>

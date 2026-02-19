@@ -10,7 +10,7 @@ const approvalHistorySchema = new mongoose.Schema({
 
 const formSubmissionSchema = new mongoose.Schema({
   // Core identifiers
-  formId: { type: mongoose.Schema.Types.ObjectId, ref: "Facility", required: true },
+  formId: { type: mongoose.Schema.Types.ObjectId, ref: "Form", required: true },
   formName: { type: String, required: true },
   
   // Submission metadata
@@ -70,8 +70,8 @@ formSubmissionSchema.index({ currentLevel: 1, status: 1 });
 formSubmissionSchema.pre('save', async function(next) {
   if (!this.numericalId && this.isNew) {
     try {
-      const FacilitySubmissionModel = mongoose.model('FacilitySubmission');
-      const maxSubmission = await FacilitySubmissionModel.findOne({}, {}, { sort: { numericalId: -1 } });
+      const FormSubmissionModel = mongoose.model('FormSubmission');
+      const maxSubmission = await FormSubmissionModel.findOne({}, {}, { sort: { numericalId: -1 } });
       this.numericalId = maxSubmission && maxSubmission.numericalId ? maxSubmission.numericalId + 1 : 1000;
     } catch (err) {
       console.error('Error generating numerical ID:', err);
@@ -93,4 +93,4 @@ formSubmissionSchema.pre('save', async function(next) {
   next();
 });
 
-export default mongoose.model("FacilitySubmission", formSubmissionSchema);
+export default mongoose.model("FormSubmission", formSubmissionSchema);

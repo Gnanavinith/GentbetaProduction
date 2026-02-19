@@ -1,23 +1,23 @@
 import api from "./api";
 
 export const formApi = {
-  getFacilitys: async () => {
+  getForms: async () => {
     const response = await api.get("/api/forms");
     return response.data;
   },
-  getFacilityById: async (id) => {
+  getFormById: async (id) => {
     const response = await api.get(`/api/forms/${id}`);
     return response.data;
   },
-  createFacility: async (formData) => {
+  createForm: async (formData) => {
     const response = await api.post("/api/forms", formData);
     return { ...response.data, success: true };
   },
-  updateFacility: async (id, formData) => {
+  updateForm: async (id, formData) => {
     const response = await api.put(`/api/forms/${id}`, formData);
     return { ...response.data, success: true };
   },
-  deleteFacility: async (id) => {
+  deleteForm: async (id) => {
     const response = await api.delete(`/api/forms/${id}`);
     return { ...response.data, success: true };
   },
@@ -25,15 +25,15 @@ export const formApi = {
     const response = await api.post(`/api/forms/${formId}/send-link`, { approverEmail: email });
     return response.data;
   },
-  sendMultiFacilityLink: async (formIds, email) => {
+  sendMultiFormLink: async (formIds, email) => {
     const response = await api.post("/api/approve/send-multi", { formIds, approverEmail: email });
     return response.data;
   },
-  archiveFacility: async (id) => {
+  archiveForm: async (id) => {
     const response = await api.patch(`/api/forms/${id}/archive`);
     return { ...response.data, success: true };
   },
-  restoreFacility: async (id) => {
+  restoreForm: async (id) => {
     const response = await api.patch(`/api/forms/${id}/restore`);
     return { ...response.data, success: true };
   },

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-export default function FacilityCard({ form }) {
+export default function FormCard({ form }) {
   const navigate = useNavigate();
 
   return (
@@ -39,7 +39,7 @@ export default function FacilityCard({ form }) {
           className="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-xl hover:bg-gray-200 transition-all duration-200 text-sm font-semibold"
           onClick={() => navigate(`/forms/${form.formId}/fill`)}
         >
-          Fill Facility
+          Fill Form
         </button>
       </div>
     </div>

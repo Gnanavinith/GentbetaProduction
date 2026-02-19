@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company" },
   plantId: { type: mongoose.Schema.Types.ObjectId, ref: "Plant" },
   permissions: {
-    canFillFacilitys: { type: Boolean, default: true },
+    canFillForms: { type: Boolean, default: true },
     canApprove: { type: Boolean, default: false },
     approvalLevels: [{ type: Number }]
   },

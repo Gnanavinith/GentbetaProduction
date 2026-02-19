@@ -78,4 +78,4 @@ const formTemplateSchema = new mongoose.Schema({
     archivedAt: { type: Date }
   }, { timestamps: true });
 
-export default mongoose.model("FacilityTemplate", formTemplateSchema);
+export default mongoose.model("FormTemplate", formTemplateSchema);

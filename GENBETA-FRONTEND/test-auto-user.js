@@ -114,7 +114,7 @@ const testAutoUserField = () => {
   };
   
   const formattedValue = formatFieldValue(userData, "auto-user");
-  console.log('Facilityatted value:', formattedValue);
+  console.log('Formatted value:', formattedValue);
   
   return {
     userData,

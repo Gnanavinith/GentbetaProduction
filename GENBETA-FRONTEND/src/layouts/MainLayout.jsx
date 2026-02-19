@@ -7,7 +7,7 @@
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const location = useLocation();
     
-    // Check if we are on the Create/Edit Company onboarding page or Facility Builder
+    // Check if we are on the Create/Edit Company onboarding page or Form Builder
     const isFullWidthPage = location.pathname.includes("/super/companies/create") || 
                            location.pathname.match(/\/super\/companies\/.*\/edit/) ||
                            location.pathname.includes("/plant/forms/create") ||

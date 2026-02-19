@@ -6,8 +6,8 @@ import {
   Loader2 
 } from "lucide-react";
 
-export function AdminCredentialsFacility({ admin, setAdmin, loading, plants, company }) {
-  const isFacilityIncomplete = !company.companyName || !admin.name || !admin.email || admin.password.length < 6 || plants.some(p => !p.plantName);
+export function AdminCredentialsForm({ admin, setAdmin, loading, plants, company }) {
+  const isFormIncomplete = !company.companyName || !admin.name || !admin.email || admin.password.length < 6 || plants.some(p => !p.plantName);
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-md sticky top-8">
@@ -72,8 +72,8 @@ export function AdminCredentialsFacility({ admin, setAdmin, loading, plants, com
           <div className="space-y-4">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
               <span className="text-slate-500">Validation Status</span>
-              <span className={isFacilityIncomplete ? "text-amber-600" : "text-emerald-600"}>
-                {isFacilityIncomplete ? "Incomplete" : "Ready"}
+              <span className={isFormIncomplete ? "text-amber-600" : "text-emerald-600"}>
+                {isFormIncomplete ? "Incomplete" : "Ready"}
               </span>
             </div>
           </div>

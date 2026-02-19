@@ -1,8 +1,8 @@
-import ModernFacilityBuilder from "../../components/forms/ModernFormBuilder";
+import ModernFormBuilder from "../../components/forms/ModernFormBuilder";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-export default function FacilityBuilderPage() {
+export default function FormBuilderPage() {
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -16,11 +16,11 @@ export default function FacilityBuilderPage() {
           <div className="p-1.5 bg-white border border-slate-200 rounded-lg group-hover:bg-slate-50 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </div>
-          Back to Facilitys
+          Back to Forms
         </button>
       </div>
 
-      <ModernFacilityBuilder formId={id} />
+      <ModernFormBuilder formId={id} />
     </div>
   );
 }

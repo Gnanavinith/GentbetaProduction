@@ -8,11 +8,11 @@ import {
   EyeOff
 } from "lucide-react";
 
-export const EmployeeFacilityFields = ({ formData, setFacilityData, showPassword, setShowPassword }) => {
+export const EmployeeFormFields = ({ formData, setFormData, showPassword, setShowPassword }) => {
   const inputClasses = "w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all";
   
   const handleInputChange = (field, value) => {
-    setFacilityData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (

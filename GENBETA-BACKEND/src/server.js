@@ -70,7 +70,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Root route
 app.get("/", (req, res) => {
-  res.send("Dynamic Facility Approval SaaS API is running 🚀");
+  res.send("Dynamic Form Approval SaaS API is running 🚀");
 });
 
 // Basic health check

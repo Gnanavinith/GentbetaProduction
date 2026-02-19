@@ -1,6 +1,6 @@
 import { Crown, Zap, Star, Medal, Sparkles } from "lucide-react";
 
-export default function CompanySubscriptionFacility({ company }) {
+export default function CompanySubscriptionForm({ company }) {
   const getPlanIcon = (planKey) => {
     switch(planKey?.toUpperCase()) {
       case "GOLD": return <Medal className="w-5 h-5 text-amber-500" />;
@@ -46,9 +46,9 @@ export default function CompanySubscriptionFacility({ company }) {
           
           <div className="bg-slate-50 rounded-lg p-4 text-center border border-slate-200">
             <div className="text-2xl font-black text-green-600 mb-1">
-              {company.subscription?.customLimits?.maxFacilitysPerPlant === -1 ? '∞' : (company.subscription?.customLimits?.maxFacilitysPerPlant || 10)}
+              {company.subscription?.customLimits?.maxFormsPerPlant === -1 ? '∞' : (company.subscription?.customLimits?.maxFormsPerPlant || 10)}
             </div>
-            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Facilitys/Plant</div>
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Forms/Plant</div>
           </div>
           
           <div className="bg-slate-50 rounded-lg p-4 text-center border border-slate-200">

@@ -1,4 +1,4 @@
-export const validateEmployeeFacility = (formData) => {
+export const validateEmployeeForm = (formData) => {
   const errors = [];
   
   // Required field validations

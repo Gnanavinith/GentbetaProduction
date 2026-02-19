@@ -1,7 +1,7 @@
-export { AddEmployeeFacility } from './AddEmployeeForm';
-export { EmployeeFacilityFields } from './EmployeeFormFields';
+export { AddEmployeeForm } from './AddEmployeeForm';
+export { EmployeeFormFields } from './EmployeeFormFields';
 export { EmployeeLimitChecker } from './EmployeeLimitChecker';
-export { validateEmployeeFacility, validateEmployeeLimits } from './EmployeeValidation';
+export { validateEmployeeForm, validateEmployeeLimits } from './EmployeeValidation';
 export { EmployeeSearch } from './EmployeeSearch';
 export { EmployeeTable } from './EmployeeTable';
 export { EmployeeActions } from './EmployeeActions';

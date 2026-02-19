@@ -81,16 +81,16 @@ export const exportToExcel = async (data, fileName = 'export', sheetName = 'Data
 };
 
 /**
- * Facilityats template details for Excel export with all questions, approvers, created date, and form ID
+ * Formats template details for Excel export with all questions, approvers, created date, and form ID
  * @param {Object} template - The template object
- * @returns {Array} Facilityatted data for export
+ * @returns {Array} Formatted data for export
  */
 export const formatTemplateForExport = (template) => {
   const data = [];
   
   data.push({ Section: 'GENERAL INFORMATION', Key: '', Value: '' });
-  data.push({ Section: 'General', Key: 'Facility ID', Value: template.numericalId || template.formId || template._id });
-  data.push({ Section: 'General', Key: 'Facility Name', Value: template.formName || template.templateName });
+  data.push({ Section: 'General', Key: 'Form ID', Value: template.numericalId || template.formId || template._id });
+  data.push({ Section: 'General', Key: 'Form Name', Value: template.formName || template.templateName });
   data.push({ Section: 'General', Key: 'Description', Value: template.description || 'N/A' });
   data.push({ Section: 'General', Key: 'Created Date', Value: new Date(template.createdAt).toLocaleDateString() });
   data.push({ Section: 'General', Key: 'Created Time', Value: new Date(template.createdAt).toLocaleTimeString() });
@@ -135,9 +135,9 @@ export const formatTemplateForExport = (template) => {
 };
 
 /**
- * Facilityats submission data for Excel export based on user requirements
+ * Formats submission data for Excel export based on user requirements
  * @param {Array} submissions - Array of submission objects
- * @returns {Array} Facilityatted data for export
+ * @returns {Array} Formatted data for export
  */
 export const formatSubmissionsForExport = (submissions) => {
   return submissions.map(s => {
@@ -165,8 +165,8 @@ export const formatSubmissionsForExport = (submissions) => {
     
     const row = {
       'Submission ID': submissionId,
-      'Facility ID': formId,
-      'Facility Name': s.formName || s.templateName || s.templateId?.templateName || s.templateId?.formName || s.formId?.formName || 'Unknown Facility',
+      'Form ID': formId,
+      'Form Name': s.formName || s.templateName || s.templateId?.templateName || s.templateId?.formName || s.formId?.formName || 'Unknown Form',
       'Submitted By': submittedBy || 'Unknown',
       'Date': new Date(s.createdAt || s.submittedAt).toLocaleString(),
       'Approval Status': approvalStatus,

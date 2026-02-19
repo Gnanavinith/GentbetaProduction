@@ -2,20 +2,20 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 
 // Import the model properly
-const Facility = require('./src/models/Facility.model').default;
+const Form = require('./src/models/Form.model').default;
 
-async function checkFacility() {
+async function checkForm() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to MongoDB');
     
-    const form = await Facility.findById('6996997fcf173350d722d9e1');
-    console.log('Facility found:', form ? 'Yes' : 'No');
+    const form = await Form.findById('6996997fcf173350d722d9e1');
+    console.log('Form found:', form ? 'Yes' : 'No');
     
     if (form) {
       console.log('\n=== FORM DETAILS ===');
-      console.log('Facility ID:', form._id);
-      console.log('Facility Name:', form.formName);
+      console.log('Form ID:', form._id);
+      console.log('Form Name:', form.formName);
       console.log('Is Template:', form.isTemplate);
       console.log('Status:', form.status);
       
@@ -57,4 +57,4 @@ async function checkFacility() {
   }
 }
 
-checkFacility();
+checkForm();

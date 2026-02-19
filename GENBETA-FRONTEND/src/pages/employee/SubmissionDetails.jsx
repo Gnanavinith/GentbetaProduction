@@ -13,11 +13,11 @@ import {
   Trash2
 } from "lucide-react";
 import { submissionApi } from "../../api/submission.api";
-import FacilityRenderer from "../../components/FormRenderer/FormRenderer";
+import FormRenderer from "../../components/FormRenderer/FormRenderer";
 import { format } from "date-fns";
 
 // Helper function to extract all fields from form
-const getFacilityFields = (form) => {
+const getFormFields = (form) => {
   if (!form) return [];
   
   let allFields = [...(form.fields || [])];
@@ -242,15 +242,15 @@ export default function SubmissionDetails() {
         </div>
       </div>
 
-      {/* Facility Data */}
+      {/* Form Data */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Facility Data</h2>
+          <h2 className="text-lg font-medium text-gray-900">Form Data</h2>
         </div>
         <div className="p-6">
           {submission.data ? (
             <div className="space-y-4">
-              {getFacilityFields(submission.formId).map((field) => {
+              {getFormFields(submission.formId).map((field) => {
                 const fieldValue = submission.data[field.fieldId] || submission.data[field.id];
                 if (fieldValue === undefined || fieldValue === null) return null;
                 

@@ -87,10 +87,10 @@ export default function PlansPage() {
         </div>
       </div>
 
-      {/* Plant-wise Facility Usage */}
+      {/* Plant-wise Form Usage */}
       {plantUsage && plantUsage.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Facility Usage by Plant</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">Form Usage by Plant</h3>
           <div className="space-y-3">
             {plantUsage.map((plant) => {
               const formsRemaining = plant.formsLimit === "Unlimited" 

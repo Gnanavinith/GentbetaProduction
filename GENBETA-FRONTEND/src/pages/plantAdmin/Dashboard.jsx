@@ -58,10 +58,10 @@ function RecentSubmissionSkeleton() {
 
 export default function PlantAdminDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ totalFacilitys: 0, totalSubmissions: 0, recentApprovals: 0, pendingReview: 0, pendingAssignments: 0 });
+  const [stats, setStats] = useState({ totalForms: 0, totalSubmissions: 0, recentApprovals: 0, pendingReview: 0, pendingAssignments: 0 });
   const [allSubmissions, setAllSubmissions] = useState([]);
     const [recentSubmissions, setRecentSubmissions] = useState([]);
-    const [chartData, setChartData] = useState({ statusDistribution: {}, submissionsPerFacility: [], approvalsByEmployee: [], submissionsTrend: [], submissionsByUser: [] });
+    const [chartData, setChartData] = useState({ statusDistribution: {}, submissionsPerForm: [], approvalsByEmployee: [], submissionsTrend: [], submissionsByUser: [] });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => { 
@@ -88,8 +88,8 @@ export default function PlantAdminDashboard() {
         const token = localStorage.getItem("token");
         console.log("Token:", token ? "Present" : "Missing");
         
-        const [FacilitysRes, submissionsRes, assignmentsRes, analyticsRes] = await Promise.all([
-          formApi.getFacilitys(),
+        const [formsRes, submissionsRes, assignmentsRes, analyticsRes] = await Promise.all([
+          formApi.getForms(),
           submissionApi.getSubmissions(), 
           assignmentApi.getPlantAssignments(),
           analyticsApi.getDashboardAnalytics(30)
@@ -108,10 +108,10 @@ export default function PlantAdminDashboard() {
           return acc;
         }, {});
         
-        // Process Submissions per Facility
+        // Process Submissions per Form
         const formCounts = submissions.reduce((acc, s) => {
-          const formName = s.templateName || s.formId?.formName || "Unknown Facility";
-          acc[FacilityName] = (acc[FacilityName] || 0) + 1;
+          const formName = s.templateName || s.formId?.formName || "Unknown Form";
+          acc[formName] = (acc[formName] || 0) + 1;
           return acc;
         }, {});
         const barData = Object.entries(formCounts)
@@ -144,7 +144,7 @@ export default function PlantAdminDashboard() {
 
         setChartData({ 
           statusDistribution: statusCounts, 
-          submissionsPerFacility: barData, 
+          submissionsPerForm: barData, 
           approvalsByEmployee: (analytics?.approvalsByEmployee || []).map(a => ({ label: a.name || a.label, value: a.count || a.value })),
           submissionsTrend: trendData,
           submissionsByUser: userBarData
@@ -155,7 +155,7 @@ export default function PlantAdminDashboard() {
         const pendingAssignmentsCount = assignments.filter(a => a.status === "PENDING").length;
         
         setStats({
-          totalFacilitys: forms.length,
+          totalForms: forms.length,
           totalSubmissions: submissions.length,
           recentApprovals: approvedCount,
           pendingReview: pendingCount,
@@ -165,7 +165,7 @@ export default function PlantAdminDashboard() {
       } catch (err) { 
         console.error("Error fetching dashboard data:", err);
         // Error handling - could add toast notification here if needed
-        setStats({ totalFacilitys: 0, totalSubmissions: 0, recentApprovals: 0, pendingReview: 0, pendingAssignments: 0 });
+        setStats({ totalForms: 0, totalSubmissions: 0, recentApprovals: 0, pendingReview: 0, pendingAssignments: 0 });
       } finally { 
         setLoading(false); 
       }
@@ -180,7 +180,7 @@ export default function PlantAdminDashboard() {
   }, [allSubmissions]);
 
   const statCards = useMemo(() => [
-    { title: "Active Templates", value: stats.totalFacilitys, icon: <FileText className="w-5 h-5" />, color: "blue" },
+    { title: "Active Templates", value: stats.totalForms, icon: <FileText className="w-5 h-5" />, color: "blue" },
     { title: "Total Submissions", value: stats.totalSubmissions, icon: <ClipboardList className="w-5 h-5" />, color: "indigo" },
     { title: "Pending Review", value: stats.pendingReview, icon: <AlertCircle className="w-5 h-5" />, color: "amber" },
     { title: "My Assignments", value: stats.pendingAssignments, icon: <Clock className="w-5 h-5" />, color: "orange" },
@@ -200,7 +200,7 @@ export default function PlantAdminDashboard() {
             <Download className="w-4 h-4" /> Export
           </button>
           <Link to="/plant/forms/create/select" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md shadow-indigo-100 transition-all text-sm">
-            <Plus className="w-4 h-4" /> Create Facility
+            <Plus className="w-4 h-4" /> Create Form
           </Link>
         </div>
       </div>
@@ -221,7 +221,7 @@ export default function PlantAdminDashboard() {
               <PieChart data={chartData.statusDistribution} title="Submission Status" />
             </div>
             <div className="lg:col-span-2">
-              <BarChart data={chartData.submissionsPerFacility} title="Most Submitted Facilitys" xLabel="Facility Name" yLabel="Submissions" />
+              <BarChart data={chartData.submissionsPerForm} title="Most Submitted Forms" xLabel="Form Name" yLabel="Submissions" />
             </div>
             <div className="lg:col-span-2">
               <BarChart data={chartData.submissionsByUser} title="Top Contributors" xLabel="User" yLabel="Submissions" />
@@ -248,7 +248,7 @@ export default function PlantAdminDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 bg-gray-50 group-hover:bg-white rounded-md flex items-center justify-center transition-colors shadow-sm"><FileText className="w-3.5 h-3.5 text-gray-400" /></div>
                   <div>
-                    <p className="text-xs font-black text-gray-900 leading-none mb-0.5">{s.templateName || s.formId?.formName || "Unknown Facility"}</p>
+                    <p className="text-xs font-black text-gray-900 leading-none mb-0.5">{s.templateName || s.formId?.formName || "Unknown Form"}</p>
                     <p className="text-[10px] font-bold text-gray-500">{typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy}</p>
                   </div>
                 </div>
@@ -273,11 +273,11 @@ export default function PlantAdminDashboard() {
             <div className="grid grid-cols-1 gap-1.5">
               <Link to="/plant/forms/create/select" className="flex items-center gap-2 p-2 rounded-md border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all group">
                 <div className="p-1.5 bg-indigo-50 group-hover:bg-white rounded-md transition-colors"><Plus className="w-3.5 h-3.5 text-indigo-600" /></div>
-                <div><p className="font-black text-xs text-gray-900">Create Facility</p><p className="text-[9px] font-bold text-gray-400">New form or template</p></div>
+                <div><p className="font-black text-xs text-gray-900">Create Form</p><p className="text-[9px] font-bold text-gray-400">New form or template</p></div>
               </Link>
               <Link to="/plant/forms" className="flex items-center gap-2 p-2 rounded-md border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all group">
                 <div className="p-1.5 bg-purple-50 group-hover:bg-white rounded-md transition-colors"><FileText className="w-3.5 h-3.5 text-purple-600" /></div>
-                <div><p className="font-black text-xs text-gray-900">Manage Facilitys</p><p className="text-[9px] font-bold text-gray-400">Edit and assign</p></div>
+                <div><p className="font-black text-xs text-gray-900">Manage Forms</p><p className="text-[9px] font-bold text-gray-400">Edit and assign</p></div>
               </Link>
               <button onClick={handleExport} className="flex items-center gap-2 p-2 rounded-md border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 transition-all group w-full text-left">
                 <div className="p-1.5 bg-emerald-50 group-hover:bg-white rounded-md transition-colors"><Download className="w-3.5 h-3.5 text-emerald-600" /></div>

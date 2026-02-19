@@ -8,7 +8,7 @@
  * - SkeletonCard: For stat cards and dashboard KPIs
  * - SkeletonTable: For data tables
  * - SkeletonChart: For charts and graphs
- * - SkeletonFacility: For form inputs
+ * - SkeletonForm: For form inputs
  */
 
 export function SkeletonCard({ className = "" }) {
@@ -71,7 +71,7 @@ export function SkeletonChart({ className = "" }) {
   );
 }
 
-export function SkeletonFacility({ fields = 3, className = "" }) {
+export function SkeletonForm({ fields = 3, className = "" }) {
   return (
     <div className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 ${className}`}>
       {Array.from({ length: fields }).map((_, i) => (

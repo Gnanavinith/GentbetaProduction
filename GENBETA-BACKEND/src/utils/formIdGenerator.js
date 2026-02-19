@@ -2,11 +2,11 @@ import crypto from 'crypto';
 
 /**
  * Generate form ID in simple format: efsdf-523006
- * Facilityat: [random-string]-[timestamp-based-number]
+ * Format: [random-string]-[timestamp-based-number]
  * @param {string} formName - The name of the form
  * @returns {string} Generated form ID
  */
-export const generateFacilityId = (formName) => {
+export const generateFormId = (formName) => {
   // Generate a random short string based on form name if available
   let baseString = 'form';
   
@@ -35,7 +35,7 @@ export const generateRandomSuffix = () => {
 
 /**
  * Generate a readable submission ID combining form name and numerical ID
- * Facilityat: formname-number
+ * Format: formname-number
  * @param {string} formName - Name of the form
  * @param {number} numericalId - Numerical ID of the submission
  * @returns {string} Readable submission ID

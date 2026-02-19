@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { submissionApi } from "../../api/submission.api";
-import FacilityRenderer from "../../components/FormRenderer/FormRenderer";
+import FormRenderer from "../../components/FormRenderer/FormRenderer";
 
 export default function EditSubmission() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [submission, setSubmission] = useState(null);
-  const [FacilityData, setFacilityData] = useState({});
+  const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -23,7 +23,7 @@ export default function EditSubmission() {
       const response = await submissionApi.getSubmissionById(id);
       if (response.success) {
         setSubmission(response.data);
-        setFacilityData(response.data.data || {});
+        setFormData(response.data.data || {});
       } else {
         setError("Submission not found");
       }
@@ -139,13 +139,13 @@ export default function EditSubmission() {
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="p-6">
-          <FacilityRenderer
+          <FormRenderer
             formDefinition={{
               fields: submission.formId?.fields || [],
               sections: submission.formId?.sections || []
             }}
             initialData={formData}
-            onSubmit={(data) => setFacilityData(data)}
+            onSubmit={(data) => setFormData(data)}
             showSubmitButton={false}
             mode="edit"
           />

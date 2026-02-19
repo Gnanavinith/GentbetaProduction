@@ -1,22 +1,22 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Facility from './src/models/Facility.model.js';
+import Form from './src/models/Form.model.js';
 
 dotenv.config();
 
-const examineSpecificFacility = async () => {
+const examineSpecificForm = async () => {
   try {
     console.log('Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to MongoDB');
     
     // Find the "hai" form that has 4+4=8 fields
-    const forms = await Facility.find({ formName: 'hai' });
+    const forms = await Form.find({ formName: 'hai' });
     
     forms.forEach((form, index) => {
       console.log(`\n=== FORM ${index + 1} ===`);
-      console.log('Facility ID:', form._id);
-      console.log('Facility Name:', form.formName);
+      console.log('Form ID:', form._id);
+      console.log('Form Name:', form.formName);
       console.log('Status:', form.status);
       console.log('Is Template:', form.isTemplate);
       
@@ -62,4 +62,4 @@ const examineSpecificFacility = async () => {
   }
 };
 
-examineSpecificFacility();
+examineSpecificForm();

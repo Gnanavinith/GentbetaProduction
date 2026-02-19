@@ -39,7 +39,7 @@ export default function EmployeeAssignments() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">My Assignments</h1>
-          <p className="text-sm text-gray-500">Facility templates specifically assigned to you.</p>
+          <p className="text-sm text-gray-500">Form templates specifically assigned to you.</p>
         </div>
       </div>
 
@@ -74,7 +74,7 @@ export default function EmployeeAssignments() {
                   <th className="px-6 py-4 text-left">
                     <span className="text-xs font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                       <FileText size={12} />
-                      Facility Name
+                      Form Name
                     </span>
                   </th>
                   <th className="px-6 py-4 text-left">
@@ -153,7 +153,7 @@ export default function EmployeeAssignments() {
                           to={`/employee/fill-assignment/${assignment._id}`}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm group/btn"
                         >
-                          {assignment.status === "FILLED" ? "View" : "Fill Facility"}
+                          {assignment.status === "FILLED" ? "View" : "Fill Form"}
                           <ChevronRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
                         </Link>
                       </td>

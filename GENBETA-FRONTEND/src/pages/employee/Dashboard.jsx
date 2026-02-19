@@ -85,7 +85,7 @@ export default function EmployeeDashboard() {
   const [recentSubmissions, setRecentSubmissions] = useState([]);
   const [chartData, setChartData] = useState({ 
     statusDistribution: {}, 
-    submissionsPerFacility: [], 
+    submissionsPerForm: [], 
     submissionsTrend: [], 
     submissionsByUser: []
   });
@@ -122,10 +122,10 @@ export default function EmployeeDashboard() {
         return acc;
       }, {});
       
-      // Process Submissions per Facility
+      // Process Submissions per Form
       const formCounts = submissions.reduce((acc, s) => {
-        const formName = s.templateName || s.formId?.formName || "Unknown Facility";
-        acc[FacilityName] = (acc[FacilityName] || 0) + 1;
+        const formName = s.templateName || s.formId?.formName || "Unknown Form";
+        acc[formName] = (acc[formName] || 0) + 1;
         return acc;
       }, {});
       const barData = Object.entries(formCounts)
@@ -158,7 +158,7 @@ export default function EmployeeDashboard() {
 
       setChartData({ 
         statusDistribution: statusCounts, 
-        submissionsPerFacility: barData, 
+        submissionsPerForm: barData, 
         submissionsTrend: trendData,
         submissionsByUser: userBarData
       });
@@ -344,7 +344,7 @@ export default function EmployeeDashboard() {
             <PieChart data={chartData.statusDistribution} title="Submission Status" />
           </div>
           <div className="lg:col-span-2">
-            <BarChart data={chartData.submissionsPerFacility} title="Most Submitted Facilitys" xLabel="Facility Name" yLabel="Submissions" />
+            <BarChart data={chartData.submissionsPerForm} title="Most Submitted Forms" xLabel="Form Name" yLabel="Submissions" />
           </div>
           <div className="lg:col-span-1">
             <BarChart data={chartData.submissionsByUser} title="My Submission Activity" xLabel="User" yLabel="Submissions" />
@@ -447,7 +447,7 @@ export default function EmployeeDashboard() {
                       <div className="w-8 h-8 bg-slate-50 group-hover:bg-white rounded-md flex items-center justify-center transition-colors shadow-sm"><FileText className="w-3.5 h-3.5 text-slate-400" /></div>
                       <div>
                         <p className="text-xs font-black text-slate-900 leading-none mb-0.5">
-                          {task.templateId?.templateName || task.templateId?.formName || "Untitled Facility"}
+                          {task.templateId?.templateName || task.templateId?.formName || "Untitled Form"}
                         </p>
                         <p className="text-[10px] font-bold text-slate-500">{task.assignedBy?.name || "System Admin"}</p>
                       </div>
@@ -489,7 +489,7 @@ export default function EmployeeDashboard() {
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 bg-slate-50 group-hover:bg-white rounded-md flex items-center justify-center transition-colors shadow-sm"><FileText className="w-3.5 h-3.5 text-slate-400" /></div>
                     <div>
-                      <p className="text-xs font-black text-slate-900 leading-none mb-0.5">{s.templateName || s.formId?.formName || "Unknown Facility"}</p>
+                      <p className="text-xs font-black text-slate-900 leading-none mb-0.5">{s.templateName || s.formId?.formName || "Unknown Form"}</p>
                       <p className="text-[10px] font-bold text-slate-500">{typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy}</p>
                     </div>
                   </div>

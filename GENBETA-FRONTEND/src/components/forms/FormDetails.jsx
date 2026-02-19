@@ -1,23 +1,23 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import FacilityRenderer from "../FacilityRenderer/FacilityRenderer";
+import FormRenderer from "../FormRenderer/FormRenderer";
 import { formApi } from "../../api/form.api";
 
-export default function FacilityDetails() {
+export default function FormDetails() {
   const { formId } = useParams();
   const navigate = useNavigate();
-  const [Facility, setFacility] = useState(null);
+  const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadFacility = useCallback(async () => {
+  const loadForm = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await formApi.getFacilityById(formId);
+      const response = await formApi.getFormById(formId);
       if (response.success) {
-        setFacility(response.data);
+        setForm(response.data);
       } else {
-        setError(response.message || "Facility not found");
+        setError(response.message || "Form not found");
       }
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Error loading form");
@@ -25,11 +25,11 @@ export default function FacilityDetails() {
     } finally {
       setLoading(false);
     }
-  }, [FacilityId]);
+  }, [formId]);
 
   useEffect(() => {
-    loadFacility();
-  }, [loadFacility]);
+    loadForm();
+  }, [loadForm]);
 
   if (loading) {
     return (
@@ -43,13 +43,13 @@ export default function FacilityDetails() {
     return (
       <div className="p-6">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error || "Facility not found"}
+          {error || "Form not found"}
         </div>
         <button
           onClick={() => navigate("/forms")}
           className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
         >
-          Back to Facilitys
+          Back to Forms
         </button>
       </div>
     );
@@ -62,13 +62,13 @@ export default function FacilityDetails() {
           onClick={() => navigate("/forms")}
           className="text-indigo-600 hover:text-indigo-800 mb-4"
         >
-          ← Back to Facilitys
+          ← Back to Forms
         </button>
         <h1 className="text-2xl font-bold">{form.formName}</h1>
-        <p className="text-sm text-gray-500 mt-1">Facility ID: {form.formId}</p>
+        <p className="text-sm text-gray-500 mt-1">Form ID: {form.formId}</p>
       </div>
 
-      <FacilityRenderer form={form} />
+      <FormRenderer form={form} />
     </div>
   );
 }

@@ -9,8 +9,8 @@ const assignmentSchema = new mongoose.Schema({
   templateModel: {
     type: String,
     required: true,
-    enum: ['FacilityTemplate', 'Facility'],
-    default: 'FacilityTemplate'
+    enum: ['FormTemplate', 'Form'],
+    default: 'FormTemplate'
   },
   employeeId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -23,7 +23,7 @@ const assignmentSchema = new mongoose.Schema({
     },
   dueDate: { type: Date },
   submittedAt: { type: Date },
-  submissionId: { type: mongoose.Schema.Types.ObjectId, ref: "FacilitySubmission" }
+  submissionId: { type: mongoose.Schema.Types.ObjectId, ref: "FormSubmission" }
 }, { timestamps: true });
 
 assignmentSchema.index({ employeeId: 1, status: 1 });

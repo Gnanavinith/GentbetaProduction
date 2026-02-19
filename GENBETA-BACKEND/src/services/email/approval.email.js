@@ -23,19 +23,19 @@ export const sendApprovalEmail = async (
   formId = ""
 ) => {
   // Process formName to remove duplication
-  const cleanFacilityName = removeDuplication(formName);
+  const cleanFormName = removeDuplication(formName);
   // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
   const content = `
-    <h2 style="color: #4f46e5;">Facility Approval Request</h2>
+    <h2 style="color: #4f46e5;">Form Approval Request</h2>
     <p>You have been requested to fill out and approve the following form:</p>
     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
       <strong style="font-size: 18px;">${formName}</strong>
     </div>
     <p>Please click the button below to open the form and submit your data. This link will expire in 48 hours.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Open Approval Facility</a>
+      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Open Approval Form</a>
     </div>
     <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">If you were not expecting this email, please ignore it.</p>
   `;
@@ -50,7 +50,7 @@ export const sendApprovalEmail = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Approval Required] ${formId || 'FORM-ID'} – ${cleanFacilityName} | Level 1 Approval`,
+    subject: `[Approval Required] ${formId || 'FORM-ID'} – ${cleanFormName} | Level 1 Approval`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -91,7 +91,7 @@ export const sendSubmissionNotificationToApprover = async (
   submitterEmail = null
 ) => {
   // Process formName to remove duplication
-  const cleanFacilityName = removeDuplication(formName);
+  const cleanFormName = removeDuplication(formName);
   // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
@@ -134,14 +134,14 @@ export const sendSubmissionNotificationToApprover = async (
   }
 
   const content = `
-    <h2 style="color: #4f46e5;">Facility Approval Request</h2>
+    <h2 style="color: #4f46e5;">Form Approval Request</h2>
     <p style="color: #1f2937; font-size: 16px;">
-      <strong>${submitterName}</strong> submitted the form <strong>${cleanFacilityName}</strong> at ${formatIST(submittedAt)}.
+      <strong>${submitterName}</strong> submitted the form <strong>${cleanFormName}</strong> at ${formatIST(submittedAt)}.
     </p>
     ${approvalContext}
     ${approvalSummaryHtml}
     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
-      <strong style="font-size: 18px;">${cleanFacilityName}</strong>
+      <strong style="font-size: 18px;">${cleanFormName}</strong>
     </div>
     <p>Please click the button below to review and take action on this submission.</p>
     <div style="text-align: center; margin: 30px 0;">
@@ -161,7 +161,7 @@ export const sendSubmissionNotificationToApprover = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Facility Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
+    subject: `[Form Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -177,7 +177,7 @@ export const sendSubmissionNotificationToApprover = async (
 /**
  * Sends notification to approvers when a new form is created and awaiting approval
  */
-export const sendFacilityCreatedApproverNotification = async (
+export const sendFormCreatedApproverNotification = async (
   to,
   formName,
   creatorName,
@@ -189,12 +189,12 @@ export const sendFacilityCreatedApproverNotification = async (
   plantId = null
 ) => {
   // Process formName to remove duplication
-  const cleanFacilityName = removeDuplication(formName);
+  const cleanFormName = removeDuplication(formName);
   // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
   const content = `
-    <h2 style="color: #4f46e5;">New Facility Awaiting Your Approval</h2>
+    <h2 style="color: #4f46e5;">New Form Awaiting Your Approval</h2>
     <p style="color: #1f2937; font-size: 16px;">
       <strong>${creatorName}</strong> has created a new form that requires your approval.
     </p>
@@ -203,7 +203,7 @@ export const sendFacilityCreatedApproverNotification = async (
     </div>
     <p>You have been assigned as an approver for this form. Please review and take action.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Facility</a>
+      <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Form</a>
     </div>
     <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">If you were not expecting this email, please contact your administrator.</p>
   `;
@@ -218,16 +218,16 @@ export const sendFacilityCreatedApproverNotification = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `Action Required: Facility Approval - ${cleanFacilityName}`,
+    subject: `Action Required: Form Approval - ${cleanFormName}`,
     html: getBaseLayout(content, company, plant)
   };
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Facility created approver notification sent: %s", info.messageId);
+    console.log("Form created approver notification sent: %s", info.messageId);
     return info;
   } catch (error) {
-    console.error("Facility created approver notification failed, logging to console:");
+    console.error("Form created approver notification failed, logging to console:");
     console.log("-----------------------------------------");
     console.log(`TO: ${to}`);
     console.log(`FORM: ${formName}`);
@@ -261,7 +261,7 @@ export const sendApprovalStatusNotificationToPlant = async (
   approverEmail = null
 ) => {
   // Process formName to remove duplication
-  const cleanFacilityName = removeDuplication(formName);
+  const cleanFormName = removeDuplication(formName);
   // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
@@ -270,12 +270,12 @@ export const sendApprovalStatusNotificationToPlant = async (
   const statusText = isApproved ? "Approved" : "Rejected";
 
   const content = `
-    <h2 style="color: ${statusColor};">Facility ${statusText}</h2>
+    <h2 style="color: ${statusColor};">Form ${statusText}</h2>
     <p style="color: #1f2937; font-size: 16px;">
       <strong>${approverName}</strong> has ${statusText.toLowerCase()} a submission from <strong>${submitterName}</strong>.
     </p>
     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
-      <strong style="font-size: 18px;">${cleanFacilityName}</strong>
+      <strong style="font-size: 18px;">${cleanFormName}</strong>
       <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">Status: <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
       ${comments ? `<p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">Comments: "${comments}"</p>` : ''}
     </div>
@@ -285,8 +285,8 @@ export const sendApprovalStatusNotificationToPlant = async (
   `;
 
   const subject = isApproved
-    ? `[Facility Approved] ${submissionId || formId || 'FORM-ID'} | Level ${level} Approved by ${approverName}`
-    : `[Facility Rejected] ${submissionId || formId || 'FORM-ID'} | Level ${level} Rejected by ${approverName}`;
+    ? `[Form Approved] ${submissionId || formId || 'FORM-ID'} | Level ${level} Approved by ${approverName}`
+    : `[Form Rejected] ${submissionId || formId || 'FORM-ID'} | Level ${level} Rejected by ${approverName}`;
 
   const fromAddress = approverEmail
     ? `"${approverName}" <${approverEmail}>`

@@ -1,13 +1,13 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Facility from './src/models/Facility.model.js';
-import FacilityTemplate from './src/models/FacilityTemplate.model.js';
+import Form from './src/models/Form.model.js';
+import FormTemplate from './src/models/FormTemplate.model.js';
 import Company from './src/models/Company.model.js';
 import Plant from './src/models/Plant.model.js';
 
 dotenv.config();
 
-const debugFacilityCount = async () => {
+const debugFormCount = async () => {
   try {
     // Connect to database
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/matapang');
@@ -34,31 +34,31 @@ const debugFacilityCount = async () => {
       console.log(`\nPlant: ${plant.name} (${plant._id})`);
       
       // Count forms from both models
-      const formTemplatesCount = await FacilityTemplate.countDocuments({ 
+      const formTemplatesCount = await FormTemplate.countDocuments({ 
         plantId: plant._id, 
         isActive: true 
       });
       
-      const formsCount = await Facility.countDocuments({ 
+      const formsCount = await Form.countDocuments({ 
         plantId: plant._id, 
         isActive: true 
       });
       
       const totalCount = formTemplatesCount + formsCount;
       
-      console.log(`  FacilityTemplate count: ${formTemplatesCount}`);
-      console.log(`  Facility count: ${formsCount}`);
+      console.log(`  FormTemplate count: ${formTemplatesCount}`);
+      console.log(`  Form count: ${formsCount}`);
       console.log(`  Total active forms: ${totalCount}`);
       
       // Show form details
       if (totalCount > 0) {
-        console.log('  Facility details:');
-        const formTemplates = await FacilityTemplate.find({ 
+        console.log('  Form details:');
+        const formTemplates = await FormTemplate.find({ 
           plantId: plant._id, 
           isActive: true 
         });
         
-        const forms = await Facility.find({ 
+        const forms = await Form.find({ 
           plantId: plant._id, 
           isActive: true 
         });
@@ -71,20 +71,20 @@ const debugFacilityCount = async () => {
     }
 
     // Check company-wide counts
-    const companyFacilityTemplatesCount = await FacilityTemplate.countDocuments({ 
+    const companyFormTemplatesCount = await FormTemplate.countDocuments({ 
       companyId, 
       isActive: true 
     });
     
-    const companyFacilitysCount = await Facility.countDocuments({ 
+    const companyFormsCount = await Form.countDocuments({ 
       companyId, 
       isActive: true 
     });
     
     console.log(`\nCompany-wide counts:`);
-    console.log(`  FacilityTemplate: ${companyFacilityTemplatesCount}`);
-    console.log(`  Facility: ${companyFacilitysCount}`);
-    console.log(`  Total: ${companyFacilityTemplatesCount + companyFacilitysCount}`);
+    console.log(`  FormTemplate: ${companyFormTemplatesCount}`);
+    console.log(`  Form: ${companyFormsCount}`);
+    console.log(`  Total: ${companyFormTemplatesCount + companyFormsCount}`);
 
   } catch (error) {
     console.error('Error:', error);
@@ -94,4 +94,4 @@ const debugFacilityCount = async () => {
   }
 };
 
-debugFacilityCount();
+debugFormCount();

@@ -8,7 +8,7 @@ async function testCaching() {
     console.log('1. Testing basic cache operations...');
     const testKey = 'test:form:123';
     const testData = { 
-      formName: 'Test Facility',
+      formName: 'Test Form',
       fields: ['field1', 'field2'],
       createdAt: new Date().toISOString()
     };

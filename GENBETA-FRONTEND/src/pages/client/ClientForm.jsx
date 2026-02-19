@@ -1,28 +1,28 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import FacilityRenderer from "../../components/FacilityRenderer/FacilityRenderer";
+import FormRenderer from "../../components/FormRenderer/FormRenderer";
 import { formApi } from "../../api/form.api";
 import { Loader2 } from "lucide-react";
 
-export default function ClientFacility() {
+export default function ClientForm() {
   const { formId } = useParams();
   const navigate = useNavigate();
-  const [Facility, setFacility] = useState(null);
+  const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadFacility();
-  }, [FacilityId]);
+    loadForm();
+  }, [formId]);
 
-  const loadFacility = async () => {
+  const loadForm = async () => {
     try {
       setLoading(true);
-      const response = await formApi.getFacilityById(formId);
+      const response = await formApi.getFormById(formId);
       if (response.success) {
-        setFacility(response.data);
+        setForm(response.data);
       } else {
-        setError(response.message || "Facility not found");
+        setError(response.message || "Form not found");
       }
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Error loading form");
@@ -52,7 +52,7 @@ export default function ClientFacility() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Facility Not Found</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Form Not Found</h2>
           <p className="text-gray-600 mb-6">{error || "The form you're looking for doesn't exist."}</p>
           <button
             onClick={() => navigate("/")}
@@ -76,9 +76,9 @@ export default function ClientFacility() {
           <p className="text-gray-600">Please fill out all required fields</p>
         </div>
 
-        {/* Facility */}
+        {/* Form */}
         <div className="bg-white rounded-2xl shadow-lg p-8 animate-fade-in-up">
-          <FacilityRenderer form={form} />
+          <FormRenderer form={form} />
         </div>
       </div>
     </div>

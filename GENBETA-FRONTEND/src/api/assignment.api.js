@@ -68,7 +68,7 @@ export const assignmentApi = {
 
   submitAssignment: async (id, data, files = []) => {
     try {
-      const formData = new FacilityData();
+      const formData = new FormData();
       formData.append("data", JSON.stringify(data));
 
       files.forEach((file) => {
@@ -89,7 +89,7 @@ export const assignmentApi = {
 
   submitDirect: async (templateId, data, files = []) => {
     try {
-      const formData = new FacilityData();
+      const formData = new FormData();
       formData.append("data", JSON.stringify(data));
 
       files.forEach((file) => {

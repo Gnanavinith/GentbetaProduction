@@ -26,17 +26,17 @@ export const sendSubmissionNotificationToPlant = async (
   companyId = null
 ) => {
   // Process formName to remove duplication
-  const cleanFacilityName = removeDuplication(formName);
+  const cleanFormName = removeDuplication(formName);
   // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
   const content = `
-    <h2 style="color: #4f46e5;">New Facility Submission</h2>
+    <h2 style="color: #4f46e5;">New Form Submission</h2>
     <p style="color: #1f2937; font-size: 16px;">
       <strong>${submitterName}</strong> has submitted a form.
     </p>
     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
-      <strong style="font-size: 18px;">${cleanFacilityName}</strong>
+      <strong style="font-size: 18px;">${cleanFormName}</strong>
       <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">Submitted at: ${formatIST(submittedAt)}</p>
     </div>
     <p>Click below to view the submission details.</p>
@@ -55,7 +55,7 @@ export const sendSubmissionNotificationToPlant = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Facility Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
+    subject: `[Form Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -87,14 +87,14 @@ export const sendRejectionNotificationToSubmitter = async (
   companyId = null
 ) => {
   // Process formName to remove duplication
-  const cleanFacilityName = removeDuplication(formName);
+  const cleanFormName = removeDuplication(formName);
   // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
   const content = `
-    <h2 style="color: #ef4444;">Facility Submission Rejected</h2>
+    <h2 style="color: #ef4444;">Form Submission Rejected</h2>
     <p style="color: #1f2937; font-size: 16px;">
-      Your submission for <strong>${cleanFacilityName}</strong> has been rejected by <strong>${rejectorName}</strong>.
+      Your submission for <strong>${cleanFormName}</strong> has been rejected by <strong>${rejectorName}</strong>.
     </p>
     <div style="background-color: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 5px; margin: 20px 0;">
       <strong style="color: #991b1b;">Reason for Rejection:</strong>
@@ -116,7 +116,7 @@ export const sendRejectionNotificationToSubmitter = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Facility Rejected] ${submissionId || formId || 'FORM-ID'} | Rejected at Level 1`,
+    subject: `[Form Rejected] ${submissionId || formId || 'FORM-ID'} | Rejected at Level 1`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -148,7 +148,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (
   plantIdParam = null
 ) => {
   // Process formName to remove duplication
-  const cleanFacilityName = removeDuplication(formName);
+  const cleanFormName = removeDuplication(formName);
   const historyHtml = approvalHistory.map(h => `
     <li style="margin-bottom: 10px;">
       <strong>${h.name}</strong> - Approved at ${formatIST(h.date)}
@@ -157,9 +157,9 @@ export const sendFinalApprovalNotificationToSubmitter = async (
   `).join('');
 
   const content = `
-    <h2 style="color: #10b981;">Facility Fully Approved</h2>
+    <h2 style="color: #10b981;">Form Fully Approved</h2>
     <p style="color: #1f2937; font-size: 16px;">
-      Your submission for <strong>${cleanFacilityName}</strong> at ${formatIST(submittedAt)} has been fully verified and approved.
+      Your submission for <strong>${cleanFormName}</strong> at ${formatIST(submittedAt)} has been fully verified and approved.
     </p>
     <div style="margin: 25px 0;">
       <h4 style="color: #374151; margin-bottom: 15px;">Approval History:</h4>
@@ -182,7 +182,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Facility Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
+    subject: `[Form Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -215,7 +215,7 @@ export const sendFinalApprovalNotificationToPlant = async (
   approverName = null
 ) => {
   // Process formName to remove duplication
-  const cleanFacilityName = removeDuplication(formName);
+  const cleanFormName = removeDuplication(formName);
   const historyHtml = approvalHistory.map(h => `
     <li style="margin-bottom: 10px;">
       <strong>${h.name}</strong> - Approved at ${formatIST(h.date)}
@@ -224,9 +224,9 @@ export const sendFinalApprovalNotificationToPlant = async (
   `).join('');
 
   const content = `
-    <h2 style="color: #10b981;">Facility Fully Approved</h2>
+    <h2 style="color: #10b981;">Form Fully Approved</h2>
     <p style="color: #1f2937; font-size: 16px;">
-      The submission for <strong>${cleanFacilityName}</strong> at ${formatIST(submittedAt)} has been fully verified and approved.
+      The submission for <strong>${cleanFormName}</strong> at ${formatIST(submittedAt)} has been fully verified and approved.
     </p>
     <div style="margin: 25px 0;">
       <h4 style="color: #374151; margin-bottom: 15px;">Approval History:</h4>
@@ -251,7 +251,7 @@ export const sendFinalApprovalNotificationToPlant = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Facility Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
+    subject: `[Form Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 

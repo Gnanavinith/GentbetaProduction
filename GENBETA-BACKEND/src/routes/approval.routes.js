@@ -1,8 +1,8 @@
 import express from "express";
 import { 
-  getFacilityByToken, 
-  submitFacilityByToken, 
-  sendMultiFacilityLink,
+  getFormByToken, 
+  submitFormByToken, 
+  sendMultiFormLink,
   getAssignedSubmissions,
   processApproval,
   getEmployeeStats,
@@ -26,10 +26,10 @@ router.post("/process", auth, authorize(["EMPLOYEE", "PLANT_ADMIN"]), processApp
 router.get("/stats/employee", auth, authorize(["EMPLOYEE", "PLANT_ADMIN"]), getEmployeeStats);
 
 // External links
-router.post("/send-multi", auth, authorize(["PLANT_ADMIN"]), sendMultiFacilityLink);
+router.post("/send-multi", auth, authorize(["PLANT_ADMIN"]), sendMultiFormLink);
 
 // Token-based routes (MUST be last - catch-all)
-router.get("/:token", getFacilityByToken);
-router.post("/:token", submitFacilityByToken);
+router.get("/:token", getFormByToken);
+router.post("/:token", submitFormByToken);
 
 export default router;

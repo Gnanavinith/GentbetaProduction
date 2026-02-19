@@ -136,7 +136,7 @@ export default function CompanyCard({ company, onEdit, onDelete }) {
           <p className="text-2xl font-bold text-blue-600">
             {company.formsCount || 0}
           </p>
-          <p className="text-xs text-gray-600 font-medium mt-1">Facilitys</p>
+          <p className="text-xs text-gray-600 font-medium mt-1">Forms</p>
         </div>
       </div>
 
