@@ -128,7 +128,7 @@ export default function AddPlantPage() {
               </div>
             </div>
 
-            {/* Main Form Card */}
+            {/* Main Facility Card */}
             <div className="bg-white rounded-3xl border border-slate-200/60 shadow-2xl shadow-slate-300/50 overflow-hidden">
               {/* Card Header */}
               <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 px-8 md:px-10 py-6 border-b border-slate-200">

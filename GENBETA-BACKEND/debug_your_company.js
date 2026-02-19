@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Form from './src/models/Form.model.js';
-import FormTemplate from './src/models/FormTemplate.model.js';
+import Facility from './src/models/Facility.model.js';
+import FacilityTemplate from './src/models/FacilityTemplate.model.js';
 import Company from './src/models/Company.model.js';
 import Plant from './src/models/Plant.model.js';
 
@@ -36,20 +36,20 @@ const debugYourCompany = async () => {
       console.log(`\nPlant: ${plant.name} (${plant._id})`);
       
       // Count forms from both models
-      const formTemplatesCount = await FormTemplate.countDocuments({ 
+      const formTemplatesCount = await FacilityTemplate.countDocuments({ 
         plantId: plant._id, 
         isActive: true 
       });
       
-      const formsCount = await Form.countDocuments({ 
+      const formsCount = await Facility.countDocuments({ 
         plantId: plant._id, 
         isActive: true 
       });
       
       const totalCount = formTemplatesCount + formsCount;
       
-      console.log(`  FormTemplate count: ${formTemplatesCount}`);
-      console.log(`  Form count: ${formsCount}`);
+      console.log(`  FacilityTemplate count: ${formTemplatesCount}`);
+      console.log(`  Facility count: ${formsCount}`);
       console.log(`  Total active forms: ${totalCount}`);
       
       // Check if over limit (Silver plan = 10 forms per plant)
@@ -62,20 +62,20 @@ const debugYourCompany = async () => {
       
       // Show form details if there are forms
       if (totalCount > 0) {
-        console.log('  Form details:');
-        const formTemplates = await FormTemplate.find({ 
+        console.log('  Facility details:');
+        const formTemplates = await FacilityTemplate.find({ 
           plantId: plant._id, 
           isActive: true 
         });
         
-        const forms = await Form.find({ 
+        const forms = await Facility.find({ 
           plantId: plant._id, 
           isActive: true 
         });
         
         [...formTemplates, ...forms].forEach((form, index) => {
           const modelName = form.constructor.modelName;
-          const name = form.templateName || form.formName || 'Unnamed Form';
+          const name = form.templateName || form.formName || 'Unnamed Facility';
           const status = form.status || 'Unknown';
           console.log(`    ${index + 1}. ${modelName}: ${name} (Status: ${status})`);
         });

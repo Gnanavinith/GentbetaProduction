@@ -15,11 +15,11 @@ import { userApi } from "../../api/user.api";
 import { useAuth } from "../../context/AuthContext";
 import { Users, Plus, Trash2, ShieldCheck, Layout, ChevronDown, ChevronUp } from "lucide-react";
 
-export default function FormBuilder() {
+export default function FacilityBuilder() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [formName, setFormName] = useState("");
+  const [FacilityName, setFacilityName] = useState("");
   const [sections, setSections] = useState([
     { id: crypto.randomUUID(), title: "Default Section", fields: [] }
   ]);
@@ -72,7 +72,7 @@ export default function FormBuilder() {
       const response = await templateApi.getTemplateById(templateId);
       if (response.success && response.data) {
         const template = response.data;
-        setFormName(template.templateName);
+        setFacilityName(template.templateName);
         
         if (template.sections && template.sections.length > 0) {
           const sectionsWithIds = template.sections.map(section => ({
@@ -106,7 +106,7 @@ export default function FormBuilder() {
 
   const deleteSection = (sectionId) => {
     if (sections.length === 1) {
-      setError("Form must have at least one section");
+      setError("Facility must have at least one section");
       return;
     }
     setSections(sections.filter(s => s.id !== sectionId));
@@ -171,7 +171,7 @@ export default function FormBuilder() {
     }
   };
 
-  const validateForm = () => {
+  const validateFacility = () => {
     if (!formName.trim()) {
       setError("Please enter a form name");
       return false;
@@ -215,8 +215,8 @@ export default function FormBuilder() {
     return true;
   };
 
-  const saveForm = async () => {
-    if (!validateForm()) {
+  const saveFacility = async () => {
+    if (!validateFacility()) {
       return;
     }
 
@@ -251,7 +251,7 @@ export default function FormBuilder() {
         status: "PUBLISHED"
       };
 
-      const response = await formApi.createForm(payload);
+      const response = await formApi.createFacility(payload);
         
       if (response.success) {
         if (saveAsTemplate) {
@@ -262,7 +262,7 @@ export default function FormBuilder() {
             fields: allFields
           });
         }
-        alert("Form saved successfully!");
+        alert("Facility saved successfully!");
         navigate("/plant/forms");
       } else {
         setError(response.message || "Failed to save form");
@@ -289,7 +289,7 @@ export default function FormBuilder() {
             </div>
             <div>
               <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Form Designer
+                Facility Designer
               </h2>
               <p className="text-sm text-gray-600 mt-1">Design multi-section forms with advanced logic</p>
             </div>
@@ -297,13 +297,13 @@ export default function FormBuilder() {
           
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Form Name
+              Facility Name
             </label>
             <input
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 outline-none font-medium"
               placeholder="e.g., Daily Safety Audit"
               value={formName}
-              onChange={(e) => setFormName(e.target.value)}
+              onChange={(e) => setFacilityName(e.target.value)}
             />
           </div>
 
@@ -497,7 +497,7 @@ export default function FormBuilder() {
             Cancel
           </button>
           <button
-            onClick={saveForm}
+            onClick={saveFacility}
             disabled={loading}
             className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-10 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold flex items-center gap-2"
             type="button"
@@ -512,7 +512,7 @@ export default function FormBuilder() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Publish Form
+                Publish Facility
               </>
             )}
           </button>

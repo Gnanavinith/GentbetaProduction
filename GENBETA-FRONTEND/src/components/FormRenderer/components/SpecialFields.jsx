@@ -7,7 +7,7 @@ import {
   AlertCircle,
   Loader2
 } from "lucide-react";
-import SignaturePad from "../../forms/ModernFormBuilder/components/SignaturePad";
+import SignaturePad from "../../forms/ModernFacilityBuilder/components/SignaturePad";
 import { uploadImage, uploadFile } from "../../../api/upload.api";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
@@ -404,7 +404,7 @@ export default function SpecialFields({
           update(fieldId, userData);
           // Also notify parent directly to ensure data propagation
           if (typeof update === 'function') {
-            // This should trigger the FormRenderer's handleChange which calls onDataChange
+            // This should trigger the FacilityRenderer's handleChange which calls onDataChange
           }
         }, 0);
       }

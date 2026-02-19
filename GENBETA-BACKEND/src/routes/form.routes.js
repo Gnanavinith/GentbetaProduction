@@ -1,12 +1,12 @@
 import express from "express";
 import {
-  createForm,
-  getForms,
-  getFormById,
-  updateForm,
-  deleteForm,
-  archiveForm,
-  restoreForm,
+  createFacility,
+  getFacilitys,
+  getFacilityById,
+  updateFacility,
+  deleteFacility,
+  archiveFacility,
+  restoreFacility,
   toggleTemplateStatus
 } from "../controllers/form.controller.js";
 import { sendLink } from "../controllers/approval.controller.js";
@@ -17,17 +17,17 @@ import { generateCacheKey, getFromCache, setInCache, deleteFromCache } from "../
 
 const router = express.Router();
 
-router.post("/", auth, authorize(["PLANT_ADMIN"]), enforcePlanLimits("form"), createForm);
-router.get("/", auth, authorize(["SUPER_ADMIN", "COMPANY_ADMIN", "PLANT_ADMIN", "EMPLOYEE"]), getForms);
-router.get("/:id", auth, authorize(["SUPER_ADMIN", "COMPANY_ADMIN", "PLANT_ADMIN", "EMPLOYEE"]), getFormById);
-router.put("/:id", auth, authorize(["PLANT_ADMIN"]), updateForm);
-router.delete("/:id", auth, authorize(["PLANT_ADMIN"]), deleteForm);
+router.post("/", auth, authorize(["PLANT_ADMIN"]), enforcePlanLimits("form"), createFacility);
+router.get("/", auth, authorize(["SUPER_ADMIN", "COMPANY_ADMIN", "PLANT_ADMIN", "EMPLOYEE"]), getFacilitys);
+router.get("/:id", auth, authorize(["SUPER_ADMIN", "COMPANY_ADMIN", "PLANT_ADMIN", "EMPLOYEE"]), getFacilityById);
+router.put("/:id", auth, authorize(["PLANT_ADMIN"]), updateFacility);
+router.delete("/:id", auth, authorize(["PLANT_ADMIN"]), deleteFacility);
 
 router.post("/:id/send-link", auth, authorize(["PLANT_ADMIN"]), sendLink);
 
 // Archive/Restore routes
-router.patch("/:id/archive", auth, authorize(["PLANT_ADMIN"]), archiveForm);
-router.patch("/:id/restore", auth, authorize(["PLANT_ADMIN"]), restoreForm);
+router.patch("/:id/archive", auth, authorize(["PLANT_ADMIN"]), archiveFacility);
+router.patch("/:id/restore", auth, authorize(["PLANT_ADMIN"]), restoreFacility);
 
 // Template status routes
 router.patch("/:id/toggle-template", auth, authorize(["PLANT_ADMIN"]), toggleTemplateStatus);

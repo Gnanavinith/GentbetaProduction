@@ -4,9 +4,9 @@ import { toast } from "react-hot-toast";
 import { ArrowLeft, Loader2, Save, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { companyApi } from "../../api/company.api";
-import CompanyProfileForm from "./CompanyProfileForm";
-import CompanyAdminsForm from "./CompanyAdminsForm";
-import CompanySubscriptionForm from "./CompanySubscriptionForm";
+import CompanyProfileFacility from "./CompanyProfileFacility";
+import CompanyAdminsFacility from "./CompanyAdminsFacility";
+import CompanySubscriptionFacility from "./CompanySubscriptionFacility";
 
 export default function EditCompanyContainer() {
   const { id } = useParams();
@@ -18,7 +18,7 @@ export default function EditCompanyContainer() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [FacilityData, setFacilityData] = useState({
     name: "",
     industry: "",
     contactEmail: "",
@@ -48,7 +48,7 @@ export default function EditCompanyContainer() {
       setCompany(data);
       
       // Initialize form data
-      setFormData({
+      setFacilityData({
         name: data.name || "",
         industry: data.industry || "",
         contactEmail: data.contactEmail || "",
@@ -176,19 +176,19 @@ export default function EditCompanyContainer() {
 
       <div className="px-6 py-8">
         <div className="space-y-8">
-          <CompanyProfileForm 
+          <CompanyProfileFacility 
             formData={formData}
-            setFormData={setFormData}
+            setFacilityData={setFacilityData}
             company={company}
           />
           
-          <CompanyAdminsForm 
+          <CompanyAdminsFacility 
             adminData={adminData}
             setAdminData={setAdminData}
             company={company}
           />
           
-          <CompanySubscriptionForm company={company} />
+          <CompanySubscriptionFacility company={company} />
         </div>
       </div>
     </div>

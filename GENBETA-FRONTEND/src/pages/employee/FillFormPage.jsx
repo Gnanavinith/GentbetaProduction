@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { assignmentApi } from "../../api/assignment.api";
 import { formApi } from "../../api/form.api";
-import FormRenderer from "../../components/FormRenderer/FormRenderer";
+import FacilityRenderer from "../../components/FacilityRenderer/FacilityRenderer";
 import { useAuth } from "../../context/AuthContext";
 import { ArrowLeft, Loader2, FileText, User, Calendar, AlertCircle } from "lucide-react";
 
@@ -16,7 +16,7 @@ const DRAFT_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 // ==================== IN-MEMORY CACHE ====================
 const formCache = new Map();
 
-export default function FillFormPage() {
+export default function FillFacilityPage() {
   const { taskId, formId, assignmentId } = useParams();
   const navigate = useNavigate();
   
@@ -24,12 +24,12 @@ export default function FillFormPage() {
   const { user: currentUser } = useAuth();
   
   // ==================== STATE ====================
-  const [form, setForm] = useState(null);
+  const [Facility, setFacility] = useState(null);
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [formData, setFormData] = useState({});
+  const [FacilityData, setFacilityData] = useState({});
   const [lastSaved, setLastSaved] = useState(null);
   
   // ==================== REFS ====================
@@ -40,7 +40,7 @@ export default function FillFormPage() {
   const draftKey = `${DRAFT_KEY_PREFIX}${formInstanceId}`;
 
   // ==================== CACHE FUNCTIONS ====================
-  const getCachedForm = useCallback((id) => {
+  const getCachedFacility = useCallback((id) => {
     const cached = formCache.get(id);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return cached.data;
@@ -48,7 +48,7 @@ export default function FillFormPage() {
     return null;
   }, []);
 
-  const cacheForm = useCallback((id, data) => {
+  const cacheFacility = useCallback((id, data) => {
     formCache.set(id, {
       data,
       timestamp: Date.now()
@@ -62,7 +62,7 @@ export default function FillFormPage() {
       try {
         const { data, timestamp } = JSON.parse(savedDraft);
         if (Date.now() - timestamp < DRAFT_EXPIRY) {
-          setFormData(data);
+          setFacilityData(data);
           setLastSaved(new Date(timestamp));
           toast.success("Draft restored", { duration: 2000 });
         } else {
@@ -100,7 +100,7 @@ export default function FillFormPage() {
         clearInterval(autoSaveTimerRef.current);
       }
     };
-  }, [formData, draftKey]);
+  }, [FacilityData, draftKey]);
 
   // ==================== CLEANUP ON UNMOUNT ====================
   useEffect(() => {
@@ -121,7 +121,7 @@ export default function FillFormPage() {
     } else if (taskId) {
       fetchTask();
     } else if (formId) {
-      fetchForm();
+      fetchFacility();
     }
   }, [taskId, formId, assignmentId]);
 
@@ -130,7 +130,7 @@ export default function FillFormPage() {
     if (task?.submissionData && Object.keys(task.submissionData).length > 0) {
       // Only set if formData is currently empty to avoid overwriting draft data
       if (Object.keys(formData).length === 0) {
-        setFormData(task.submissionData);
+        setFacilityData(task.submissionData);
       }
     }
   }, [task, formData]);
@@ -141,15 +141,15 @@ export default function FillFormPage() {
     
     try {
       const cacheKey = `assignment_${assignmentId}`;
-      const cached = getCachedForm(cacheKey);
+      const cached = getCachedFacility(cacheKey);
       
       if (cached) {
         setTask(cached.task);
-        setForm(cached.form);
+        setFacility(cached.form);
         // Initialize formData from cached submission data if available
         if (cached.task?.submissionData && Object.keys(cached.task.submissionData).length > 0) {
           if (Object.keys(formData).length === 0) {
-            setFormData(cached.task.submissionData);
+            setFacilityData(cached.task.submissionData);
           }
         }
         if (cached.task?.status === "FILLED") {
@@ -168,9 +168,9 @@ export default function FillFormPage() {
       
       if (response.success) {
         setTask(response.data);
-        setForm(response.data.templateId);
+        setFacility(response.data.templateId);
         
-        cacheForm(cacheKey, {
+        cacheFacility(cacheKey, {
           task: response.data,
           form: response.data.templateId
         });
@@ -178,7 +178,7 @@ export default function FillFormPage() {
         // Initialize formData from assignment submission data if available
         if (response.data.submissionData && Object.keys(response.data.submissionData).length > 0) {
           if (Object.keys(formData).length === 0) {
-            setFormData(response.data.submissionData);
+            setFacilityData(response.data.submissionData);
           }
         }
         
@@ -207,15 +207,15 @@ export default function FillFormPage() {
     
     try {
       const cacheKey = `task_${taskId}`;
-      const cached = getCachedForm(cacheKey);
+      const cached = getCachedFacility(cacheKey);
       
       if (cached) {
         setTask(cached.task);
-        setForm(cached.form);
+        setFacility(cached.form);
         // Initialize formData from cached submission data if available
         if (cached.task?.submissionData && Object.keys(cached.task.submissionData).length > 0) {
           if (Object.keys(formData).length === 0) {
-            setFormData(cached.task.submissionData);
+            setFacilityData(cached.task.submissionData);
           }
         }
         setLoading(false);
@@ -231,9 +231,9 @@ export default function FillFormPage() {
       
       if (response.success) {
         setTask(response.data);
-        setForm(response.data.templateId);
+        setFacility(response.data.templateId);
         
-        cacheForm(cacheKey, {
+        cacheFacility(cacheKey, {
           task: response.data,
           form: response.data.templateId
         });
@@ -241,7 +241,7 @@ export default function FillFormPage() {
         // Initialize formData from task submission data if available
         if (response.data.submissionData && Object.keys(response.data.submissionData).length > 0) {
           if (Object.keys(formData).length === 0) {
-            setFormData(response.data.submissionData);
+            setFacilityData(response.data.submissionData);
           }
         }
       } else {
@@ -260,33 +260,33 @@ export default function FillFormPage() {
     }
   };
 
-  const fetchForm = async () => {
+  const fetchFacility = async () => {
     setLoading(true);
     setError("");
     
     try {
       const cacheKey = `form_${formId}`;
-      const cached = getCachedForm(cacheKey);
+      const cached = getCachedFacility(cacheKey);
       
       if (cached) {
-        setForm(cached);
+        setFacility(cached);
         setLoading(false);
         return;
       }
 
       abortControllerRef.current = new AbortController();
       
-      const response = await formApi.getFormById(
+      const response = await formApi.getFacilityById(
         formId,
         { signal: abortControllerRef.current.signal }
       );
       
       if (response.success) {
-        setForm(response.data);
-        cacheForm(cacheKey, response.data);
+        setFacility(response.data);
+        cacheFacility(cacheKey, response.data);
         // Initialize empty formData for new forms
         if (Object.keys(formData).length === 0) {
-          setFormData({});
+          setFacilityData({});
         }
       } else {
         setError(response.message || "Failed to load template");
@@ -305,13 +305,13 @@ export default function FillFormPage() {
   };
 
   // ==================== FORM SUBMISSION ====================
-  const handleSubmit = async (submittedFormData, files = []) => {
+  const handleSubmit = async (submittedFacilityData, files = []) => {
     if (isSubmittedRef.current || submitting) {
       return;
     }
 
-    console.log('[FillFormPage] handleSubmit called with:', {
-      submittedFormData,
+    console.log('[FillFacilityPage] handleSubmit called with:', {
+      submittedFacilityData,
       files,
       formData: formData
     });
@@ -320,13 +320,13 @@ export default function FillFormPage() {
     const user = currentUser;
     
     // Create submission data with auto-field injection
-    const submissionData = { ...submittedFormData };
+    const submissionData = { ...submittedFacilityData };
     
     // Inject auto-user fields if they exist in the form
     if (form?.fields) {
       form.fields.forEach(field => {
         if (field.type === "auto-user" && !submissionData[field.fieldId]) {
-          console.log('[FillFormPage] Injecting auto-user data for field:', field.fieldId);
+          console.log('[FillFacilityPage] Injecting auto-user data for field:', field.fieldId);
           submissionData[field.fieldId] = {
             id: user?._id || "",
             name: user?.name || "",
@@ -341,7 +341,7 @@ export default function FillFormPage() {
       });
     }
 
-    console.log('[FillFormPage] Final submission data with auto-fields:', submissionData);
+    console.log('[FillFacilityPage] Final submission data with auto-fields:', submissionData);
 
     isSubmittedRef.current = true;
     setSubmitting(true);
@@ -377,12 +377,12 @@ export default function FillFormPage() {
           clearInterval(autoSaveTimerRef.current);
         }
         
-        toast.success("Form submitted successfully!");
+        toast.success("Facility submitted successfully!");
         
         navigate("/employee", { 
           state: { 
             shouldRefresh: true,
-            message: "Form submitted successfully"
+            message: "Facility submitted successfully"
           },
           replace: true
         });
@@ -404,9 +404,9 @@ export default function FillFormPage() {
   };
 
   // ==================== FORM DATA CHANGE HANDLER ====================
-  const handleFormDataChange = useCallback((newData) => {
-    // console.log('[FillFormPage] handleFormDataChange called with:', newData);
-    setFormData(prev => {
+  const handleFacilityDataChange = useCallback((newData) => {
+    // console.log('[FillFacilityPage] handleFacilityDataChange called with:', newData);
+    setFacilityData(prev => {
       // Only update if data actually changed
       if (JSON.stringify(prev) !== JSON.stringify(newData)) {
         return newData;
@@ -445,7 +445,7 @@ export default function FillFormPage() {
             </div>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-red-900 mb-2">Unable to Load Form</h3>
+            <h3 className="text-lg font-semibold text-red-900 mb-2">Unable to Load Facility</h3>
             <p className="text-red-600">{error}</p>
           </div>
           <button
@@ -480,9 +480,9 @@ export default function FillFormPage() {
         )}
       </div>
 
-      {/* Form Container */}
+      {/* Facility Container */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        {/* Form Header */}
+        {/* Facility Header */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -490,7 +490,7 @@ export default function FillFormPage() {
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold text-gray-900 truncate">
-                {form?.templateName || form?.formName || "Form"}
+                {form?.templateName || form?.formName || "Facility"}
               </h1>
               <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500">
                 <div className="flex items-center gap-1">
@@ -520,14 +520,14 @@ export default function FillFormPage() {
           </div>
         )}
 
-        {/* Form Content */}
+        {/* Facility Content */}
         <div className="p-6">
           {form ? (
-            <FormRenderer
+            <FacilityRenderer
               form={form}
               initialData={formData}
               onSubmit={handleSubmit}
-              onDataChange={handleFormDataChange}
+              onDataChange={handleFacilityDataChange}
               submitting={submitting}
               disabled={task?.status === "FILLED"}
             />

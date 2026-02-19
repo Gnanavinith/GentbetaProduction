@@ -93,9 +93,9 @@ formSchema.index({ plantId: 1, status: 1 });
 formSchema.pre('save', async function(next) {
   if (!this.numericalId && this.isNew) {
     try {
-      const FormModel = mongoose.model('Form');
-      const maxForm = await FormModel.findOne().sort({ numericalId: -1 });
-      this.numericalId = maxForm && maxForm.numericalId ? maxForm.numericalId + 1 : 1;
+      const FacilityModel = mongoose.model('Facility');
+      const maxFacility = await FacilityModel.findOne().sort({ numericalId: -1 });
+      this.numericalId = maxFacility && maxFacility.numericalId ? maxFacility.numericalId + 1 : 1;
     } catch (err) {
       console.error('Error generating numerical ID:', err);
       this.numericalId = Date.now(); // Fallback
@@ -104,4 +104,4 @@ formSchema.pre('save', async function(next) {
   next();
 });
 
-export default mongoose.model("Form", formSchema);
+export default mongoose.model("Facility", formSchema);

@@ -18,13 +18,13 @@ import { useAuth } from "../../../context/AuthContext";
 import { logError } from "../../../utils/errorHandler";
 
 // Modularized Components
-import { FormBuilderHeader } from "./components/FormBuilderHeader";
+import { FacilityBuilderHeader } from "./components/FacilityBuilderHeader";
 import { InitializingOverlay } from "./components/InitializingOverlay";
 import { DesignerView } from "./components/DesignerView";
 import { WorkflowView } from "./components/WorkflowView";
 import { PreviewView } from "./components/PreviewView";
 
-export default function ModernFormBuilder({ formId }) {
+export default function ModernFacilityBuilder({ formId }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { view: activeViewFromParams } = useParams();
@@ -50,14 +50,14 @@ export default function ModernFormBuilder({ formId }) {
     // Preserve search params (like name) if any
     const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
     navigate(`${basePath}/${view}${queryString}`);
-  }, [formId, searchParams, navigate]);
+  }, [FacilityId, searchParams, navigate]);
 
   // Determine if this is a template creation based on URL params
   const isTemplateMode = searchParams.get("isTemplate") === "true" || searchParams.get("fromTemplate") || searchParams.get("template");
   const templateId = searchParams.get("template") || searchParams.get("fromTemplate");
 
-  const [formName, setFormName] = useState(searchParams.get("name") || "Untitled Form");
-  const [description, setDescription] = useState("Form template description");
+  const [FacilityName, setFacilityName] = useState(searchParams.get("name") || "Untitled Facility");
+  const [description, setDescription] = useState("Facility template description");
   const [sections, setSections] = useState([
     { id: "section-1", title: "General Information", fields: [] }
   ]);
@@ -109,12 +109,12 @@ export default function ModernFormBuilder({ formId }) {
         
         // Only auto-save drafts for NEW forms, don't modify existing published forms
         if (isNew) {
-          const generatedFormId = `${formName.toLowerCase().replace(/\s+/g, '-')}-${Math.floor(100000 + Math.random() * 900000)}`;
+          const generatedFacilityId = `${formName.toLowerCase().replace(/\s+/g, '-')}-${Math.floor(100000 + Math.random() * 900000)}`;
                 
           const payload = {
             formName: formName.trim(),
             description: description.trim(),
-            formId: generatedFormId,
+            formId: generatedFacilityId,
             status: "DRAFT", // Always create new forms as drafts
             isTemplate: isTemplateMode,
             sections: sections.map(s => ({
@@ -135,7 +135,7 @@ export default function ModernFormBuilder({ formId }) {
             plantId: user?.plantId
           };
 
-          formApi.createForm(payload).catch(e => {
+          formApi.createFacility(payload).catch(e => {
             logError("Unmount create", e);
             if (e.response?.data?.overLimit) {
               toast.error("Your form limit is reached. Contact admin");
@@ -152,25 +152,25 @@ export default function ModernFormBuilder({ formId }) {
     if (initialLoadDone.current) {
       setIsDirty(true);
     }
-  }, [formName, description]);
+  }, [FacilityName, description]);
 
   useEffect(() => {
     if (formId && formId !== "new" && formId !== "create") {
-      loadForm();
+      loadFacility();
     } else if (templateId && !formId) {
       // Load template if creating from template
       loadTemplate(templateId);
     }
-  }, [formId, templateId]);
+  }, [FacilityId, templateId]);
 
   const loadTemplate = useCallback(async (templateId) => {
     try {
       setFetching(true);
       // Try loading as modern form template first
-      const formResponse = await formApi.getFormById(templateId);
+      const formResponse = await formApi.getFacilityById(templateId);
       if (formResponse && formResponse.data) {
         const template = formResponse.data;
-        setFormName(template.formName || "Untitled Form");
+        setFacilityName(template.formName || "Untitled Facility");
         setDescription(template.description || "");
         if (template.sections && template.sections.length > 0) {
           setSections(template.sections.map(s => ({
@@ -198,7 +198,7 @@ export default function ModernFormBuilder({ formId }) {
       const templateResponse = await templateApi.getTemplateById(templateId);
       if (templateResponse && templateResponse.data) {
         const template = templateResponse.data;
-        setFormName(template.templateName || "Untitled Form");
+        setFacilityName(template.templateName || "Untitled Facility");
         setDescription(template.description || "");
         if (template.sections && template.sections.length > 0) {
           setSections(template.sections.map(s => ({
@@ -220,13 +220,13 @@ export default function ModernFormBuilder({ formId }) {
     }
   }, []);
 
-  const loadForm = useCallback(async () => {
+  const loadFacility = useCallback(async () => {
     try {
       setFetching(true);
-      const response = await formApi.getFormById(formId);
+      const response = await formApi.getFacilityById(formId);
       if (response && response.data) {
         const form = response.data;
-        setFormName(form.formName || "New project");
+        setFacilityName(form.formName || "New project");
         setDescription(form.description || "");
         
         // Map approvalFlow from backend to workflow for frontend
@@ -261,7 +261,7 @@ export default function ModernFormBuilder({ formId }) {
     } finally {
       setFetching(false);
     }
-  }, [formId]);
+  }, [FacilityId]);
 
   const handleSave = useCallback(async (isPublish = false, silent = false, overrideStatus = null) => {
     if (!formName.trim()) {
@@ -293,14 +293,14 @@ export default function ModernFormBuilder({ formId }) {
       const shouldCreateNewDraft = isEditingPublished;
       
       // Generate formId - always create new ID for drafts of published forms
-      const generatedFormId = shouldCreateNewDraft || isNew 
+      const generatedFacilityId = shouldCreateNewDraft || isNew 
         ? `${formName.toLowerCase().replace(/\s+/g, '-')}-${Math.floor(100000 + Math.random() * 900000)}`
         : formId;
             
       const payload = {
         formName: formName.trim(),
         description: description.trim(),
-        formId: generatedFormId,
+        formId: generatedFacilityId,
         status: overrideStatus || (isPublish ? "PUBLISHED" : "DRAFT"),
         isTemplate: isTemplateMode,
         sections: sections.map(s => ({
@@ -326,13 +326,13 @@ export default function ModernFormBuilder({ formId }) {
       
       if (shouldCreateNewDraft) {
         // Create new draft version instead of updating published form
-        response = await formApi.createForm(payload);
+        response = await formApi.createFacility(payload);
       } else if (!isNew) {
         // Update existing draft/other status forms
-        response = await formApi.updateForm(formId, payload);
+        response = await formApi.updateFacility(formId, payload);
       } else {
         // Create new form
-        response = await formApi.createForm(payload);
+        response = await formApi.createFacility(payload);
       }
 
       if (response.success) {
@@ -352,7 +352,7 @@ export default function ModernFormBuilder({ formId }) {
         if (!silent) {
           // Check if workflow was assigned/updated
           const hasWorkflow = workflow && workflow.length > 0;
-          const isNewForm = isNew || shouldCreateNewDraft;
+          const isNewFacility = isNew || shouldCreateNewDraft;
           
           if (isPublish) {
             if (hasWorkflow) {
@@ -365,7 +365,7 @@ export default function ModernFormBuilder({ formId }) {
             if (isEditingPublished) {
               toast.success("New draft version created successfully! The original published form remains unchanged.");
               setTimeout(() => navigate("/plant/forms/draft", { state: { shouldRefresh: true } }), 1500);
-            } else if (hasWorkflow && !isNewForm) {
+            } else if (hasWorkflow && !isNewFacility) {
               toast.success("Template draft saved successfully! Emails sent to approvers for workflow assignment.");
             } else {
               toast.success("Template draft saved successfully!");
@@ -393,7 +393,7 @@ export default function ModernFormBuilder({ formId }) {
       saveInProgress.current = false;
       if (!silent) setLoading(false);
     }
-  }, [formName, description, workflow, sections, user?.plantId, formId, activeView, searchParams, navigate, setActiveView, status]);
+  }, [FacilityName, description, workflow, sections, user?.plantId, formId, activeView, searchParams, navigate, setActiveView, status]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -506,9 +506,9 @@ export default function ModernFormBuilder({ formId }) {
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans">
-      <FormBuilderHeader 
+      <FacilityBuilderHeader 
         formName={formName}
-        setFormName={setFormName}
+        setFacilityName={setFacilityName}
         status={status}
         saveStatus={saveStatus}
         activeView={activeView}

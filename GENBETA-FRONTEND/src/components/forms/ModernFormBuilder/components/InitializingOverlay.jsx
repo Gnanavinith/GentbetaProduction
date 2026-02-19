@@ -10,7 +10,7 @@ export function InitializingOverlay() {
           <Layout className="text-indigo-600" size={24} />
         </div>
       </div>
-      <p className="mt-6 text-slate-500 font-bold tracking-tight animate-pulse uppercase text-xs">Initializing Form Engine...</p>
+      <p className="mt-6 text-slate-500 font-bold tracking-tight animate-pulse uppercase text-xs">Initializing Facility Engine...</p>
     </div>
   );
 }

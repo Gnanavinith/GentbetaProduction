@@ -79,7 +79,7 @@ export default function SuperAdminDashboard() {
     const exportData = analytics.companyTable.map(row => ({
       'Company Name': row.companyName,
       'Plants': row.plantsCount,
-      'Forms': row.formsCount,
+      'Facilitys': row.formsCount,
       'Submissions': row.submissionsCount,
       'Approved %': row.approvedPercent,
       'Rejected %': row.rejectedPercent,
@@ -112,7 +112,7 @@ export default function SuperAdminDashboard() {
   const statCardsData = [
     { title: "Network Companies", value: kpis.totalCompanies || 0, icon: <Building2 className="w-7 h-7" />, color: "blue" },
     { title: "Facility Count", value: kpis.totalPlants || 0, icon: <Factory className="w-7 h-7" />, color: "indigo" },
-    { title: "Total Templates", value: kpis.totalForms || 0, icon: <FileText className="w-7 h-7" />, color: "purple" },
+    { title: "Total Templates", value: kpis.totalFacilitys || 0, icon: <FileText className="w-7 h-7" />, color: "purple" },
     { title: "System Throughput", value: kpis.totalSubmissions || 0, icon: <Activity className="w-7 h-7" />, color: "indigo" },
     { title: "Successful Permits", value: kpis.totalApproved || 0, icon: <CheckCircle2 className="w-7 h-7" />, color: "green" },
     { title: "Blocked Permits", value: kpis.totalRejected || 0, icon: <XCircle className="w-7 h-7" />, color: "red" },

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, Filter, LayoutGrid, List } from 'lucide-react';
-import { FormTemplatesTable } from '../../components/forms/FormTemplatesTable';
+import { FacilityTemplatesTable } from '../../components/forms/FacilityTemplatesTable';
 import { templateApi } from '../../api/template.api';
 import { formApi } from '../../api/form.api';
 import { submissionApi } from '../../api/submission.api';
 import { exportToExcel } from '../../utils/excelExport';
 
-export default function FormsOverview() {
+export default function FacilitysOverview() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,10 +27,10 @@ export default function FormsOverview() {
       'Last Updated': t.lastUpdated,
       'Type': t.isLegacy ? 'Legacy' : 'Modern'
     }));
-    exportToExcel(data, "All_Form_Templates");
+    exportToExcel(data, "All_Facility_Templates");
   };
 
-  const formatFormCode = (formId, createdAt) => {
+  const formatFacilityCode = (formId, createdAt) => {
     // Convert formId to uppercase and format as code
     // Example: safety-checklist-abc123 => SAFETY-CHECKLIST-24-JAN-1023-PM-2026-ABC123
     if (!formId) return 'N/A';
@@ -57,12 +57,12 @@ export default function FormsOverview() {
     try {
       const [templatesRes, formsRes, submissionsRes] = await Promise.all([
         templateApi.getTemplates(),
-        formApi.getForms(),
+        formApi.getFacilitys(),
         submissionApi.getSubmissions()
       ]);
 
       const legacyTemplates = templatesRes.success ? templatesRes.data : (Array.isArray(templatesRes) ? templatesRes : []);
-      const modernForms = formsRes.success ? formsRes.data : (Array.isArray(formsRes) ? formsRes : []);
+      const modernFacilitys = formsRes.success ? formsRes.data : (Array.isArray(formsRes) ? formsRes : []);
       const allSubmissions = submissionsRes.success ? submissionsRes.data : (Array.isArray(submissionsRes) ? submissionsRes : []);
 
       const combined = [
@@ -76,7 +76,7 @@ export default function FormsOverview() {
           lastUpdated: t.updatedAt ? new Date(t.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
           isLegacy: true
         })),
-        ...modernForms.filter(f => f.isTemplate || f.status === 'PUBLISHED').map(f => ({
+        ...modernFacilitys.filter(f => f.isTemplate || f.status === 'PUBLISHED').map(f => ({
           id: f._id,
           name: f.formName,
           formCode: f.numericalId ? `F-${f.numericalId.toString().padStart(3, '0')}` : (f.formId || 'N/A'),
@@ -96,7 +96,7 @@ export default function FormsOverview() {
       setTemplates([
         { id: '1', name: 'Safety Inspection Report', description: 'Weekly safety check for plant floor A', status: 'Published', submissionCount: 24, lastUpdated: '12 Jan 2026' },
         { id: '2', name: 'Equipment Maintenance Log', description: 'Daily maintenance tracker for heavy machinery', status: 'Published', submissionCount: 156, lastUpdated: '10 Jan 2026' },
-        { id: '3', name: 'Incident Report Form', description: 'Standard form for reporting workplace incidents', status: 'Published', submissionCount: 8, lastUpdated: '05 Jan 2026' },
+        { id: '3', name: 'Incident Report Facility', description: 'Standard form for reporting workplace incidents', status: 'Published', submissionCount: 8, lastUpdated: '05 Jan 2026' },
         { id: '4', name: 'Shift Handover Notes', description: 'End-of-shift notes for team leads', status: 'Archived', submissionCount: 89, lastUpdated: '20 Dec 2025' },
         { id: '5', name: 'Quality Control Checklist', description: 'Final inspection checklist for production line B', status: 'Draft', submissionCount: 0, lastUpdated: 'Never' },
       ]);
@@ -124,7 +124,7 @@ export default function FormsOverview() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Form Templates</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Facility Templates</h1>
           <p className="text-[15px] text-gray-500">
             Design and manage reusable form structures for your plant.
           </p>
@@ -190,7 +190,7 @@ export default function FormsOverview() {
           </button>
         </div>
 
-        <FormTemplatesTable 
+        <FacilityTemplatesTable 
           templates={templates} 
           loading={loading} 
           onView={handleView}

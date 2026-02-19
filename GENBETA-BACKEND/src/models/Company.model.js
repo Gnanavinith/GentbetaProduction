@@ -22,7 +22,7 @@ const companySchema = new mongoose.Schema({
       billingCycle: { type: String, enum: ["monthly", "yearly", "manual"], default: "monthly" },
       customLimits: {
         maxPlants: { type: Number },
-        maxFormsPerPlant: { type: Number },
+        maxFacilitysPerPlant: { type: Number },
         maxEmployeesPerPlant: { type: Number },
         approvalLevels: { type: Number }
       }

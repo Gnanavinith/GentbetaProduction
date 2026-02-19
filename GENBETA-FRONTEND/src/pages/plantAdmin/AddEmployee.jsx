@@ -1,6 +1,6 @@
-import { AddEmployeeForm } from "../../components/employees";
+import { AddEmployeeFacility } from "../../components/employees";
 
 export default function AddEmployee() {
-  return <AddEmployeeForm />;
+  return <AddEmployeeFacility />;
 }
   

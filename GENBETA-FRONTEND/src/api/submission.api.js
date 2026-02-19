@@ -3,7 +3,7 @@ import api from "./api";
 export const submissionApi = {
   // Create a new submission
   createSubmission: async (formId, data, status = "DRAFT") => {
-    const formData = new FormData();
+    const formData = new FacilityData();
     formData.append('formId', formId);
     formData.append('data', JSON.stringify(data));
     formData.append('status', status);

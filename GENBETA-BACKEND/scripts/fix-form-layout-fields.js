@@ -4,8 +4,8 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Import the Form model
-import Form from '../src/models/Form.model.js';
+// Import the Facility model
+import Facility from '../src/models/Facility.model.js';
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/genbeta', {
@@ -14,7 +14,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/genbeta',
 });
 
 // Helper function to normalize form fields and nest them properly within layout containers
-const normalizeFormFields = (fields) => {
+const normalizeFacilityFields = (fields) => {
   if (!fields || !Array.isArray(fields)) return [];
 
   const normalizedFields = [];
@@ -68,12 +68,12 @@ const normalizeFormFields = (fields) => {
 };
 
 // Migration function
-const migrateForms = async () => {
+const migrateFacilitys = async () => {
   try {
     console.log('Starting form layout migration...');
     
     // Find all forms
-    const forms = await Form.find({});
+    const forms = await Facility.find({});
     console.log(`Found ${forms.length} forms to process`);
 
     let updatedCount = 0;
@@ -81,25 +81,25 @@ const migrateForms = async () => {
 
     for (const form of forms) {
       let needsUpdate = false;
-      let updatedForm = { ...form.toObject() };
+      let updatedFacility = { ...form.toObject() };
 
       // Process top-level fields
-      if (updatedForm.fields && updatedForm.fields.length > 0) {
-        const normalizedFields = normalizeFormFields(updatedForm.fields);
-        if (JSON.stringify(normalizedFields) !== JSON.stringify(updatedForm.fields)) {
-          updatedForm.fields = normalizedFields;
+      if (updatedFacility.fields && updatedFacility.fields.length > 0) {
+        const normalizedFields = normalizeFacilityFields(updatedFacility.fields);
+        if (JSON.stringify(normalizedFields) !== JSON.stringify(updatedFacility.fields)) {
+          updatedFacility.fields = normalizedFields;
           needsUpdate = true;
         }
       }
 
       // Process fields within sections
-      if (updatedForm.sections && updatedForm.sections.length > 0) {
-        for (let j = 0; j < updatedForm.sections.length; j++) {
-          const section = updatedForm.sections[j];
+      if (updatedFacility.sections && updatedFacility.sections.length > 0) {
+        for (let j = 0; j < updatedFacility.sections.length; j++) {
+          const section = updatedFacility.sections[j];
           if (section.fields && section.fields.length > 0) {
-            const normalizedSectionFields = normalizeFormFields(section.fields);
+            const normalizedSectionFields = normalizeFacilityFields(section.fields);
             if (JSON.stringify(normalizedSectionFields) !== JSON.stringify(section.fields)) {
-              updatedForm.sections[j].fields = normalizedSectionFields;
+              updatedFacility.sections[j].fields = normalizedSectionFields;
               needsUpdate = true;
             }
           }
@@ -108,11 +108,11 @@ const migrateForms = async () => {
 
       if (needsUpdate) {
         // Update the form in the database
-        await Form.findByIdAndUpdate(
+        await Facility.findByIdAndUpdate(
           form._id,
           { 
-            fields: updatedForm.fields,
-            sections: updatedForm.sections
+            fields: updatedFacility.fields,
+            sections: updatedFacility.sections
           },
           { new: true, runValidators: true }
         );
@@ -138,4 +138,4 @@ const migrateForms = async () => {
 };
 
 // Run the migration
-migrateForms();
+migrateFacilitys();

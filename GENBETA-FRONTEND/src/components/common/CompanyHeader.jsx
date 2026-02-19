@@ -9,7 +9,7 @@ export default function CompanyHeader() {
 
   return (
     <div className="w-full mb-6">
-      {/* Enterprise-Grade Form Header Card */}
+      {/* Enterprise-Grade Facility Header Card */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
         <div className="flex flex-col md:flex-row items-stretch min-h-[90px]">
           

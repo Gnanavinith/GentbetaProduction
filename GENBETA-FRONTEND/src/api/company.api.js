@@ -14,8 +14,8 @@ export const companyApi = {
     const hasFile = companyData.logo instanceof File;
     
     if (hasFile) {
-      // Use FormData for file upload
-      const formData = new FormData();
+      // Use FacilityData for file upload
+      const formData = new FacilityData();
       Object.keys(companyData).forEach(key => {
         formData.append(key, companyData[key]);
       });

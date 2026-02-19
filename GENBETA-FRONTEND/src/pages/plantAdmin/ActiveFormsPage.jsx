@@ -14,16 +14,16 @@ import ApproverSelectionModal from "../../components/modals/ApproverSelectionMod
 import { Modal, Input } from "../../components/modals/Modal";
 import { ActionBar } from "../../components/common/ActionBar";
 
-export default function ActiveFormsPage() {
+export default function ActiveFacilitysPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [forms, setForms] = useState([]);
+  const [Facilitys, setFacilitys] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedForms, setSelectedForms] = useState([]);
-  const [selectedForm, setSelectedForm] = useState(null);
-  const [showFormActionsModal, setShowFormActionsModal] = useState(false);
+  const [selectedFacilitys, setSelectedFacilitys] = useState([]);
+  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [showFacilityActionsModal, setShowFacilityActionsModal] = useState(false);
   const [isApproverModalOpen, setIsApproverModalOpen] = useState(false);
   const [exportingId, setExportingId] = useState(null);
   const [showExportOptions, setShowExportOptions] = useState(null);
@@ -40,16 +40,16 @@ export default function ActiveFormsPage() {
     }
     
     try {
-      const response = await formApi.updateForm(form._id, {
+      const response = await formApi.updateFacility(form._id, {
         ...form,
         isTemplate: true,
         status: "PUBLISHED" // Ensure it's published so it appears in Active tab
       });
       
       if (response.success) {
-        toast.success("Form saved as template successfully! It will appear in Templates and Active tabs.");
-        setShowFormActionsModal(false);
-        setSelectedForm(null);
+        toast.success("Facility saved as template successfully! It will appear in Templates and Active tabs.");
+        setShowFacilityActionsModal(false);
+        setSelectedFacility(null);
         fetchData();
       } else {
         toast.error(response.message || "Failed to save as template");
@@ -60,17 +60,17 @@ export default function ActiveFormsPage() {
     }
   };
 
-  const handleExportFormDetails = async (form) => {
+  const handleExportFacilityDetails = async (form) => {
     try {
       setExportingId(form._id);
       
       // Get form fields/sections
       const fields = form.sections?.flatMap(s => s.fields || []) || form.fields || [];
       
-      // Create export data with Form ID and column values
+      // Create export data with Facility ID and column values
       const exportData = [
-        { Field: "Form ID", Value: form.numericalId ? `F-${form.numericalId.toString().padStart(3, '0')}` : (form.formId || form._id) },
-        { Field: "Form Name", Value: form.formName },
+        { Field: "Facility ID", Value: form.numericalId ? `F-${form.numericalId.toString().padStart(3, '0')}` : (form.formId || form._id) },
+        { Field: "Facility Name", Value: form.formName },
         { Field: "Description", Value: form.description || "" },
         { Field: "Status", Value: form.status },
         { Field: "Created At", Value: formatDate(form.createdAt) },
@@ -84,8 +84,8 @@ export default function ActiveFormsPage() {
       
       const fileName = `${form.formName}_Details`;
       exportToExcel(exportData, fileName);
-      setShowFormActionsModal(false);
-      setSelectedForm(null);
+      setShowFacilityActionsModal(false);
+      setSelectedFacility(null);
     } catch (err) {
       logError("Export form details", err);
       toast.error("Failed to export form details");
@@ -162,12 +162,12 @@ export default function ActiveFormsPage() {
   };
 
   const handleBulkExport = async () => {
-    if (selectedForms.length === 0) return;
+    if (selectedFacilitys.length === 0) return;
     
     setExportingId("bulk");
     try {
       let allSubmissions = [];
-      for (const id of selectedForms) {
+      for (const id of selectedFacilitys) {
         const item = allTemplates.find(t => t._id === id);
         if (!item) continue;
         
@@ -182,7 +182,7 @@ export default function ActiveFormsPage() {
       
       if (allSubmissions.length > 0) {
         const formattedData = formatSubmissionsForExport(allSubmissions);
-        exportToExcel(formattedData, `Bulk_Form_Export`);
+        exportToExcel(formattedData, `Bulk_Facility_Export`);
       } else {
         toast.error("No submission data found for selected templates.");
       }
@@ -207,7 +207,7 @@ export default function ActiveFormsPage() {
     });
   };
 
-  const formatFormCode = (formId, createdAt) => {
+  const formatFacilityCode = (formId, createdAt) => {
     // Convert formId to uppercase and format as code
     // Example: safety-checklist-abc123 => SAFETY-CHECKLIST-24-JAN-1023-PM-2026-ABC123
     if (!formId) return 'N/A';
@@ -267,32 +267,32 @@ export default function ActiveFormsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [formsRes, templatesRes] = await Promise.all([
-        formApi.getForms(),
+      const [FacilitysRes, templatesRes] = await Promise.all([
+        formApi.getFacilitys(),
         templateApi.getTemplates()
       ]);
       
       if (formsRes.success) {
         // Check for any malformed data that might cause "allshow" string
-        const cleanedForms = formsRes.data.map(form => {
+        const cleanedFacilitys = formsRes.data.map(form => {
           if (form.formName && form.formName.includes("allshow")) {
             console.warn("Found malformed form name:", form.formName);
             return { ...form, formName: form.formName.replace("allshow", "[ERROR]") };
           }
           return form;
         });
-        setForms(cleanedForms);
+        setFacilitys(cleanedFacilitys);
       } else {
         const formsData = formsRes || [];
         // Check for malformed data in fallback case
-        const cleanedForms = formsData.map(form => {
+        const cleanedFacilitys = formsData.map(form => {
           if (form.formName && form.formName.includes("allshow")) {
             console.warn("Found malformed form name in fallback:", form.formName);
             return { ...form, formName: form.formName.replace("allshow", "[ERROR]") };
           }
           return form;
         });
-        setForms(cleanedForms);
+        setFacilitys(cleanedFacilitys);
       }
 
       if (templatesRes.success) {
@@ -313,8 +313,8 @@ export default function ActiveFormsPage() {
     }
   };
 
-  const handleSendMultiFormLink = async () => {
-    if (selectedForms.length === 0) {
+  const handleSendMultiFacilityLink = async () => {
+    if (selectedFacilitys.length === 0) {
       toast.error("Please select at least one template");
       return;
     }
@@ -323,7 +323,7 @@ export default function ActiveFormsPage() {
 
   const onConfirmApproval = async (approverId) => {
     // Validate input data
-    if (!selectedForms || selectedForms.length === 0) {
+    if (!selectedFacilitys || selectedFacilitys.length === 0) {
       toast.error("Please select at least one form to assign");
       return;
     }
@@ -334,17 +334,17 @@ export default function ActiveFormsPage() {
     }
     
     try {
-      console.log("Sending assignment data:", { formIds: selectedForms, assignedTo: approverId });
+      console.log("Sending assignment data:", { formIds: selectedFacilitys, assignedTo: approverId });
       
       const response = await assignmentApi.createTasks({
-        formIds: selectedForms,
+        formIds: selectedFacilitys,
         assignedTo: approverId
       });
 
       if (response.success) {
-        const successMessage = response.message || `Form(s) assigned successfully to the employee!`;
+        const successMessage = response.message || `Facility(s) assigned successfully to the employee!`;
         toast.success(successMessage);
-        setSelectedForms([]);
+        setSelectedFacilitys([]);
         setIsApproverModalOpen(false);
       } else {
         const errorMessage = response.message || "Failed to assign forms";
@@ -361,8 +361,8 @@ export default function ActiveFormsPage() {
     }
   };
 
-  const toggleFormSelection = (formId) => {
-    setSelectedForms(prev => 
+  const toggleFacilitySelection = (formId) => {
+    setSelectedFacilitys(prev => 
       prev.includes(formId) 
         ? prev.filter(id => id !== formId)
         : [...prev, formId]
@@ -370,81 +370,81 @@ export default function ActiveFormsPage() {
   };
 
   const handleClearSelection = () => {
-    setSelectedForms([]);
+    setSelectedFacilitys([]);
   };
 
   const handleDeleteTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isForm = forms.some(f => f._id === itemId);
+    const isFacility = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Are you sure you want to delete ${itemName}?`)) return;
     
     try {
-      if (isForm) {
-        await formApi.deleteForm(itemId);
+      if (isFacility) {
+        await formApi.deleteFacility(itemId);
       } else {
         await templateApi.deleteTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Delete ${isForm ? 'form' : 'template'}`, err);
-      const errorMessage = err.response?.data?.message || `Failed to delete ${isForm ? 'form' : 'template'}`;
+      logError(`Delete ${isFacility ? 'form' : 'template'}`, err);
+      const errorMessage = err.response?.data?.message || `Failed to delete ${isFacility ? 'form' : 'template'}`;
       toast.error(errorMessage);
     }
   };
 
   const handleArchiveTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isForm = forms.some(f => f._id === itemId);
+    const isFacility = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Archive ${itemName}? It will be hidden from employees but history is preserved.`)) return;
     
     try {
-      if (isForm) {
-        await formApi.archiveForm(itemId);
+      if (isFacility) {
+        await formApi.archiveFacility(itemId);
       } else {
         await templateApi.archiveTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Archive ${isForm ? 'form' : 'template'}`, err);
-      toast.error(`Failed to archive ${isForm ? 'form' : 'template'}`);
+      logError(`Archive ${isFacility ? 'form' : 'template'}`, err);
+      toast.error(`Failed to archive ${isFacility ? 'form' : 'template'}`);
     }
   };
 
   const handleRestoreTemplate = async (itemId) => {
     const item = [...templates, ...forms].find(f => f._id === itemId);
-    const isForm = forms.some(f => f._id === itemId);
+    const isFacility = forms.some(f => f._id === itemId);
     
     const itemName = item?.templateName || item?.formName || 'this item';
     if (!confirm(`Restore ${itemName}? It will become available for use again.`)) return;
     
     try {
-      if (isForm) {
-        await formApi.restoreForm(itemId);
+      if (isFacility) {
+        await formApi.restoreFacility(itemId);
       } else {
         await templateApi.restoreTemplate(itemId);
       }
       fetchData();
     } catch (err) {
-      logError(`Restore ${isForm ? 'form' : 'template'}`, err);
-      toast.error(`Failed to restore ${isForm ? 'form' : 'template'}`);
+      logError(`Restore ${isFacility ? 'form' : 'template'}`, err);
+      toast.error(`Failed to restore ${isFacility ? 'form' : 'template'}`);
     }
   };
 
   // Separate regular forms from templates
-  const regularForms = forms.filter(f => !f.isTemplate);
-  const templateForms = forms.filter(f => f.isTemplate);
+  const regularFacilitys = forms.filter(f => !f.isTemplate);
+  const templateFacilitys = forms.filter(f => f.isTemplate);
   const allTemplates = [
     ...templates.map(t => ({ ...t, isLegacy: true })),
-    ...templateForms
+    ...templateFacilitys
   ];
 
   // Filter for active forms only
-  const filteredItems = [...regularForms.filter(f => f.status === "PUBLISHED"), 
-                         ...templateForms.filter(t => t.status === "PUBLISHED")]
+  const filteredItems = [...regularFacilitys.filter(f => f.status === "PUBLISHED"), 
+                         ...templateFacilitys.filter(t => t.status === "PUBLISHED")]
                        .filter(f => f.formName.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const getStatusBadge = (status) => {
@@ -469,7 +469,7 @@ export default function ActiveFormsPage() {
     <div className="space-y-3 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Active Forms</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Active Facilitys</h1>
           <p className="text-xs text-gray-500">Published forms available for use.</p>
         </div>
         {user?.role === "PLANT_ADMIN" && (
@@ -509,15 +509,15 @@ export default function ActiveFormsPage() {
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider w-10">
                       <div 
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                          selectedForms.length === filteredItems.length && filteredItems.length > 0
+                          selectedFacilitys.length === filteredItems.length && filteredItems.length > 0
                             ? 'bg-indigo-600 border-indigo-600 text-white' 
                             : 'bg-white border-gray-300 text-transparent'
                         }`}
                         onClick={() => {
-                          if (selectedForms.length === filteredItems.length) {
-                            setSelectedForms([]);
+                          if (selectedFacilitys.length === filteredItems.length) {
+                            setSelectedFacilitys([]);
                           } else {
-                            setSelectedForms(filteredItems.map(f => f._id));
+                            setSelectedFacilitys(filteredItems.map(f => f._id));
                           }
                         }}
                       >
@@ -525,10 +525,10 @@ export default function ActiveFormsPage() {
                       </div>
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Form Name
+                      Facility Name
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Form ID
+                      Facility ID
                     </th>
                     <th className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Details
@@ -546,7 +546,7 @@ export default function ActiveFormsPage() {
                 </thead>
               <tbody className="divide-y divide-gray-100">
                   {filteredItems.map((item) => {
-                    const isSelected = selectedForms.includes(item._id);
+                    const isSelected = selectedFacilitys.includes(item._id);
                     const isArchived = item.status === "ARCHIVED";
                     const name = item.formName;
                     const fieldCount = (item.fields?.length || item.sections?.reduce((acc, s) => acc + (s.fields?.length || 0), 0)) || 0;
@@ -557,10 +557,10 @@ export default function ActiveFormsPage() {
                         className={`hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? 'bg-indigo-50/30' : ''} ${isArchived ? 'opacity-60 bg-gray-50/50' : ''}`}
                         onClick={() => {
                           if (!item.isTemplate && !isArchived) {
-                            setSelectedForm(item);
-                            setShowFormActionsModal(true);
+                            setSelectedFacility(item);
+                            setShowFacilityActionsModal(true);
                           } else if (!isArchived) {
-                            toggleFormSelection(item._id);
+                            toggleFacilitySelection(item._id);
                           }
                         }}
                       >
@@ -572,7 +572,7 @@ export default function ActiveFormsPage() {
                                 ? 'bg-indigo-600 border-indigo-600 text-white' 
                                 : 'bg-white border-gray-300 text-transparent'
                             }`}
-                            onClick={() => !isArchived && toggleFormSelection(item._id)}
+                            onClick={() => !isArchived && toggleFacilitySelection(item._id)}
                           >
                             <Check className="w-3 h-3" />
                           </div>
@@ -626,18 +626,18 @@ export default function ActiveFormsPage() {
                               {!isArchived && (
                                 <button
                                   onClick={() => {
-                                    toggleFormSelection(item._id);
-                                    if (!selectedForms.includes(item._id)) {
+                                    toggleFacilitySelection(item._id);
+                                    if (!selectedFacilitys.includes(item._id)) {
                                       // If this is the first selection, show assign modal
                                       setTimeout(() => {
-                                        if (selectedForms.length > 0 || [item._id].length > 0) {
-                                          handleSendMultiFormLink();
+                                        if (selectedFacilitys.length > 0 || [item._id].length > 0) {
+                                          handleSendMultiFacilityLink();
                                         }
                                       }, 100);
                                     }
                                   }}
                                   className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                                  title="Assign Form"
+                                  title="Assign Facility"
                                 >
                                   <UserPlus className="w-4 h-4" />
                                 </button>
@@ -649,7 +649,7 @@ export default function ActiveFormsPage() {
                                   <Link
                                     to={`/plant/forms/${item._id}/edit`}
                                     className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                    title="Edit Form"
+                                    title="Edit Facility"
                                   >
                                     <Edit className="w-4 h-4" />
                                   </Link>
@@ -701,34 +701,34 @@ export default function ActiveFormsPage() {
       )}
 
       <ActionBar 
-        selectedCount={selectedForms.length}
+        selectedCount={selectedFacilitys.length}
         onClear={handleClearSelection}
         onExport={handleBulkExport}
-        onAssign={handleSendMultiFormLink}
+        onAssign={handleSendMultiFacilityLink}
       />
 
       <ApproverSelectionModal 
         isOpen={isApproverModalOpen}
         onClose={() => setIsApproverModalOpen(false)}
         onConfirm={onConfirmApproval}
-        selectedForms={
-          [...templates.map(t => ({...t, isLegacy: true})), ...templateForms]
-            .filter(f => selectedForms.includes(f._id))
+        selectedFacilitys={
+          [...templates.map(t => ({...t, isLegacy: true})), ...templateFacilitys]
+            .filter(f => selectedFacilitys.includes(f._id))
         }
       />
 
-      {showFormActionsModal && selectedForm && (
+      {showFacilityActionsModal && selectedFacility && (
         <Modal 
-          title={`Actions: ${selectedForm.formName}`}
+          title={`Actions: ${selectedFacility.formName}`}
           onClose={() => {
-            setShowFormActionsModal(false);
-            setSelectedForm(null);
+            setShowFacilityActionsModal(false);
+            setSelectedFacility(null);
           }}
         >
           <div className="space-y-3">
             {user?.role === "PLANT_ADMIN" && templateFeatureEnabled && (
               <button
-                onClick={() => handleSaveAsTemplate(selectedForm)}
+                onClick={() => handleSaveAsTemplate(selectedFacility)}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition-colors font-semibold"
               >
                 <Copy className="w-5 h-5" />
@@ -736,16 +736,16 @@ export default function ActiveFormsPage() {
               </button>
             )}
             <button
-              onClick={() => handleExportFormDetails(selectedForm)}
-              disabled={exportingId === selectedForm._id}
+              onClick={() => handleExportFacilityDetails(selectedFacility)}
+              disabled={exportingId === selectedFacility._id}
               className="w-full flex items-center gap-3 px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors font-semibold disabled:opacity-50"
             >
-              {exportingId === selectedForm._id ? (
+              {exportingId === selectedFacility._id ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <Download className="w-5 h-5" />
               )}
-              Export Form Details (Excel)
+              Export Facility Details (Excel)
             </button>
           </div>
         </Modal>

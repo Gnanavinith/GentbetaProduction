@@ -1,7 +1,7 @@
-import FormTask from "../models/FormTask.model.js";
-import FormSubmission from "../models/FormSubmission.model.js";
-import Form from "../models/Form.model.js";
-import FormTemplate from "../models/FormTemplate.model.js";
+import FacilityTask from "../models/FacilityTask.model.js";
+import FacilitySubmission from "../models/FacilitySubmission.model.js";
+import Facility from "../models/Facility.model.js";
+import FacilityTemplate from "../models/FacilityTemplate.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
@@ -13,7 +13,7 @@ export const getAssignedTasks = async (req, res) => {
   try {
     const userId = req.user.userId;
     
-    const tasks = await FormTask.find({
+    const tasks = await FacilityTask.find({
       assignedTo: userId,
       status: "pending"
     })
@@ -32,12 +32,12 @@ export const getTaskStats = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const pendingCount = await FormTask.countDocuments({
+    const pendingCount = await FacilityTask.countDocuments({
       assignedTo: userId,
       status: "pending"
     });
 
-    const completedCount = await FormTask.countDocuments({
+    const completedCount = await FacilityTask.countDocuments({
       assignedTo: userId,
       status: "completed"
     });
@@ -101,7 +101,7 @@ export const submitTask = async (req, res) => {
       }
     }
 
-    const task = await FormTask.findById(taskId).populate({
+    const task = await FacilityTask.findById(taskId).populate({
       path: "formId",
       select: "formName formId fields sections approvalFlow workflow companyId plantId"
     });
@@ -119,7 +119,7 @@ export const submitTask = async (req, res) => {
 
     const form = task.formId;
     if (!form) {
-      return res.status(404).json({ success: false, message: "Form definition not found for this task" });
+      return res.status(404).json({ success: false, message: "Facility definition not found for this task" });
     }
 
     // Debug: Log form fields to verify they're loaded
@@ -141,7 +141,7 @@ export const submitTask = async (req, res) => {
       submittedAt: new Date()
     };
 
-    const submission = await FormSubmission.create(submissionData);
+    const submission = await FacilitySubmission.create(submissionData);
 
     // Notify first approver if sequential approval is required with filtered fields (non-blocking)
     if (finalStatus === "PENDING_APPROVAL") {
@@ -188,7 +188,7 @@ export const submitTask = async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: "Form submitted successfully", 
+      message: "Facility submitted successfully", 
       submission 
     });
   } catch (error) {
@@ -207,7 +207,7 @@ export const getTaskById = async (req, res) => {
     const { taskId } = req.params;
     const userId = req.user.userId;
 
-    const task = await FormTask.findById(taskId)
+    const task = await FacilityTask.findById(taskId)
       .populate("formId", "formName formId fields sections approvalFlow")
       .populate("assignedBy", "name email");
 
@@ -241,7 +241,7 @@ export const createTasks = async (req, res) => {
 
     const tasks = await Promise.all(
       formIds.map(async (formId) => {
-        return await FormTask.create({
+        return await FacilityTask.create({
           formId,
           assignedTo,
           assignedBy: userId,
@@ -256,14 +256,14 @@ export const createTasks = async (req, res) => {
     // Optional: Send notification to employee
     try {
       const employee = await User.findById(assignedTo);
-      const forms = await Form.find({ _id: { $in: formIds } });
+      const forms = await Facility.find({ _id: { $in: formIds } });
       const company = await Company.findById(companyId);
       const plant = await Plant.findById(plantId);
       
       if (employee && employee.email) {
         const formNames = forms.map(f => f.formName).join(", ");
         const dashboardLink = `${process.env.FRONTEND_URL}/employee/dashboard`;
-        await sendApprovalEmail(employee.email, `New Assigned Forms: ${formNames}`, null, dashboardLink, company, plant);
+        await sendApprovalEmail(employee.email, `New Assigned Facilitys: ${formNames}`, null, dashboardLink, company, plant);
       }
     } catch (emailError) {
       console.error("Failed to notify employee of new tasks:", emailError);
@@ -280,7 +280,7 @@ export const createTasks = async (req, res) => {
   }
 };
 
-export const submitFormDirectly = async (req, res) => {
+export const submitFacilityDirectly = async (req, res) => {
   try {
     const { formId } = req.params;
     const userId = req.user.userId;
@@ -291,20 +291,20 @@ export const submitFormDirectly = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // First, try to find in Form model
-    let form = await Form.findById(formId).select("formName formId fields sections approvalFlow status companyId plantId workflow");
+    // First, try to find in Facility model
+    let form = await Facility.findById(formId).select("formName formId fields sections approvalFlow status companyId plantId workflow");
     
     if (!form) {
-      // If not found in Form model, try FormTemplate model
-      form = await FormTemplate.findById(formId).select("templateName formId fields sections workflow status companyId plantId");
+      // If not found in Facility model, try FacilityTemplate model
+      form = await FacilityTemplate.findById(formId).select("templateName formId fields sections workflow status companyId plantId");
     }
 
     if (!form) {
-      return res.status(404).json({ success: false, message: "Form not found" });
+      return res.status(404).json({ success: false, message: "Facility not found" });
     }
 
     // Debug: Log form fields to verify they're loaded
-    console.log('Form fields loaded:', form.fields?.length || 0);
+    console.log('Facility fields loaded:', form.fields?.length || 0);
     console.log('Sample field with includeInApprovalEmail:', form.fields?.[0]?.includeInApprovalEmail);
 
     // Check if form has proper status (using either status field)
@@ -366,7 +366,7 @@ export const submitFormDirectly = async (req, res) => {
 
     const submissionData = {
       formId: form._id,
-      formName: form.formName || form.templateName || "Untitled Form", // Use appropriate name field
+      formName: form.formName || form.templateName || "Untitled Facility", // Use appropriate name field
       plantId: form.plantId || user.plantId,
       companyId: form.companyId || user.companyId,
       submittedBy: userId,
@@ -379,16 +379,16 @@ export const submitFormDirectly = async (req, res) => {
       submittedAt: new Date()
     };
 
-    const submission = await FormSubmission.create(submissionData);
+    const submission = await FacilitySubmission.create(submissionData);
 
-    // Create FormTask entries for approvers if there's an approval workflow
+    // Create FacilityTask entries for approvers if there's an approval workflow
     if (hasFlow && finalStatus === "PENDING_APPROVAL") {
       try {
         const formTasks = [];
         
         // Create a task for each approver in the workflow
         for (const approvalLevel of workflow) {
-          const formTask = await FormTask.create({
+          const formTask = await FacilityTask.create({
             formId: form._id,
             assignedTo: approvalLevel.approverId,
             assignedBy: userId, // The person who submitted the form
@@ -441,7 +441,7 @@ export const submitFormDirectly = async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: "Form submitted successfully", 
+      message: "Facility submitted successfully", 
       submission 
     });
   } catch (error) {

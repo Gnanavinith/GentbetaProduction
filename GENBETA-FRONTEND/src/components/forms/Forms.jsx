@@ -1,24 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import FormCard from "./FormCard";
+import FacilityCard from "./FacilityCard";
 import { formApi } from "../../api/form.api";
 
-export default function Forms() {
-  const [forms, setForms] = useState([]);
+export default function Facilitys() {
+  const [Facilitys, setFacilitys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    loadForms();
+    loadFacilitys();
   }, []);
 
-  const loadForms = async () => {
+  const loadFacilitys = async () => {
     try {
       setLoading(true);
-      const response = await formApi.getForms();
+      const response = await formApi.getFacilitys();
       if (response.success) {
-        setForms(response.data || []);
+        setFacilitys(response.data || []);
       } else {
         setError(response.message || "Failed to load forms");
       }
@@ -38,7 +38,7 @@ export default function Forms() {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                Forms
+                Facilitys
               </h1>
               <p className="text-gray-600">Manage and create dynamic forms</p>
             </div>
@@ -49,7 +49,7 @@ export default function Forms() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Create New Form
+              Create New Facility
             </button>
           </div>
 
@@ -88,14 +88,14 @@ export default function Forms() {
               onClick={() => navigate("/forms/create")}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-semibold"
             >
-              Create Form
+              Create Facility
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {forms.map((form, index) => (
               <div key={form.formId} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-                <FormCard form={form} />
+                <FacilityCard form={form} />
               </div>
             ))}
           </div>

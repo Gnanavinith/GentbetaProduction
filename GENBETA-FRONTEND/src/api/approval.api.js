@@ -2,7 +2,7 @@ import api from "./api";
 
 export const approvalApi = {
   // External links
-  sendMultiFormLink: async (data) => {
+  sendMultiFacilityLink: async (data) => {
     try {
       const response = await api.post("/api/approve/send-multi", data);
       return { success: true, data: response.data };
@@ -14,7 +14,7 @@ export const approvalApi = {
     }
   },
 
-  getFormByToken: async (token) => {
+  getFacilityByToken: async (token) => {
     try {
       const response = await api.get(`/api/approve/${token}`);
       return { success: true, data: response.data };
@@ -26,7 +26,7 @@ export const approvalApi = {
     }
   },
 
-  submitFormByToken: async (token, data) => {
+  submitFacilityByToken: async (token, data) => {
     try {
       const response = await api.post(`/api/approve/${token}`, data);
       return { success: true, data: response.data };

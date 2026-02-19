@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { approvalApi } from "../../api/approval.api";
 import { submissionApi } from "../../api/submission.api";
-import FormRenderer from "../../components/FormRenderer/FormRenderer";
+import FacilityRenderer from "../../components/FacilityRenderer/FacilityRenderer";
 import { 
   ArrowLeft, 
   Loader2, 
@@ -22,10 +22,10 @@ export default function BulkApprovalPage() {
   const navigate = useNavigate();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeForm, setActiveForm] = useState(null);
+  const [activeFacility, setActiveFacility] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [completedForms, setCompletedForms] = useState([]);
+  const [completedFacilitys, setCompletedFacilitys] = useState([]);
 
   useEffect(() => {
     fetchTaskDetails();
@@ -37,7 +37,7 @@ export default function BulkApprovalPage() {
       const response = await approvalApi.getApprovalTaskDetails(taskId);
       if (response.success) {
         setTask(response.data);
-        setCompletedForms(response.data.completedForms?.map(f => f._id || f) || []);
+        setCompletedFacilitys(response.data.completedFacilitys?.map(f => f._id || f) || []);
       } else {
         setError(response.message || "Failed to load task details");
       }
@@ -48,14 +48,14 @@ export default function BulkApprovalPage() {
     }
   };
 
-  const handleFormSubmit = async (formData, files) => {
-    if (!activeForm) return;
+  const handleFacilitySubmit = async (formData, files) => {
+    if (!activeFacility) return;
     
     setSubmitting(true);
     try {
       // Create a submission for this specific form in the task
       const response = await submissionApi.createSubmission(
-        activeForm._id,
+        activeFacility._id,
         formData,
         files,
         "APPROVED", // Internal completion
@@ -63,9 +63,9 @@ export default function BulkApprovalPage() {
       );
 
         if (response.success) {
-          toast.success("Form submitted successfully");
-          setCompletedForms(prev => [...prev, activeForm._id]);
-          setActiveForm(null);
+          toast.success("Facility submitted successfully");
+          setCompletedFacilitys(prev => [...prev, activeFacility._id]);
+          setActiveFacility(null);
           
           // Refresh task details to get updated progress
           fetchTaskDetails();
@@ -125,9 +125,9 @@ export default function BulkApprovalPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
-                    completedForms.length === task.formIds.length ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                    completedFacilitys.length === task.formIds.length ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                   }`}>
-                    {completedForms.length === task.formIds.length ? 'Completed' : 'In Progress'}
+                    {completedFacilitys.length === task.formIds.length ? 'Completed' : 'In Progress'}
                   </span>
                 </div>
               </div>
@@ -139,25 +139,25 @@ export default function BulkApprovalPage() {
               <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-indigo-600 transition-all duration-500"
-                  style={{ width: `${(completedForms.length / task.formIds.length) * 100}%` }}
+                  style={{ width: `${(completedFacilitys.length / task.formIds.length) * 100}%` }}
                 ></div>
               </div>
               <span className="text-sm font-bold text-gray-900">
-                {completedForms.length}/{task.formIds.length}
+                {completedFacilitys.length}/{task.formIds.length}
               </span>
             </div>
           </div>
         </div>
 
-        {activeForm ? (
+        {activeFacility ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <Edit3 className="w-5 h-5 text-indigo-600" />
-                Filling: {activeForm.formName}
+                Filling: {activeFacility.formName}
               </h3>
               <button 
-                onClick={() => setActiveForm(null)}
+                onClick={() => setActiveFacility(null)}
                 className="text-sm text-gray-500 hover:text-gray-700 font-medium"
               >
                 Cancel & Return to List
@@ -165,20 +165,20 @@ export default function BulkApprovalPage() {
             </div>
             
             <div className="bg-gray-50 rounded-xl p-1 border border-gray-100">
-              <FormRenderer
-                fields={activeForm.fields || []}
-                sections={activeForm.sections || []}
-                onSubmit={handleFormSubmit}
+              <FacilityRenderer
+                fields={activeFacility.fields || []}
+                sections={activeFacility.sections || []}
+                onSubmit={handleFacilitySubmit}
                 submitting={submitting}
               />
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Pending Forms in this Task</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Pending Facilitys in this Task</h2>
             <div className="grid gap-4">
               {task.formIds.map((form) => {
-                const isCompleted = completedForms.includes(form._id);
+                const isCompleted = completedFacilitys.includes(form._id);
                 return (
                   <div 
                     key={form._id}
@@ -210,10 +210,10 @@ export default function BulkApprovalPage() {
                     
                     {!isCompleted && (
                       <button
-                        onClick={() => setActiveForm(form)}
+                        onClick={() => setActiveFacility(form)}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm shadow-sm"
                       >
-                        Open Form
+                        Open Facility
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     )}
@@ -232,7 +232,7 @@ export default function BulkApprovalPage() {
         )}
       </div>
 
-      {!activeForm && completedForms.length === task.formIds.length && (
+      {!activeFacility && completedFacilitys.length === task.formIds.length && (
         <div className="bg-green-600 rounded-2xl p-6 text-white flex items-center justify-between shadow-lg shadow-green-200 animate-in zoom-in duration-300">
           <div className="flex items-center gap-4">
             <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">

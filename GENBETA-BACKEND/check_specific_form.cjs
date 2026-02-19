@@ -2,22 +2,22 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 
 // Import the model properly
-const Form = require('./src/models/Form.model').default;
+const Facility = require('./src/models/Facility.model').default;
 
-async function checkForm() {
+async function checkFacility() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to MongoDB');
     
     const formId = '69969cdacf173350d722dee3';
-    const form = await Form.findById(formId);
-    console.log('Form found:', form ? 'Yes' : 'No');
+    const form = await Facility.findById(formId);
+    console.log('Facility found:', form ? 'Yes' : 'No');
     
     if (form) {
       console.log('\n=== FORM DETAILS ===');
-      console.log('Form ID:', form._id);
-      console.log('Form Name:', form.formName);
-      console.log('Form ID (string):', form.formId);
+      console.log('Facility ID:', form._id);
+      console.log('Facility Name:', form.formName);
+      console.log('Facility ID (string):', form.formId);
       console.log('Is Template:', form.isTemplate);
       console.log('Status:', form.status);
       console.log('Description:', form.description);
@@ -63,7 +63,7 @@ async function checkForm() {
         });
       }
     } else {
-      console.log('Form with ID', formId, 'not found in database');
+      console.log('Facility with ID', formId, 'not found in database');
     }
     
     await mongoose.connection.close();
@@ -72,4 +72,4 @@ async function checkForm() {
   }
 }
 
-checkForm();
+checkFacility();

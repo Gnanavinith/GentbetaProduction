@@ -2,7 +2,7 @@ import React from "react";
 import { Layout, Sparkles } from "lucide-react";
 import CompanyHeader from "../../../common/CompanyHeader";
 
-export function FormCanvasHeader() {
+export function FacilityCanvasHeader() {
   return (
     <div className="">
       {/* Default Company Header */}
@@ -14,7 +14,7 @@ export function FormCanvasHeader() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-              Form Design Canvas
+              Facility Design Canvas
             </h1>
             <p className="text-[11px] text-slate-400 mt-1 font-semibold uppercase tracking-wider">
               Drag fields here to build your form. Everything auto-saves.

@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { userApi } from "../../api/user.api";
 
-export default function ApproverSelectionModal({ isOpen, onClose, onConfirm, selectedForms = [] }) {
+export default function ApproverSelectionModal({ isOpen, onClose, onConfirm, selectedFacilitys = [] }) {
   const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,7 @@ export default function ApproverSelectionModal({ isOpen, onClose, onConfirm, sel
               Templates to be assigned
             </p>
             <ul className="space-y-1.5 max-h-[120px] overflow-y-auto">
-              {selectedForms.map((form, idx) => (
+              {selectedFacilitys.map((form, idx) => (
                 <li key={form._id || idx} className="text-sm text-gray-700 flex items-start gap-2">
                   <span className="text-indigo-500 mt-0.5">•</span>
                   <span className="truncate">{form.formName}</span>

@@ -4,7 +4,7 @@ import { User, Mail, Lock, Eye, EyeOff, Shield } from "lucide-react";
 export default function CompanyAdminStep({ companyAdmin, setCompanyAdmin, onNext, onPrevious }) {
   const [showPassword, setShowPassword] = useState(false);
 
-  const validateForm = () => {
+  const validateFacility = () => {
     if (!companyAdmin.adminName.trim()) {
       return "Admin name is required";
     }
@@ -24,7 +24,7 @@ export default function CompanyAdminStep({ companyAdmin, setCompanyAdmin, onNext
   };
 
   const handleNext = () => {
-    const error = validateForm();
+    const error = validateFacility();
     if (error) {
       alert(error);
       return;

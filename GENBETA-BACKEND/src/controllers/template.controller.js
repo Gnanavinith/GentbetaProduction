@@ -1,12 +1,12 @@
-import FormTemplate from "../models/FormTemplate.model.js";
-import FormSubmission from "../models/FormSubmission.model.js";
-import { validateFormCreation } from "../utils/planLimits.js";
+import FacilityTemplate from "../models/FacilityTemplate.model.js";
+import FacilitySubmission from "../models/FacilitySubmission.model.js";
+import { validateFacilityCreation } from "../utils/planLimits.js";
 
 export const createTemplate = async (req, res) => {
   try {
     const { templateName, description, fields, workflow, status } = req.body;
 
-    const validation = await validateFormCreation(req.user.companyId, req.user.plantId);
+    const validation = await validateFacilityCreation(req.user.companyId, req.user.plantId);
     if (!validation.allowed) {
       return res.status(403).json({ 
         success: false,
@@ -17,7 +17,7 @@ export const createTemplate = async (req, res) => {
       });
     }
 
-    const template = await FormTemplate.create({
+    const template = await FacilityTemplate.create({
       templateName,
       description,
       fields,
@@ -54,7 +54,7 @@ export const getTemplates = async (req, res) => {
       filter.status = status;
     }
 
-    const templates = await FormTemplate.find(filter).sort({ createdAt: -1 });
+    const templates = await FacilityTemplate.find(filter).sort({ createdAt: -1 });
 
     res.json({ success: true, data: templates });
   } catch (error) {
@@ -65,7 +65,7 @@ export const getTemplates = async (req, res) => {
 
 export const getTemplateById = async (req, res) => {
   try {
-    const template = await FormTemplate.findById(req.params.id);
+    const template = await FacilityTemplate.findById(req.params.id);
     if (!template) {
       return res.status(404).json({ success: false, message: "Template not found" });
     }
@@ -78,7 +78,7 @@ export const getTemplateById = async (req, res) => {
 
 export const updateTemplate = async (req, res) => {
   try {
-    const updated = await FormTemplate.findByIdAndUpdate(
+    const updated = await FacilityTemplate.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
@@ -100,7 +100,7 @@ export const deleteTemplate = async (req, res) => {
     const templateId = req.params.id;
 
     // Guard: Check if template has submissions
-    const submissionCount = await FormSubmission.countDocuments({ templateId });
+    const submissionCount = await FacilitySubmission.countDocuments({ templateId });
     if (submissionCount > 0) {
       return res.status(400).json({ 
         success: false, 
@@ -108,7 +108,7 @@ export const deleteTemplate = async (req, res) => {
       });
     }
 
-    await FormTemplate.findByIdAndUpdate(templateId, { isActive: false });
+    await FacilityTemplate.findByIdAndUpdate(templateId, { isActive: false });
     res.json({ success: true, message: "Template removed successfully" });
   } catch (error) {
     console.error("Delete template error:", error);
@@ -118,7 +118,7 @@ export const deleteTemplate = async (req, res) => {
 
 export const archiveTemplate = async (req, res) => {
   try {
-    const template = await FormTemplate.findByIdAndUpdate(
+    const template = await FacilityTemplate.findByIdAndUpdate(
       req.params.id,
       { status: "ARCHIVED", archivedAt: new Date() },
       { new: true }
@@ -132,7 +132,7 @@ export const archiveTemplate = async (req, res) => {
 
 export const restoreTemplate = async (req, res) => {
   try {
-    const template = await FormTemplate.findByIdAndUpdate(
+    const template = await FacilityTemplate.findByIdAndUpdate(
       req.params.id,
       { status: "PUBLISHED", archivedAt: null },
       { new: true }
@@ -146,7 +146,7 @@ export const restoreTemplate = async (req, res) => {
 
 export const incrementUsageCount = async (templateId) => {
   try {
-    await FormTemplate.findByIdAndUpdate(templateId, { $inc: { usageCount: 1 } });
+    await FacilityTemplate.findByIdAndUpdate(templateId, { $inc: { usageCount: 1 } });
   } catch (error) {
     console.error("Increment usage count error:", error);
   }

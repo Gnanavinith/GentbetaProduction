@@ -23,7 +23,7 @@ export default function CreateCompanyWizard() {
   const [selectedPlan, setSelectedPlan] = useState("SILVER");
   const [customLimits, setCustomLimits] = useState({
     maxPlants: 1,
-    maxFormsPerPlant: 10,
+    maxFacilitysPerPlant: 10,
     maxEmployeesPerPlant: 20,
     approvalLevels: 3
   });
@@ -79,7 +79,7 @@ export default function CreateCompanyWizard() {
       setLoading(true);
       
       // Prepare payload - handle file upload if logo exists
-      const payload = new FormData();
+      const payload = new FacilityData();
       
       // Create company data object without the logoFile (since we handle the actual file separately)
       const companyData = {

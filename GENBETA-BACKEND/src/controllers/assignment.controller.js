@@ -1,6 +1,6 @@
 import Assignment from "../models/Assignment.model.js";
-import FormTemplate from "../models/FormTemplate.model.js";
-import Form from "../models/Form.model.js";
+import FacilityTemplate from "../models/FacilityTemplate.model.js";
+import Facility from "../models/Facility.model.js";
 import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
 
 export const assignTemplateToEmployees = async (req, res) => {
@@ -18,14 +18,14 @@ export const assignTemplateToEmployees = async (req, res) => {
     const errors = [];
 
     for (const id of ids) {
-      // 1. Try to find in FormTemplate
-      let template = await FormTemplate.findById(id);
-      let modelType = "FormTemplate";
+      // 1. Try to find in FacilityTemplate
+      let template = await FacilityTemplate.findById(id);
+      let modelType = "FacilityTemplate";
 
-      // 2. If not found, try to find in Form (Modern templates)
+      // 2. If not found, try to find in Facility (Modern templates)
       if (!template) {
-        template = await Form.findById(id);
-        modelType = "Form";
+        template = await Facility.findById(id);
+        modelType = "Facility";
       }
 
       if (!template) {

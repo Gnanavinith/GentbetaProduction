@@ -19,7 +19,7 @@ const formatIST = (date) => {
     return "Invalid Date";
   }
 
-  // Format with timezone indicator for clarity
+  // Facilityat with timezone indicator for clarity
   const formattedDate = d.toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
     weekday: "short",

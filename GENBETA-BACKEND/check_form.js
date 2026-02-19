@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Form from './src/models/Form.model.js';
+import Facility from './src/models/Facility.model.js';
 
 dotenv.config();
 
@@ -10,11 +10,11 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/genbeta',
   useUnifiedTopology: true,
 });
 
-const checkForm = async () => {
+const checkFacility = async () => {
   try {
-    const form = await Form.findById('698dd4de4fd390b4106d655b');
+    const form = await Facility.findById('698dd4de4fd390b4106d655b');
     if (form) {
-      console.log('Form found:', {
+      console.log('Facility found:', {
         _id: form._id,
         formName: form.formName,
         status: form.status,
@@ -45,7 +45,7 @@ const checkForm = async () => {
         });
       }
     } else {
-      console.log('Form not found');
+      console.log('Facility not found');
     }
     
     await mongoose.connection.close();
@@ -55,4 +55,4 @@ const checkForm = async () => {
   }
 };
 
-checkForm();
+checkFacility();

@@ -1,8 +1,8 @@
 import ApprovalLink from "../models/ApprovalLink.model.js";
 import ApprovalTask from "../models/ApprovalTask.model.js";
-import Form from "../models/Form.model.js";
-import FormSubmission from "../models/FormSubmission.model.js";
-import FormTask from "../models/FormTask.model.js";
+import Facility from "../models/Facility.model.js";
+import FacilitySubmission from "../models/FacilitySubmission.model.js";
+import FacilityTask from "../models/FacilityTask.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
@@ -44,7 +44,7 @@ export const createApprovalTask = async (req, res) => {
     // Notify approver
     try {
       const approver = await User.findById(approverId);
-      const forms = await Form.find({ _id: { $in: formIds } });
+      const forms = await Facility.find({ _id: { $in: formIds } });
       const company = await Company.findById(companyId);
       const plant = await Plant.findById(plantId);
       
@@ -58,7 +58,7 @@ export const createApprovalTask = async (req, res) => {
     }
 
     // Update form statuses to IN_APPROVAL
-    await Form.updateMany(
+    await Facility.updateMany(
       { _id: { $in: formIds } },
       { 
         $set: { 
@@ -101,7 +101,7 @@ export const getApprovalTaskDetails = async (req, res) => {
     const task = await ApprovalTask.findById(id)
       .populate("formIds")
       .populate("submittedBy", "name")
-      .populate("completedForms");
+      .populate("completedFacilitys");
 
     if (!task) return res.status(404).json({ message: "Approval task not found" });
 
@@ -117,15 +117,15 @@ export const sendLink = async (req, res) => {
     const { id } = req.params;
     const { approverEmail } = req.body;
 
-    const form = await Form.findById(id);
-    if (!form) return res.status(404).json({ message: "Form not found" });
+    const form = await Facility.findById(id);
+    if (!form) return res.status(404).json({ message: "Facility not found" });
 
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 48);
 
     await ApprovalLink.create({
-      formIds: [form._id],
+      formIds: [Facility._id],
       plantId: form.plantId,
       token,
       approverEmail,
@@ -147,7 +147,7 @@ export const sendLink = async (req, res) => {
   }
 };
 
-export const sendMultiFormLink = async (req, res) => {
+export const sendMultiFacilityLink = async (req, res) => {
   try {
     const { formIds, approverEmail } = req.body;
 
@@ -155,7 +155,7 @@ export const sendMultiFormLink = async (req, res) => {
       return res.status(400).json({ message: "At least one form is required" });
     }
 
-    const forms = await Form.find({ _id: { $in: formIds } });
+    const forms = await Facility.find({ _id: { $in: formIds } });
     if (forms.length !== formIds.length) {
       return res.status(404).json({ message: "One or more forms not found" });
     }
@@ -179,7 +179,7 @@ export const sendMultiFormLink = async (req, res) => {
     const company = await Company.findById(forms[0].companyId);
     const plant = await Plant.findById(forms[0].plantId);
     
-    await sendApprovalEmail(approverEmail, `${forms.length} Forms: ${formNames}`, null, approvalLink, company, plant);
+    await sendApprovalEmail(approverEmail, `${forms.length} Facilitys: ${formNames}`, null, approvalLink, company, plant);
 
     res.json({ message: "Approval link sent successfully for multiple forms" });
   } catch (error) {
@@ -188,7 +188,7 @@ export const sendMultiFormLink = async (req, res) => {
   }
 };
 
-export const getFormByToken = async (req, res) => {
+export const getFacilityByToken = async (req, res) => {
   try {
     const { token } = req.params;
 
@@ -199,14 +199,14 @@ export const getFormByToken = async (req, res) => {
       return res.status(410).json({ message: "Link has expired" });
     }
 
-    const forms = await Form.find({ _id: { $in: link.formIds } }).select("-companyId -createdBy");
-    if (forms.length === 0) return res.status(404).json({ message: "Forms no longer exist" });
+    const forms = await Facility.find({ _id: { $in: link.formIds } }).select("-companyId -createdBy");
+    if (forms.length === 0) return res.status(404).json({ message: "Facilitys no longer exist" });
 
     res.json({
       forms,
-      completedForms: link.completedForms || [],
+      completedFacilitys: link.completedFacilitys || [],
       approverEmail: link.approverEmail,
-      isMultiForm: forms.length > 1
+      isMultiFacility: forms.length > 1
     });
   } catch (error) {
     console.error("Get form by token error:", error);
@@ -214,7 +214,7 @@ export const getFormByToken = async (req, res) => {
   }
 };
 
-export const submitFormByToken = async (req, res) => {
+export const submitFacilityByToken = async (req, res) => {
   try {
     const { token } = req.params;
     const { formId, data } = req.body;
@@ -227,19 +227,19 @@ export const submitFormByToken = async (req, res) => {
     }
 
     if (!link.formIds.map(id => id.toString()).includes(formId)) {
-      return res.status(400).json({ message: "Form not part of this approval link" });
+      return res.status(400).json({ message: "Facility not part of this approval link" });
     }
 
-    if (link.completedForms && link.completedForms.map(id => id.toString()).includes(formId)) {
+    if (link.completedFacilitys && link.completedFacilitys.map(id => id.toString()).includes(formId)) {
       return res.status(400).json({ message: "This form has already been submitted" });
     }
 
-    const form = await Form.findById(formId);
-    if (!form) return res.status(404).json({ message: "Form not found" });
+    const form = await Facility.findById(formId);
+    if (!form) return res.status(404).json({ message: "Facility not found" });
 
-    await FormSubmission.create({
+    await FacilitySubmission.create({
       templateId: form._id,
-      templateModel: 'Form',
+      templateModel: 'Facility',
       templateName: form.formName,
       plantId: form.plantId,
       companyId: form.companyId,
@@ -248,20 +248,20 @@ export const submitFormByToken = async (req, res) => {
       status: "SUBMITTED"
     });
 
-    link.completedForms = link.completedForms || [];
-    link.completedForms.push(formId);
+    link.completedFacilitys = link.completedFacilitys || [];
+    link.completedFacilitys.push(formId);
 
-    if (link.completedForms.length === link.formIds.length) {
+    if (link.completedFacilitys.length === link.formIds.length) {
       link.isUsed = true;
     }
 
     await link.save();
 
     res.json({ 
-      message: "Form submitted successfully",
-      allFormsCompleted: link.completedForms.length === link.formIds.length,
-      completedCount: link.completedForms.length,
-      totalForms: link.formIds.length
+      message: "Facility submitted successfully",
+      allFacilitysCompleted: link.completedFacilitys.length === link.formIds.length,
+      completedCount: link.completedFacilitys.length,
+      totalFacilitys: link.formIds.length
     });
   } catch (error) {
     console.error("Submit form by token error:", error);
@@ -295,8 +295,8 @@ export const getAssignedSubmissions = async (req, res) => {
       return res.json(cachedResult);
     }
 
-    // Get submissions where user is assigned as an approver through FormTask
-    const assignedTasks = await FormTask.find({
+    // Get submissions where user is assigned as an approver through FacilityTask
+    const assignedTasks = await FacilityTask.find({
       assignedTo: userId,
       status: "pending"
     }).populate("formId").lean();
@@ -307,7 +307,7 @@ export const getAssignedSubmissions = async (req, res) => {
       .map(task => task.formId._id);
     
     // Also get forms from user's plant that have no approval flow (direct submissions)
-    const formsWithoutFlow = await Form.find({
+    const formsWithoutFlow = await Facility.find({
       plantId,
       $or: [
         { approvalFlow: { $exists: false } },
@@ -315,17 +315,17 @@ export const getAssignedSubmissions = async (req, res) => {
       ]
     }).select("_id").lean();
     
-    const allFormIds = [...formIds, ...formsWithoutFlow.map(f => f._id)];
+    const allFacilityIds = [...formIds, ...formsWithoutFlow.map(f => f._id)];
     
-    if (allFormIds.length === 0) {
+    if (allFacilityIds.length === 0) {
       const result = [];
       await setInCache(cacheKey, result, 120);
       return res.json(result);
     }
 
     // Find submissions for these forms that are currently pending approval
-    const submissions = await FormSubmission.find({
-      formId: { $in: allFormIds },
+    const submissions = await FacilitySubmission.find({
+      formId: { $in: allFacilityIds },
       status: { $in: ["PENDING_APPROVAL", "SUBMITTED"] }
     })
     .populate("formId", "formName approvalFlow")
@@ -411,7 +411,7 @@ export const processApproval = async (req, res) => {
     const { submissionId, status, comments, data } = req.body;
     const userId = req.user.userId;
 
-    const submission = await FormSubmission.findById(submissionId).populate({
+    const submission = await FacilitySubmission.findById(submissionId).populate({
       path: "formId",
       populate: {
         path: "approvalFlow.approverId",
@@ -697,7 +697,7 @@ export const getEmployeeStats = async (req, res) => {
     }
 
     // Optimized query using aggregation pipeline
-    const pendingCount = await FormSubmission.aggregate([
+    const pendingCount = await FacilitySubmission.aggregate([
       {
         $lookup: {
           from: "forms",
@@ -728,7 +728,7 @@ export const getEmployeeStats = async (req, res) => {
     ]).then(result => result[0]?.pendingCount || 0);
 
     // Submissions already actioned by this user
-    const actionedCount = await FormSubmission.countDocuments({
+    const actionedCount = await FacilitySubmission.countDocuments({
       "approvalHistory.approverId": userId
     });
     

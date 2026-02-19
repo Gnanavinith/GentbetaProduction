@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 
-export const useFormStore = create((set) => ({
+export const useFacilityStore = create((set) => ({
   formSchema: {
     id: uuidv4(),
-    title: 'Untitled Form',
+    title: 'Untitled Facility',
     description: '',
     sections: [
       {
@@ -17,7 +17,7 @@ export const useFormStore = create((set) => ({
   selectedFieldId: null,
   previewMode: false,
 
-  setFormSchema: (schema) => set({ formSchema: schema }),
+  setFacilitySchema: (schema) => set({ formSchema: schema }),
   
   setSelectedFieldId: (id) => set({ selectedFieldId: id }),
   

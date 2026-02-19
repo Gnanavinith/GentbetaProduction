@@ -8,9 +8,9 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { SortableField } from "./components/SortableField";
 import { DroppableSection } from "./components/DroppableSection";
-import { FormCanvasHeader } from "./components/FormCanvasHeader";
+import { FacilityCanvasHeader } from "./components/FacilityCanvasHeader";
 
-const FormSection = memo(React.forwardRef(function FormSection({ 
+const FacilitySection = memo(React.forwardRef(function FacilitySection({ 
   section, 
   isCollapsed, 
   editingSectionId, 
@@ -224,12 +224,12 @@ export default memo(function CenterPanel({
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8f9fc] p-8 flex flex-col items-center">
       {/* A4 Size Container */}
       <div className="w-[210mm] min-h-[297mm] bg-white border border-gray-300 shadow-2xl flex flex-col mb-20 relative origin-top scale-[0.85] 2xl:scale-100">
-        <FormCanvasHeader />
+        <FacilityCanvasHeader />
 
         <div className="flex-1 p-[15mm] space-y-8">
           <AnimatePresence mode="popLayout">
             {sections.map((section) => (
-              <FormSection
+              <FacilitySection
                 key={section.id}
                 section={section}
                 isCollapsed={collapsedSections.has(section.id)}
@@ -260,7 +260,7 @@ export default memo(function CenterPanel({
 
         <div className="p-8 border-t border-gray-50 bg-gray-50/30 flex items-center justify-center gap-4">
           <div className="h-px bg-gray-100 flex-1" />
-          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">End of Form</span>
+          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">End of Facility</span>
           <div className="h-px bg-gray-100 flex-1" />
         </div>
       </div>

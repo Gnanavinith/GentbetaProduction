@@ -14,7 +14,7 @@ import ApproverSelectionModal from "../../components/modals/ApproverSelectionMod
 import { Modal, Input } from "../../components/modals/Modal";
 import { ActionBar } from "../../components/common/ActionBar";
 
-export default function FormsList() {
+export default function FacilitysList() {
   const navigate = useNavigate();
   
   // Redirect to the active forms page by default

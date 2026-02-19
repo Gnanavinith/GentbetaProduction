@@ -1,5 +1,5 @@
-import Form from "../models/Form.model.js";
-import FormSubmission from "../models/FormSubmission.model.js";
+import Facility from "../models/Facility.model.js";
+import FacilitySubmission from "../models/FacilitySubmission.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
@@ -28,11 +28,11 @@ export const createSubmission = async (req, res) => {
       });
     }
 
-    const form = await Form.findById(formId);
+    const form = await Facility.findById(formId);
     if (!form) {
       return res.status(404).json({ 
         success: false, 
-        message: "Form not found" 
+        message: "Facility not found" 
       });
     }
 
@@ -81,7 +81,7 @@ export const createSubmission = async (req, res) => {
       currentLevel: initialStatus === "PENDING_APPROVAL" ? 1 : 0
     };
 
-    const submission = await FormSubmission.create(submissionData);
+    const submission = await FacilitySubmission.create(submissionData);
 
     res.status(201).json({
       success: true,
@@ -130,7 +130,7 @@ export const getSubmissions = async (req, res) => {
     const skip = (page - 1) * limit;
     const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
 
-    const submissions = await FormSubmission.find(filter)
+    const submissions = await FacilitySubmission.find(filter)
       .populate("submittedBy", "name email")
       .populate("approvedBy", "name email")
       .populate("rejectedBy", "name email")
@@ -139,7 +139,7 @@ export const getSubmissions = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await FormSubmission.countDocuments(filter);
+    const total = await FacilitySubmission.countDocuments(filter);
 
     res.json({
       success: true,
@@ -169,7 +169,7 @@ export const getSubmissionById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const submission = await FormSubmission.findById(id)
+    const submission = await FacilitySubmission.findById(id)
       .populate({
         path: "formId",
         select: "formName approvalFlow fields sections",
@@ -221,7 +221,7 @@ export const updateSubmission = async (req, res) => {
     const { id } = req.params;
     const { data, status } = req.body;
 
-    const submission = await FormSubmission.findById(id);
+    const submission = await FacilitySubmission.findById(id);
     if (!submission) {
       return res.status(404).json({ 
         success: false, 
@@ -277,7 +277,7 @@ export const deleteSubmission = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const submission = await FormSubmission.findById(id);
+    const submission = await FacilitySubmission.findById(id);
     if (!submission) {
       return res.status(404).json({ 
         success: false, 
@@ -301,7 +301,7 @@ export const deleteSubmission = async (req, res) => {
       });
     }
 
-    await FormSubmission.findByIdAndDelete(id);
+    await FacilitySubmission.findByIdAndDelete(id);
 
     res.json({
       success: true,
@@ -324,7 +324,7 @@ export const submitDraft = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const submission = await FormSubmission.findById(id).populate("formId");
+    const submission = await FacilitySubmission.findById(id).populate("formId");
     if (!submission) {
       return res.status(404).json({ 
         success: false, 
@@ -392,7 +392,7 @@ export const getSubmissionStats = async (req, res) => {
       filter.submittedBy = req.user.userId;
     }
 
-    const stats = await FormSubmission.aggregate([
+    const stats = await FacilitySubmission.aggregate([
       { $match: filter },
       {
         $group: {

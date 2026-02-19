@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Form from './src/models/Form.model.js';
+import Facility from './src/models/Facility.model.js';
 
 // Connect directly without buffering
 await mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://aravind:Aravind123@cluster0.x2c1o.mongodb.net/?appName=Cluster0', {
@@ -10,19 +10,19 @@ await mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://aravind:Aravind12
   bufferCommands: false // Disable buffering
 });
 
-const checkForm = async () => {
+const checkFacility = async () => {
   try {
     const formId = '698f322d931f8c8b82015ef2';
-    const form = await Form.findById(formId);
+    const form = await Facility.findById(formId);
     
     if (!form) {
-      console.log('Form not found');
+      console.log('Facility not found');
       return;
     }
     
     console.log('=== FORM STRUCTURE ===');
-    console.log('Form ID:', form._id);
-    console.log('Form Name:', form.formName);
+    console.log('Facility ID:', form._id);
+    console.log('Facility Name:', form.formName);
     console.log('Sections:', form.sections?.length || 0);
     console.log('Root fields:', form.fields?.length || 0);
     
@@ -48,4 +48,4 @@ const checkForm = async () => {
   }
 };
 
-checkForm();
+checkFacility();

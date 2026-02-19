@@ -9,8 +9,8 @@ This module has been optimized for better performance and maintainability by imp
 - Split large monolithic files into smaller, reusable components
 - Separated concerns for better maintainability
 - Components:
-  - `EmployeeFormFields.jsx` - Form field rendering
-  - `EmployeeValidation.jsx` - Form validation logic
+  - `EmployeeFacilityFields.jsx` - Facility field rendering
+  - `EmployeeValidation.jsx` - Facility validation logic
   - `EmployeeLimitChecker.jsx` - Subscription limit checking
   - `EmployeeSearch.jsx` - Search functionality with debouncing
   - `EmployeeTable.jsx` - Table rendering with skeleton loading

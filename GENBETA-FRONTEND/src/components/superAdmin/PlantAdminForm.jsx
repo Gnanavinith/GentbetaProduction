@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Users, User, Mail, Lock, Eye, EyeOff, Shield } from "lucide-react";
 
-export default function PlantAdminForm({ adminData, setAdminData }) {
+export default function PlantAdminFacility({ adminData, setAdminData }) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (

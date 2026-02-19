@@ -127,7 +127,7 @@ export default function PendingApprovals() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Form Details</th>
+                        <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Facility Details</th>
                         <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Submitted By</th>
                         <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Submitted On</th>
                         <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Status</th>
@@ -149,7 +149,7 @@ export default function PendingApprovals() {
                               <div>
                                 <div className="flex items-center gap-2">
                                   <h3 className="font-medium text-slate-900">
-                                    {sub.templateId?.formName || sub.formId?.formName || 'Untitled Form'}
+                                    {sub.templateId?.formName || sub.formId?.formName || 'Untitled Facility'}
                                   </h3>
                                   {sub.isMyTurn && (
                                     <span className="px-2 py-0.5 bg-indigo-600 text-white text-xs font-medium rounded-full">

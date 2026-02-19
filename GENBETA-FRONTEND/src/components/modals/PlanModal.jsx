@@ -18,7 +18,7 @@ export default function PlanModal({
       name: "Silver", 
       description: "Basic plan for small businesses",
       icon: "🥈",
-      limits: { maxPlants: 1, maxFormsPerPlant: 10, maxEmployeesPerPlant: 20, approvalLevels: 3 },
+      limits: { maxPlants: 1, maxFacilitysPerPlant: 10, maxEmployeesPerPlant: 20, approvalLevels: 3 },
       color: "from-gray-400 to-gray-500"
     },
     { 
@@ -26,7 +26,7 @@ export default function PlanModal({
       name: "Gold", 
       description: "Professional plan for growing businesses",
       icon: "🥇",
-      limits: { maxPlants: 5, maxFormsPerPlant: 50, maxEmployeesPerPlant: 100, approvalLevels: 5 },
+      limits: { maxPlants: 5, maxFacilitysPerPlant: 50, maxEmployeesPerPlant: 100, approvalLevels: 5 },
       color: "from-amber-400 to-amber-500"
     },
     { 
@@ -34,7 +34,7 @@ export default function PlanModal({
       name: "Premium", 
       description: "Enterprise plan with advanced features",
       icon: "💎",
-      limits: { maxPlants: -1, maxFormsPerPlant: -1, maxEmployeesPerPlant: -1, approvalLevels: -1 },
+      limits: { maxPlants: -1, maxFacilitysPerPlant: -1, maxEmployeesPerPlant: -1, approvalLevels: -1 },
       color: "from-purple-500 to-purple-600"
     },
     { 
@@ -122,9 +122,9 @@ export default function PlanModal({
                   <div className="bg-slate-50 rounded-lg p-3">
                     <div className="text-center">
                       <div className="text-lg font-black text-slate-900">
-                        {plan.limits.maxFormsPerPlant === -1 ? '∞' : plan.limits.maxFormsPerPlant}
+                        {plan.limits.maxFacilitysPerPlant === -1 ? '∞' : plan.limits.maxFacilitysPerPlant}
                       </div>
-                      <div className="text-xs text-slate-500 uppercase font-bold">Forms/Plant</div>
+                      <div className="text-xs text-slate-500 uppercase font-bold">Facilitys/Plant</div>
                     </div>
                   </div>
                   

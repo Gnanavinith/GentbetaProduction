@@ -36,8 +36,8 @@ const EmployeeAssignments = lazy(() => import("./pages/employee/Assignments"));
 
 // Plant Admin Pages
 const PlantAdminDashboard = lazy(() => import("./pages/plantAdmin/Dashboard"));
-const FormsList = lazy(() => import("./pages/plantAdmin/FormsList"));
-const FormBuilderPage = lazy(() => import("./pages/plantAdmin/FormBuilderPage"));
+const FacilitysList = lazy(() => import("./pages/plantAdmin/FacilitysList"));
+const FacilityBuilderPage = lazy(() => import("./pages/plantAdmin/FacilityBuilderPage"));
 const TemplateSelectionPage = lazy(() => import("./pages/plantAdmin/TemplateSelectionPage"));
 const PlantSubmissions = lazy(() => import("./pages/plantAdmin/Submissions"));
 const SubmissionDetails = lazy(() => import("./pages/plantAdmin/SubmissionDetails"));
@@ -46,20 +46,20 @@ const AddEmployee = lazy(() => import("./pages/plantAdmin/AddEmployee"));
 const PlantProfile = lazy(() => import("./pages/plantAdmin/Profile"));
 
 // New separate forms pages
-const ActiveFormsPage = lazy(() => import("./pages/plantAdmin/ActiveFormsPage"));
-const DraftFormsPage = lazy(() => import("./pages/plantAdmin/DraftFormsPage"));
-const ArchivedFormsPage = lazy(() => import("./pages/plantAdmin/ArchivedFormsPage"));
+const ActiveFacilitysPage = lazy(() => import("./pages/plantAdmin/ActiveFacilitysPage"));
+const DraftFacilitysPage = lazy(() => import("./pages/plantAdmin/DraftFacilitysPage"));
+const ArchivedFacilitysPage = lazy(() => import("./pages/plantAdmin/ArchivedFacilitysPage"));
 const SavedTemplatesPage = lazy(() => import("./pages/plantAdmin/SavedTemplatesPage"));
 
 // Employee Pages
 const EmployeeDashboard = lazy(() => import("./pages/employee/Dashboard"));
 const EmployeeTemplates = lazy(() => import("./pages/employee/Templates"));
-const FillFormPage = lazy(() => import("./pages/employee/FillFormPage"));
+const FillFacilityPage = lazy(() => import("./pages/employee/FillFacilityPage"));
 const BulkApprovalPage = lazy(() => import("./pages/approval/BulkApprovalPage"));
 const PendingApprovals = lazy(() => import("./pages/approval/PendingApprovals"));
 const ApprovalDetail = lazy(() => import("./pages/approval/ApprovalDetail"));
 const Profile = lazy(() => import("./pages/Profile"));
-const FormsCardView = lazy(() => import("./pages/FormsCardView"));
+const FacilitysCardView = lazy(() => import("./pages/FacilitysCardView"));
 const EmployeeSubmissions = lazy(() => import("./pages/employee/Submissions"));
 const EmployeeSubmissionDetails = lazy(() => import("./pages/employee/SubmissionDetails"));
 const EditSubmission = lazy(() => import("./pages/employee/EditSubmission"));
@@ -120,20 +120,20 @@ function App() {
         <Route path="/plant" element={<ProtectedRoute roles={["PLANT_ADMIN"]}><MainLayout /></ProtectedRoute>}>
           <Route path="dashboard" element={<PlantAdminDashboard />} />
           <Route path="profile" element={<PlantProfile />} />
-          <Route path="forms-view" element={<FormsCardView />} />
+          <Route path="forms-view" element={<FacilitysCardView />} />
           <Route path="employees" element={<Employees />} />
           <Route path="employees/add" element={<AddEmployee />} />
-          <Route path="forms" element={<FormsList />} />
-          <Route path="forms/active" element={<ActiveFormsPage />} />
-          <Route path="forms/draft" element={<DraftFormsPage />} />
-          <Route path="forms/archived" element={<ArchivedFormsPage />} />
+          <Route path="forms" element={<FacilitysList />} />
+          <Route path="forms/active" element={<ActiveFacilitysPage />} />
+          <Route path="forms/draft" element={<DraftFacilitysPage />} />
+          <Route path="forms/archived" element={<ArchivedFacilitysPage />} />
           <Route path="forms/templates" element={<SavedTemplatesPage />} />
           <Route path="assignments" element={<PlantAssignments />} />
           <Route path="forms/create/select" element={<TemplateSelectionPage />} />
-          <Route path="forms/create" element={<FormBuilderPage />} />
-          <Route path="forms/create/:view" element={<FormBuilderPage />} />
-          <Route path="forms/:id/edit" element={<FormBuilderPage />} />
-          <Route path="forms/:id/edit/:view" element={<FormBuilderPage />} />
+          <Route path="forms/create" element={<FacilityBuilderPage />} />
+          <Route path="forms/create/:view" element={<FacilityBuilderPage />} />
+          <Route path="forms/:id/edit" element={<FacilityBuilderPage />} />
+          <Route path="forms/:id/edit/:view" element={<FacilityBuilderPage />} />
           <Route path="submissions" element={<PlantSubmissions />} />
           <Route path="submissions/:id" element={<SubmissionDetails />} />
           <Route path="approval/pending" element={<PendingApprovals />} />
@@ -143,13 +143,13 @@ function App() {
         {/* Employee Routes */}
         <Route path="/employee" element={<ProtectedRoute roles={["EMPLOYEE"]}><MainLayout /></ProtectedRoute>}>
           <Route path="dashboard" element={<EmployeeDashboard />} />
-          <Route path="forms-view" element={<FormsCardView />} />
+          <Route path="forms-view" element={<FacilitysCardView />} />
           <Route path="templates" element={<EmployeeTemplates />} />
           <Route path="assignments" element={<EmployeeAssignments />} />
           <Route index element={<EmployeeDashboard />} />
-          <Route path="fill-form/:taskId" element={<FillFormPage />} />
-          <Route path="fill-assignment/:assignmentId" element={<FillFormPage />} />
-          <Route path="fill-template/:formId" element={<FillFormPage />} />
+          <Route path="fill-form/:taskId" element={<FillFacilityPage />} />
+          <Route path="fill-assignment/:assignmentId" element={<FillFacilityPage />} />
+          <Route path="fill-template/:formId" element={<FillFacilityPage />} />
           <Route path="bulk-approval/:taskId" element={<BulkApprovalPage />} />
           <Route path="submissions" element={<EmployeeSubmissions />} />
           <Route path="submissions/:id" element={<EmployeeSubmissionDetails />} />

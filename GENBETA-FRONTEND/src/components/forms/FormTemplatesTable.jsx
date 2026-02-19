@@ -5,7 +5,7 @@ import { Search, ChevronDown, ArrowRight, FileText, Inbox, Plus } from 'lucide-r
  * A compact, professional table view for form templates and submission data.
  * Inspired by Notion, Linear, and Jira.
  */
-export function FormTemplatesTable({ 
+export function FacilityTemplatesTable({ 
   templates = [], 
   loading = false, 
   onView = () => {}, 
@@ -95,7 +95,7 @@ export function FormTemplatesTable({
                     Template Name
                   </th>
                   <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                    Form Code
+                    Facility Code
                   </th>
                   <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                     Submissions

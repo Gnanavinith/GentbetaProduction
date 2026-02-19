@@ -1,16 +1,16 @@
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
 import User from "../models/User.model.js";
-import FormTemplate from "../models/FormTemplate.model.js";
+import FacilityTemplate from "../models/FacilityTemplate.model.js";
 import { getPlanLimits, isUnlimited, checkLimit, getPlanById } from "../config/plans.js";
 
-import Form from "../models/Form.model.js";
+import Facility from "../models/Facility.model.js";
 
 export const getCompanyUsage = async (companyId) => {
   const [plantsCount, formTemplatesCount, formsCount, employeesCount] = await Promise.all([
     Plant.countDocuments({ companyId, isActive: true }),
-    FormTemplate.countDocuments({ companyId, isActive: true }),
-    Form.countDocuments({ companyId, isActive: true }),
+    FacilityTemplate.countDocuments({ companyId, isActive: true }),
+    Facility.countDocuments({ companyId, isActive: true }),
     User.countDocuments({ companyId, role: "EMPLOYEE", isActive: true }),
   ]);
 
@@ -22,9 +22,9 @@ export const getCompanyUsage = async (companyId) => {
 };
 
 export const getPlantUsage = async (plantId) => {
-  const [formTemplatesCount, formsCount, employeesCount] = await Promise.all([
-    FormTemplate.countDocuments({ plantId, isActive: true }),
-    Form.countDocuments({ plantId, isActive: true }),
+  const [FacilityTemplatesCount, formsCount, employeesCount] = await Promise.all([
+    FacilityTemplate.countDocuments({ plantId, isActive: true }),
+    Facility.countDocuments({ plantId, isActive: true }),
     User.countDocuments({ plantId, role: "EMPLOYEE", isActive: true }),
   ]);
 
@@ -63,7 +63,7 @@ export const validatePlantCreation = async (companyId) => {
   return { allowed: true };
 };
 
-export const validateFormCreation = async (companyId, plantId) => {
+export const validateFacilityCreation = async (companyId, plantId) => {
   const company = await Company.findById(companyId);
   if (!company) {
     return { allowed: false, message: "Company not found" };
@@ -76,20 +76,20 @@ export const validateFormCreation = async (companyId, plantId) => {
   } else {
     limits = getPlanLimits(planId);
   }
-  const [formTemplatesCount, formsCount] = await Promise.all([
-    FormTemplate.countDocuments({ plantId, isActive: true }),
-    Form.countDocuments({ plantId, isActive: true })
+  const [FacilityTemplatesCount, formsCount] = await Promise.all([
+    FacilityTemplate.countDocuments({ plantId, isActive: true }),
+    Facility.countDocuments({ plantId, isActive: true })
   ]);
-  const currentForms = formTemplatesCount + formsCount;
+  const currentFacilitys = formTemplatesCount + formsCount;
 
-  if (!checkLimit(currentForms, limits.maxFormsPerPlant)) {
+  if (!checkLimit(currentFacilitys, limits.maxFacilitysPerPlant)) {
     const plan = getPlanById(planId);
     return {
       allowed: false,
-      message: `Form limit reached. Your ${plan.name} plan allows only ${limits.maxFormsPerPlant} forms per plant. Please upgrade to add more forms.`,
+      message: `Facility limit reached. Your ${plan.name} plan allows only ${limits.maxFacilitysPerPlant} forms per plant. Please upgrade to add more forms.`,
       upgradeRequired: true,
-      currentCount: currentForms,
-      limit: limits.maxFormsPerPlant,
+      currentCount: currentFacilitys,
+      limit: limits.maxFacilitysPerPlant,
     };
   }
 
@@ -144,13 +144,13 @@ export const isCompanyOverLimit = async (companyId) => {
   const usage = await getCompanyUsage(companyId);
   
   const isOverPlantLimit = !isUnlimited(limits.maxPlants) && usage.plants > limits.maxPlants;
-  const isOverFormLimit = !isUnlimited(limits.maxFormsPerPlant) && usage.forms > limits.maxFormsPerPlant;
+  const isOverFacilityLimit = !isUnlimited(limits.maxFacilitysPerPlant) && usage.forms > limits.maxFacilitysPerPlant;
   const isOverEmployeeLimit = !isUnlimited(limits.maxEmployeesPerPlant) && usage.employees > limits.maxEmployeesPerPlant;
 
   return {
-    overLimit: isOverPlantLimit || isOverFormLimit || isOverEmployeeLimit,
+    overLimit: isOverPlantLimit || isOverFacilityLimit || isOverEmployeeLimit,
     isOverPlantLimit,
-    isOverFormLimit,
+    isOverFacilityLimit,
     isOverEmployeeLimit,
     usage,
     limits,
@@ -181,7 +181,7 @@ export const getCompanySubscriptionDetails = async (companyId) => {
         plantName: plant.name,
         forms: plantStats.forms,
         employees: plantStats.employees,
-        formsLimit: isUnlimited(limits.maxFormsPerPlant) ? "Unlimited" : limits.maxFormsPerPlant,
+        formsLimit: isUnlimited(limits.maxFacilitysPerPlant) ? "Unlimited" : limits.maxFacilitysPerPlant,
         employeesLimit: isUnlimited(limits.maxEmployeesPerPlant) ? "Unlimited" : limits.maxEmployeesPerPlant,
       };
     })
@@ -200,7 +200,7 @@ export const getCompanySubscriptionDetails = async (companyId) => {
     subscription: company.subscription,
     limits: {
       maxPlants: isUnlimited(limits.maxPlants) ? "Unlimited" : limits.maxPlants,
-      maxFormsPerPlant: isUnlimited(limits.maxFormsPerPlant) ? "Unlimited" : limits.maxFormsPerPlant,
+      maxFacilitysPerPlant: isUnlimited(limits.maxFacilitysPerPlant) ? "Unlimited" : limits.maxFacilitysPerPlant,
       maxEmployeesPerPlant: isUnlimited(limits.maxEmployeesPerPlant) ? "Unlimited" : limits.maxEmployeesPerPlant,
       approvalLevels: isUnlimited(limits.approvalLevels) ? "Unlimited" : limits.approvalLevels,
     },

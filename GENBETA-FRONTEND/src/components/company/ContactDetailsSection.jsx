@@ -1,6 +1,6 @@
 import { Phone, Mail } from "lucide-react";
 
-export default function ContactDetailsSection({ form, setForm }) {
+export default function ContactDetailsSection({ form, setFacility }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -21,7 +21,7 @@ export default function ContactDetailsSection({ form, setForm }) {
           <input
             type="tel"
             value={form.contactPhone}
-            onChange={e => setForm({ ...form, contactPhone: e.target.value })}
+            onChange={e => setFacility({ ...form, contactPhone: e.target.value })}
             className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
             placeholder="+1 (555) 000-0000"
           />
@@ -34,7 +34,7 @@ export default function ContactDetailsSection({ form, setForm }) {
           <input
             type="email"
             value={form.contactEmail}
-            onChange={e => setForm({ ...form, contactEmail: e.target.value })}
+            onChange={e => setFacility({ ...form, contactEmail: e.target.value })}
             className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
             placeholder="contact@company.com"
           />

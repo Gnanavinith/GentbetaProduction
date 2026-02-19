@@ -56,13 +56,13 @@ export default function CustomPlanModal({ isOpen, onClose, limits, onSave }) {
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
                 <FileText className="w-3 h-3" />
-                Forms per Plant
+                Facilitys per Plant
               </label>
               <input 
                 type="number"
                 min="1"
-                value={tempLimits.maxFormsPerPlant}
-                onChange={(e) => setTempLimits({...tempLimits, maxFormsPerPlant: parseInt(e.target.value) || 1})}
+                value={tempLimits.maxFacilitysPerPlant}
+                onChange={(e) => setTempLimits({...tempLimits, maxFacilitysPerPlant: parseInt(e.target.value) || 1})}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
               />
             </div>
@@ -107,8 +107,8 @@ export default function CustomPlanModal({ isOpen, onClose, limits, onSave }) {
                 <span className="text-lg font-bold text-indigo-900">{tempLimits.maxPlants}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] text-indigo-600 font-bold uppercase">Forms/Plant</span>
-                <span className="text-lg font-bold text-indigo-900">{tempLimits.maxFormsPerPlant}</span>
+                <span className="text-[10px] text-indigo-600 font-bold uppercase">Facilitys/Plant</span>
+                <span className="text-lg font-bold text-indigo-900">{tempLimits.maxFacilitysPerPlant}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] text-indigo-600 font-bold uppercase">Users/Plant</span>

@@ -13,7 +13,7 @@ export default function SubmissionSuccess() {
           </div>
         </div>
         <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
-          Form Submitted Successfully!
+          Facility Submitted Successfully!
         </h2>
         <p className="text-gray-600 mb-8 text-lg">
           Your form submission has been received and will be reviewed by the admin team.

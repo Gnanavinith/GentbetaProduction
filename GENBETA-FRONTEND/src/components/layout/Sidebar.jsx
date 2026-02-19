@@ -37,7 +37,7 @@ export default function Sidebar({ isOpen, onToggle }) {
   // Compute submenu items based on template feature status
   const plantSubmenuItems = useMemo(() => {
     const baseItems = [
-      { title: "Active Forms", path: "/plant/forms/active", icon: FileCheck },
+      { title: "Active Facilitys", path: "/plant/forms/active", icon: FileCheck },
       { title: "Drafts", path: "/plant/forms/draft", icon: FileEdit },
       { title: "Archived", path: "/plant/forms/archived", icon: Archive }
     ];
@@ -157,7 +157,7 @@ export default function Sidebar({ isOpen, onToggle }) {
           { title: "Dashboard", icon: LayoutDashboard, path: "/employee/dashboard" },
           { title: "Summary", icon: BarChart3, path: "/employee/forms-view" },
           { title: "Facility", icon: Building2, path: "/employee/templates" },
-          { title: "Assigned Forms", icon: ClipboardList, path: "/employee/assignments" },
+          { title: "Assigned Facilitys", icon: ClipboardList, path: "/employee/assignments" },
           { title: "Pending Approvals", icon: Clock, path: "/employee/approval/pending" },
         ],
         secondary: commonItems

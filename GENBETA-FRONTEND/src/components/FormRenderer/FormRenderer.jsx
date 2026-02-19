@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BasicInputs, ChecklistAndTables, SpecialFields } from './components';
 
-const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submitting = false, readOnly = false, initialData, showSubmitButton = true, mode = 'fill', onDataChange }) => {
-  const [formData, setFormData] = useState({});
+const FacilityRenderer = ({ form, formDefinition, fields, sections, onSubmit, submitting = false, readOnly = false, initialData, showSubmitButton = true, mode = 'fill', onDataChange }) => {
+  const [FacilityData, setFacilityData] = useState({});
   const [files, setFiles] = useState({});
   const [uploadProgress, setUploadProgress] = useState({});
   const isInitialRender = useRef(true);
   const lastNotifiedData = useRef({});
 
-  // console.log('[FormRenderer] Props received:', { form, formDefinition, fields, sections, initialData, mode });
-  // console.log('[FormRenderer] Current formData:', formData);
+  // console.log('[FacilityRenderer] Props received:', { form, formDefinition, fields, sections, initialData, mode });
+  // console.log('[FacilityRenderer] Current formData:', formData);
 
   // Initialize formData with initialData when it changes
   useEffect(() => {
@@ -26,8 +26,8 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
       });
       
       if (hasChanges) {
-        // console.log('[FormRenderer] Initializing formData with initialData:', initialData);
-        setFormData(newData);
+        // console.log('[FacilityRenderer] Initializing formData with initialData:', initialData);
+        setFacilityData(newData);
       }
     }
   }, [initialData]);
@@ -53,11 +53,11 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
         onDataChange(dataCopy);
       }
     }
-  }, [formData, onDataChange]);
+  }, [FacilityData, onDataChange]);
 
   const handleChange = useCallback((fieldName, value) => {
     const fieldId = fieldName.fieldId || fieldName.id || fieldName;
-    setFormData(prev => ({
+    setFacilityData(prev => ({
       ...prev,
       [fieldId]: value
     }));
@@ -72,14 +72,14 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
     }));
     
     // Store file names in formData
-    setFormData(prev => {
+    setFacilityData(prev => {
       const newData = {
         ...prev,
         [fieldId]: fileArray.map(f => f.name)
       };
       
       if (onDataChange) {
-        console.log('[FormRenderer] handleFileChange onDataChange called for:', fieldId, newData[fieldId]);
+        console.log('[FacilityRenderer] handleFileChange onDataChange called for:', fieldId, newData[fieldId]);
         onDataChange(newData);
       }
       
@@ -92,7 +92,7 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
     const fieldValue = formData[field.fieldId || field.id] || '';
     
     // Debug: Log each field being rendered
-    console.log(`[FormRenderer] Rendering field ${index}:`, {
+    console.log(`[FacilityRenderer] Rendering field ${index}:`, {
       label: field.label,
       type: field.type,
       fieldId: field.fieldId,
@@ -160,11 +160,11 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
       default:
         return <BasicInputs key={key} {...commonProps} />;
     };
-  }, [formData, handleChange, handleFileChange, files, setFiles, uploadProgress, setUploadProgress, readOnly]);
+  }, [FacilityData, handleChange, handleFileChange, files, setFiles, uploadProgress, setUploadProgress, readOnly]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('[FormRenderer] handleSubmit called with formData:', formData);
+    console.log('[FacilityRenderer] handleSubmit called with formData:', formData);
     if (onSubmit) {
       // Convert files object to array
       const filesArray = Object.values(files).flat();
@@ -173,7 +173,7 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
   };
 
   // Helper function to normalize form data - only enhance grid-table fields
-  const normalizeFormFields = (fields) => {
+  const normalizeFacilityFields = (fields) => {
     if (!fields || !Array.isArray(fields)) return [];
     
     return fields.map(field => {
@@ -193,7 +193,7 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
       
       // If this field has nested fields, normalize them recursively
       if (processedField.fields && Array.isArray(processedField.fields)) {
-        processedField.fields = normalizeFormFields(processedField.fields);
+        processedField.fields = normalizeFacilityFields(processedField.fields);
       }
       
       return processedField;
@@ -258,7 +258,7 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
   }
   
   // Debug: Log the fields being processed
-  console.log('[FormRenderer] Processing fields:', {
+  console.log('[FacilityRenderer] Processing fields:', {
     totalRootFields: formToRender.fields?.length || 0,
     totalSectionFields: formToRender.sections?.reduce((sum, section) => sum + (section.fields?.length || 0), 0) || 0,
     combinedFields: allFields.length,
@@ -284,13 +284,13 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
       field.fieldId && sectionFieldIds.has(field.fieldId)
     );
     
-    console.log('[FormRenderer] Duplicate fields (in both root and section):', 
+    console.log('[FacilityRenderer] Duplicate fields (in both root and section):', 
       rootFieldsWithSameId.map(f => `${f.label} (${f.fieldId})`)
     );
   }
   
   // Normalize the combined fields to ensure layout containers have their nested fields
-  const normalizedFields = normalizeFormFields(allFields);
+  const normalizedFields = normalizeFacilityFields(allFields);
   
   return (
     <form onSubmit={onSubmit ? handleSubmit : undefined} className="form-renderer">
@@ -304,7 +304,7 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
             disabled={submitting}
             className={`w-full bg-indigo-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-indigo-700 transition-colors ${submitting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {submitting ? 'Submitting...' : 'Submit Form'}
+            {submitting ? 'Submitting...' : 'Submit Facility'}
           </button>
         </div>
       )}
@@ -312,4 +312,4 @@ const FormRenderer = ({ form, formDefinition, fields, sections, onSubmit, submit
   );
 };
 
-export default FormRenderer;
+export default FacilityRenderer;

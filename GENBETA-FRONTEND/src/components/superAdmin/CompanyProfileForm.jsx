@@ -1,6 +1,6 @@
 import { Building2, Briefcase, Mail, MapPin, FileText, Image } from "lucide-react";
 
-export default function CompanyProfileForm({ formData, setFormData, company }) {
+export default function CompanyProfileFacility({ formData, setFacilityData, company }) {
   const logoUrl = formData.logoUrl ? `${formData.logoUrl}` : null;
 
   return (
@@ -39,7 +39,7 @@ export default function CompanyProfileForm({ formData, setFormData, company }) {
             <input
               type="text"
               value={formData.logoUrl}
-              onChange={(e) => setFormData({...formData, logoUrl: e.target.value})}
+              onChange={(e) => setFacilityData({...formData, logoUrl: e.target.value})}
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
               placeholder="Enter logo image URL"
             />
@@ -56,7 +56,7 @@ export default function CompanyProfileForm({ formData, setFormData, company }) {
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              onChange={(e) => setFacilityData({...formData, name: e.target.value})}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
               placeholder="Enter company name"
               required
@@ -70,7 +70,7 @@ export default function CompanyProfileForm({ formData, setFormData, company }) {
             </label>
             <select
               value={formData.industry}
-              onChange={(e) => setFormData({...formData, industry: e.target.value})}
+              onChange={(e) => setFacilityData({...formData, industry: e.target.value})}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300 appearance-none"
               required
             >
@@ -98,7 +98,7 @@ export default function CompanyProfileForm({ formData, setFormData, company }) {
           <input
             type="email"
             value={formData.contactEmail}
-            onChange={(e) => setFormData({...formData, contactEmail: e.target.value})}
+            onChange={(e) => setFacilityData({...formData, contactEmail: e.target.value})}
             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
             placeholder="company@example.com"
             required
@@ -112,7 +112,7 @@ export default function CompanyProfileForm({ formData, setFormData, company }) {
           </label>
           <textarea
             value={formData.address}
-            onChange={(e) => setFormData({...formData, address: e.target.value})}
+            onChange={(e) => setFacilityData({...formData, address: e.target.value})}
             rows={3}
             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300 resize-none"
             placeholder="Enter full company address"
@@ -127,7 +127,7 @@ export default function CompanyProfileForm({ formData, setFormData, company }) {
           <input
             type="text"
             value={formData.gstNumber}
-            onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
+            onChange={(e) => setFacilityData({...formData, gstNumber: e.target.value})}
             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
             placeholder="Enter GST number (if applicable)"
           />

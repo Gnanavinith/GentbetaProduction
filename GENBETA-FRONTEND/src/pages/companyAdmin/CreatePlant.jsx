@@ -10,7 +10,7 @@ export default function CreatePlant() {
   const [limitReached, setLimitReached] = useState(false);
   const [usageInfo, setUsageInfo] = useState(null);
   const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
+  const [FacilityData, setFacilityData] = useState({
     name: "",
     location: "",
     admin: {
@@ -133,7 +133,7 @@ export default function CreatePlant() {
                 placeholder="e.g. Pune Manufacturing Unit"
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => setFacilityData({ ...formData, name: e.target.value })}
               />
             </div>
             <div className="space-y-1">
@@ -146,7 +146,7 @@ export default function CreatePlant() {
                   placeholder="e.g. Chakan, Pune"
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  onChange={(e) => setFacilityData({ ...formData, location: e.target.value })}
                 />
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function CreatePlant() {
                 placeholder="Full Name"
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 value={formData.admin.name}
-                onChange={(e) => setFormData({ 
+                onChange={(e) => setFacilityData({ 
                   ...formData, 
                   admin: { ...formData.admin, name: e.target.value } 
                 })}
@@ -183,7 +183,7 @@ export default function CreatePlant() {
                   placeholder="email@example.com"
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   value={formData.admin.email}
-                  onChange={(e) => setFormData({ 
+                  onChange={(e) => setFacilityData({ 
                     ...formData, 
                     admin: { ...formData.admin, email: e.target.value } 
                   })}
@@ -200,7 +200,7 @@ export default function CreatePlant() {
                   placeholder="********"
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   value={formData.admin.password}
-                  onChange={(e) => setFormData({ 
+                  onChange={(e) => setFacilityData({ 
                     ...formData, 
                     admin: { ...formData.admin, password: e.target.value } 
                   })}

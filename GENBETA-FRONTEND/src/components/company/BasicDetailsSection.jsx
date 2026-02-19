@@ -1,6 +1,6 @@
 import { Building2, Briefcase } from "lucide-react";
 
-export default function BasicDetailsSection({ form, setForm }) {
+export default function BasicDetailsSection({ form, setFacility }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -21,7 +21,7 @@ export default function BasicDetailsSection({ form, setForm }) {
           <input
             type="text"
             value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
+            onChange={e => setFacility({ ...form, name: e.target.value })}
             className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
             placeholder="Enter company name"
           />
@@ -34,7 +34,7 @@ export default function BasicDetailsSection({ form, setForm }) {
           <input
             type="text"
             value={form.industry}
-            onChange={e => setForm({ ...form, industry: e.target.value })}
+            onChange={e => setFacility({ ...form, industry: e.target.value })}
             className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
             placeholder="e.g. Manufacturing, IT"
           />

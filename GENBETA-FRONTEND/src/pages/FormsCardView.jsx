@@ -31,19 +31,19 @@ import { exportTableToPDF } from "../utils/exportUtils";
 import { toast } from "react-hot-toast";
 import { Copy } from "lucide-react";
 
-export default function FormsCardView() {
+export default function FacilitysCardView() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [forms, setForms] = useState([]);
+  const [Facilitys, setFacilitys] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedForm, setSelectedForm] = useState(null);
+  const [selectedFacility, setSelectedFacility] = useState(null);
   const [viewMode, setViewMode] = useState("table"); // "table" or "submissions"
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
-  const [selectedForms, setSelectedForms] = useState([]);
+  const [selectedFacilitys, setSelectedFacilitys] = useState([]);
   const [selectedSubmissions, setSelectedSubmissions] = useState([]);
   const [showExportMenu, setShowExportMenu] = useState(null);
   const [exportingId, setExportingId] = useState(null);
@@ -58,15 +58,15 @@ export default function FormsCardView() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [formsRes, submissionsRes] = await Promise.all([
-        formApi.getForms(),
+      const [FacilitysRes, submissionsRes] = await Promise.all([
+        formApi.getFacilitys(),
         submissionApi.getSubmissions()
       ]);
 
       if (formsRes.success) {
         // Filter out draft forms from the forms list
-        const nonDraftForms = (formsRes.data || []).filter(form => form.status && form.status.toUpperCase() !== "DRAFT");
-        setForms(nonDraftForms);
+        const nonDraftFacilitys = (formsRes.data || []).filter(form => form.status && form.status.toUpperCase() !== "DRAFT");
+        setFacilitys(nonDraftFacilitys);
       }
       if (submissionsRes.success) {
         setSubmissions(submissionsRes.data || []);
@@ -80,7 +80,7 @@ export default function FormsCardView() {
     }
   };
 
-  const getFormSubmissionCount = (formId) => {
+  const getFacilitySubmissionCount = (formId) => {
     return submissions.filter(s =>
       (s.formId?._id === formId || s.formId === formId) ||
       (s.templateId?._id === formId || s.templateId === formId)
@@ -97,8 +97,8 @@ export default function FormsCardView() {
     return new Date(Math.max(...dates));
   };
 
-  const handleFormClick = (form) => {
-    setSelectedForm(form);
+  const handleFacilityClick = (form) => {
+    setSelectedFacility(form);
     setViewMode("submissions");
   };
 
@@ -107,18 +107,18 @@ export default function FormsCardView() {
     setShowModal(true);
   };
 
-  const filteredForms = forms.filter(f =>
+  const filteredFacilitys = forms.filter(f =>
     (f.formName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       f.description?.toLowerCase().includes(searchTerm.toLowerCase())) &&
     f.status && f.status.toUpperCase() !== "DRAFT"
   );
 
   const filteredSubmissions = submissions.filter(s =>
-    (s.formId?._id === selectedForm?._id || s.formId === selectedForm?._id) ||
-    (s.templateId?._id === selectedForm?._id || s.templateId === selectedForm?._id)
+    (s.formId?._id === selectedFacility?._id || s.formId === selectedFacility?._id) ||
+    (s.templateId?._id === selectedFacility?._id || s.templateId === selectedFacility?._id)
   );
 
-  const getFormFields = (form) => {
+  const getFacilityFields = (form) => {
     if (!form) return [];
     let allFields = [...(form.fields || [])];
     if (form.sections) {
@@ -132,7 +132,7 @@ export default function FormsCardView() {
   };
 
   const getApproversCount = (submission) => {
-    const approvalFlow = selectedForm?.approvalFlow || [];
+    const approvalFlow = selectedFacility?.approvalFlow || [];
     const approvalHistory = submission?.approvalHistory || [];
     const totalApprovers = approvalFlow.length;
     const approvedCount = approvalHistory.filter(h => h.status === "APPROVED").length;
@@ -140,7 +140,7 @@ export default function FormsCardView() {
   };
 
   const getApproverDetails = (submission) => {
-    const approvalFlow = selectedForm?.approvalFlow || [];
+    const approvalFlow = selectedFacility?.approvalFlow || [];
     const approvalHistory = submission?.approvalHistory || [];
 
     return approvalFlow.map(approver => {
@@ -198,8 +198,8 @@ export default function FormsCardView() {
     }
   };
 
-  const toggleFormSelection = (formId) => {
-    setSelectedForms(prev =>
+  const toggleFacilitySelection = (formId) => {
+    setSelectedFacilitys(prev =>
       prev.includes(formId)
         ? prev.filter(id => id !== formId)
         : [...prev, formId]
@@ -214,7 +214,7 @@ export default function FormsCardView() {
     );
   };
 
-  const handleExportFormSummary = async (form) => {
+  const handleExportFacilitySummary = async (form) => {
     setExportingId(form._id);
     try {
       const formSubmissions = submissions.filter(s =>
@@ -237,8 +237,8 @@ export default function FormsCardView() {
       }));
 
       const summaryData = [
-        { Metric: 'Form ID', Value: form._id },
-        { Metric: 'Form Name', Value: form.formName },
+        { Metric: 'Facility ID', Value: form._id },
+        { Metric: 'Facility Name', Value: form.formName },
         { Metric: 'Created Date', Value: new Date(form.createdAt).toLocaleString() },
         { Metric: 'Total Submissions', Value: total },
         { Metric: 'Approved', Value: approved },
@@ -262,7 +262,7 @@ export default function FormsCardView() {
 
 
 
-  const handleExportFormData = async (form) => {
+  const handleExportFacilityData = async (form) => {
     setExportingId(form._id);
     try {
       const formSubmissions = submissions.filter(s =>
@@ -275,7 +275,7 @@ export default function FormsCardView() {
         return;
       }
 
-      const fields = getFormFields(form);
+      const fields = getFacilityFields(form);
       const exportData = formSubmissions.map(s => {
         const data = getSubmissionData(s);
         const approvalFlow = form.approvalFlow || [];
@@ -315,9 +315,9 @@ export default function FormsCardView() {
   const handleExportSingleSubmission = async (submission) => {
     setExportingId(submission._id);
     try {
-      const fields = getFormFields(selectedForm);
+      const fields = getFacilityFields(selectedFacility);
       const data = getSubmissionData(submission);
-      const approvalFlow = selectedForm?.approvalFlow || [];
+      const approvalFlow = selectedFacility?.approvalFlow || [];
       const approvalHistory = submission.approvalHistory || [];
 
       const exportData = [
@@ -349,12 +349,12 @@ export default function FormsCardView() {
     }
   };
 
-  const handleBulkExportForms = async () => {
-    if (selectedForms.length === 0) return;
+  const handleBulkExportFacilitys = async () => {
+    if (selectedFacilitys.length === 0) return;
     setExportingId('bulk-forms');
     try {
       const allData = [];
-      for (const formId of selectedForms) {
+      for (const formId of selectedFacilitys) {
         const form = forms.find(f => f._id === formId);
         if (!form) continue;
 
@@ -369,8 +369,8 @@ export default function FormsCardView() {
         const pending = total - approved - rejected;
 
         allData.push({
-          'Form ID': form._id,
-          'Form Name': form.formName,
+          'Facility ID': form._id,
+          'Facility Name': form.formName,
           'Created Date': new Date(form.createdAt).toLocaleString(),
           'Total Submissions': total,
           'Approved': approved,
@@ -381,7 +381,7 @@ export default function FormsCardView() {
         });
       }
 
-      await exportToExcel(allData, 'Bulk_Forms_Summary');
+      await exportToExcel(allData, 'Bulk_Facilitys_Summary');
     } catch (err) {
       console.error('Bulk export failed:', err);
     } finally {
@@ -393,8 +393,8 @@ export default function FormsCardView() {
     if (selectedSubmissions.length === 0) return;
     setExportingId('bulk-submissions');
     try {
-      const fields = getFormFields(selectedForm);
-      const approvalFlow = selectedForm?.approvalFlow || [];
+      const fields = getFacilityFields(selectedFacility);
+      const approvalFlow = selectedFacility?.approvalFlow || [];
 
       const exportData = selectedSubmissions.map(subId => {
         const s = filteredSubmissions.find(sub => sub._id === subId);
@@ -422,7 +422,7 @@ export default function FormsCardView() {
         return row;
       }).filter(Boolean);
 
-      await exportToExcel(exportData, `${selectedForm?.formName}_Bulk_Submissions`);
+      await exportToExcel(exportData, `${selectedFacility?.formName}_Bulk_Submissions`);
     } catch (err) {
       console.error('Bulk export failed:', err);
     } finally {
@@ -436,7 +436,7 @@ export default function FormsCardView() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            {viewMode === "submissions" ? `Submissions: ${selectedForm?.formName}` : "Form Templates"}
+            {viewMode === "submissions" ? `Submissions: ${selectedFacility?.formName}` : "Facility Templates"}
           </h1>
           <p className="text-[15px] text-gray-500">
             {viewMode === "submissions"
@@ -503,15 +503,15 @@ export default function FormsCardView() {
                   <tr>
                     <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 w-10">
                       <div
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${selectedForms.length === filteredForms.length && filteredForms.length > 0
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${selectedFacilitys.length === filteredFacilitys.length && filteredFacilitys.length > 0
                           ? 'bg-indigo-600 border-indigo-600 text-white'
                           : 'bg-white border-gray-300 text-transparent'
                           }`}
                         onClick={() => {
-                          if (selectedForms.length === filteredForms.length) {
-                            setSelectedForms([]);
+                          if (selectedFacilitys.length === filteredFacilitys.length) {
+                            setSelectedFacilitys([]);
                           } else {
-                            setSelectedForms(filteredForms.map(f => f._id));
+                            setSelectedFacilitys(filteredFacilitys.map(f => f._id));
                           }
                         }}
                       >
@@ -519,7 +519,7 @@ export default function FormsCardView() {
                       </div>
                     </th>
                     <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                      Form Template
+                      Facility Template
                     </th>
                     <th className="px-6 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
                       Submissions
@@ -570,9 +570,9 @@ export default function FormsCardView() {
                     </tr>
                   ))
                 ) : viewMode === "table" ? (
-                  filteredForms.length > 0 ? (
-                    filteredForms.map((form) => {
-                      const isSelected = selectedForms.includes(form._id);
+                  filteredFacilitys.length > 0 ? (
+                    filteredFacilitys.map((form) => {
+                      const isSelected = selectedFacilitys.includes(form._id);
                       return (
                         <tr
                           key={form._id}
@@ -584,12 +584,12 @@ export default function FormsCardView() {
                                 ? 'bg-indigo-600 border-indigo-600 text-white'
                                 : 'bg-white border-gray-300 text-transparent'
                                 }`}
-                              onClick={() => toggleFormSelection(form._id)}
+                              onClick={() => toggleFacilitySelection(form._id)}
                             >
                               <Check className="w-3 h-3" />
                             </div>
                           </td>
-                          <td className="px-6 py-4 min-w-[280px]" onClick={() => handleFormClick(form)}>
+                          <td className="px-6 py-4 min-w-[280px]" onClick={() => handleFacilityClick(form)}>
                             <div className="flex items-start gap-3">
                               <div className="mt-1 p-2 bg-gray-50 text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 rounded-md transition-colors">
                                 <FileText className="w-4 h-4" />
@@ -604,12 +604,12 @@ export default function FormsCardView() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap" onClick={() => handleFormClick(form)}>
+                          <td className="px-6 py-4 whitespace-nowrap" onClick={() => handleFacilityClick(form)}>
                             <span className="text-sm font-semibold text-gray-700 bg-gray-50 px-2 py-1 rounded-md">
-                              {getFormSubmissionCount(form._id)}
+                              {getFacilitySubmissionCount(form._id)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap" onClick={() => handleFormClick(form)}>
+                          <td className="px-6 py-4 whitespace-nowrap" onClick={() => handleFacilityClick(form)}>
                             <div className="flex flex-col">
                               <span className="text-[13px] text-gray-900 font-medium">{formatDate(getLatestSubmissionDate(form._id))}</span>
                               <span className="text-[11px] text-gray-400">Last submission</span>
@@ -634,21 +634,21 @@ export default function FormsCardView() {
                                 {showExportMenu === form._id && (
                                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-[100] overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Summary Report</div>
-                                    <button onClick={() => handleExportFormSummary(form)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
-                                      <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
+                                    <button onClick={() => handleExportFacilitySummary(form)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+                                      <Table className="w-3.5 h-3.5 text-green-600" /> Excel Facilityat
                                     </button>
 
                                     <div className="h-px bg-gray-100 my-1" />
                                     <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">All Submissions Data</div>
-                                    <button onClick={() => handleExportFormData(form)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
-                                      <Table className="w-3.5 h-3.5 text-green-600" /> Excel Format
+                                    <button onClick={() => handleExportFacilityData(form)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+                                      <Table className="w-3.5 h-3.5 text-green-600" /> Excel Facilityat
                                     </button>
                                   </div>
                                 )}
                               </div>
 
                               <button
-                                onClick={() => handleFormClick(form)}
+                                onClick={() => handleFacilityClick(form)}
                                 className="inline-flex items-center text-[13px] font-semibold text-gray-400 hover:text-indigo-600 transition-colors"
                               >
                                 View Data <ArrowRight className="w-3.5 h-3.5 ml-1" />
@@ -790,12 +790,12 @@ export default function FormsCardView() {
       </div>
 
       {/* Bulk Action Bar */}
-      {viewMode === "table" && selectedForms.length > 0 && (
+      {viewMode === "table" && selectedFacilitys.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <span className="text-sm font-medium">{selectedForms.length} form(s) selected</span>
+          <span className="text-sm font-medium">{selectedFacilitys.length} form(s) selected</span>
           <div className="h-5 w-px bg-gray-700" />
           <button
-            onClick={() => handleBulkExportForms('excel')}
+            onClick={() => handleBulkExportFacilitys('excel')}
             disabled={exportingId === 'bulk-forms'}
             className="flex items-center gap-2 text-sm font-semibold hover:text-emerald-400 transition-colors"
           >
@@ -803,7 +803,7 @@ export default function FormsCardView() {
             Export Excel
           </button>
           <button
-            onClick={() => handleBulkExportForms('pdf')}
+            onClick={() => handleBulkExportFacilitys('pdf')}
             disabled={exportingId === 'bulk-forms'}
             className="flex items-center gap-2 text-sm font-semibold hover:text-red-400 transition-colors"
           >
@@ -812,7 +812,7 @@ export default function FormsCardView() {
           </button>
           <div className="h-5 w-px bg-gray-700" />
           <button
-            onClick={() => setSelectedForms([])}
+            onClick={() => setSelectedFacilitys([])}
             className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
           >
             Clear
@@ -861,7 +861,7 @@ export default function FormsCardView() {
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">{selectedForm?.formName}</h2>
+                  <h2 className="text-lg font-bold text-gray-900">{selectedFacility?.formName}</h2>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Submission Detail</span>
                   </div>
@@ -891,7 +891,7 @@ export default function FormsCardView() {
 
               {/* Data Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {getFormFields(selectedForm).map((field) => {
+                {getFacilityFields(selectedFacility).map((field) => {
                   const data = getSubmissionData(selectedSubmission);
                   const value = data[field.fieldId];
 
