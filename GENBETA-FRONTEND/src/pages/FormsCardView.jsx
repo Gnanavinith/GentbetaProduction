@@ -120,7 +120,9 @@ export default function FormsCardView() {
 
   const getFormFields = (form) => {
     if (!form) return [];
+    
     let allFields = [...(form.fields || [])];
+    
     if (form.sections) {
       form.sections.forEach(section => {
         if (section.fields) {
@@ -128,7 +130,21 @@ export default function FormsCardView() {
         }
       });
     }
-    return allFields.filter(f => !["section-divider", "section-header", "spacer", "columns-2", "columns-3"].includes(f.type));
+    
+    // Filter out non-data fields and remove duplicates
+    const uniqueFields = [];
+    const seenIds = new Set();
+    
+    allFields.forEach(field => {
+      const fieldId = field.fieldId || field.id;
+      if (fieldId && !seenIds.has(fieldId) && 
+          !["section-divider", "section-header", "spacer", "columns-2", "columns-3"].includes(field.type)) {
+        seenIds.add(fieldId);
+        uniqueFields.push(field);
+      }
+    });
+    
+    return uniqueFields;
   };
 
   const getApproversCount = (submission) => {
@@ -283,7 +299,7 @@ export default function FormsCardView() {
         const approvalHistory = s.approvalHistory || [];
 
         const row = {
-          'Submission ID': s._id,
+          'Submission ID': s.readableId || s._id,
           'Submitted By': typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy || 'Unknown',
           'Submitted Date': new Date(s.createdAt).toLocaleString(),
           'Status': s.status?.replace(/_/g, ' ')
@@ -322,7 +338,7 @@ export default function FormsCardView() {
       const approvalHistory = submission.approvalHistory || [];
 
       const exportData = [
-        { Field: 'Submission ID', Value: submission._id },
+        { Field: 'Submission ID', Value: submission.readableId || submission._id },
         { Field: 'Submitted By', Value: typeof submission.submittedBy === 'object' ? submission.submittedBy?.name : submission.submittedBy || 'Unknown' },
         { Field: 'Submitted Date', Value: new Date(submission.createdAt).toLocaleString() },
         { Field: 'Status', Value: submission.status?.replace(/_/g, ' ') },
@@ -340,7 +356,7 @@ export default function FormsCardView() {
         })
       ];
 
-      const fileName = `Submission_${submission._id.slice(-6)}`;
+      const fileName = `Submission_${(submission.readableId || submission._id).slice(-6)}`;
       await exportToExcel(exportData, fileName);
     } catch (err) {
       console.error('Export failed:', err);
@@ -405,7 +421,7 @@ export default function FormsCardView() {
         const approvalHistory = s.approvalHistory || [];
 
         const row = {
-          'Submission ID': s._id,
+          'Submission ID': s.readableId || s._id,
           'Submitted By': typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy || 'Unknown',
           'Submitted Date': new Date(s.createdAt).toLocaleString(),
           'Status': s.status?.replace(/_/g, ' ')

@@ -96,7 +96,7 @@ export function FormBuilderHeader({
           className="px-4 py-1.5 bg-indigo-600 text-white text-[13px] font-semibold rounded-lg hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:opacity-50"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-          Publish Template
+          Publish
         </button>
       </div>
     </header>
