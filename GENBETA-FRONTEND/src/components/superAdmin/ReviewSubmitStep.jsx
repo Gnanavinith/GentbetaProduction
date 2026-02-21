@@ -69,12 +69,6 @@ export default function ReviewSubmitStep({
               <span className="font-semibold text-slate-700">Address:</span>
               <p className="text-slate-900">{company.address || 'Not specified'}</p>
             </div>
-            {company.gstNumber && (
-              <div>
-                <span className="font-semibold text-slate-700">GST Number:</span>
-                <p className="text-slate-900">{company.gstNumber}</p>
-              </div>
-            )}
           </div>
         </div>
 

@@ -138,12 +138,6 @@ export default function EditCompanyModal({ company, onClose, onSaved }) {
           {/* COMPLIANCE & ADDRESS */}
           <Section title="Compliance & Location">
             <div className="space-y-4">
-              <Input
-                label="GST Number"
-                value={form.gstNumber}
-                placeholder="22AAAAA0000A1Z5"
-                onChange={v => setForm({ ...form, gstNumber: v })}
-              />
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Office Address</label>
                 <textarea

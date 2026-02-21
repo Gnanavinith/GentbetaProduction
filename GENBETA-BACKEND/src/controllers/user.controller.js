@@ -82,7 +82,6 @@ export const getProfile = async (req, res) => {
           companyId: user.companyId?._id || user.companyId,
           companyName: user.companyId?.name,
           companyLogo: user.companyId?.logoUrl,
-          companyGst: user.companyId?.gstNumber,
           companyAddress: user.companyId?.address,
           plantId: user.plantId?._id || user.plantId,
           plantName: user.plantId?.name,

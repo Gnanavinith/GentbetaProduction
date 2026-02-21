@@ -11,7 +11,37 @@ dotenv.config();
 
 const formatIST = (date) => {
   if (!date) return "—";
-
+  
+  // Handle case where date is an object
+  if (typeof date === 'object' && date !== null) {
+    // If it's a Date object, use it directly
+    if (date instanceof Date) {
+      // Validate date
+      if (isNaN(date.getTime())) {
+        return "Invalid Date";
+      }
+      // If it's a valid Date object, continue processing
+    } else {
+      // If it's a plain object (like {}), return error message
+      if (Object.keys(date).length === 0) {
+        return "No Date Provided";
+      }
+      // If it's an object with properties, try to extract date-like properties
+      const dateString = date.$date || date.date || date.createdAt || date.updatedAt || date.submittedAt || date.toString();
+      if (dateString) {
+        const extractedDate = new Date(dateString);
+        if (!isNaN(extractedDate.getTime())) {
+          date = extractedDate;
+        } else {
+          return "Invalid Date Format";
+        }
+      } else {
+        return "Invalid Date Format";
+      }
+    }
+  }
+  
+  // Ensure date is a Date object now
   const d = date instanceof Date ? date : new Date(date);
   
   // Validate date
@@ -197,7 +227,6 @@ const getBaseLayout = (content, company = {}, plant = {}, showLoginButton = fals
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
       <p style="margin: 2px 0;"><strong>${company.name || 'Matapang'}</strong></p>
       ${company.address ? `<p style="margin: 2px 0;">${company.address}</p>` : ''}
-      ${company.gstNumber ? `<p style="margin: 2px 0;">GST: ${company.gstNumber}</p>` : ''}
     </div>
   `;
 

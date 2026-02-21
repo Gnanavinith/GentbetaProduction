@@ -53,7 +53,6 @@ export default function EditCompanyContainer() {
         industry: data.industry || "",
         contactEmail: data.contactEmail || "",
         address: data.address || "",
-        gstNumber: data.gstNumber || "",
         logoUrl: data.logoUrl || ""
       });
 
@@ -86,7 +85,6 @@ export default function EditCompanyContainer() {
         industry: formData.industry,
         contactEmail: formData.contactEmail,
         address: formData.address,
-        gstNumber: formData.gstNumber,
         logoUrl: formData.logoUrl,
         admin: {
           name: adminData.adminName,

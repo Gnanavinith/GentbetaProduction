@@ -223,7 +223,6 @@ export default function Profile() {
                     <DetailItem icon={<MapPin size={18} />} label="Address" value={companyData.address} />
                     <DetailItem icon={<Phone size={18} />} label="Contact Phone" value={companyData.contactPhone} />
                     <DetailItem icon={<Mail size={18} />} label="Contact Email" value={companyData.contactEmail} />
-                    <DetailItem icon={<Calendar size={18} />} label="Member Since" value={formatDate(companyData.createdAt)} />
                   </div>
                 </div>
 

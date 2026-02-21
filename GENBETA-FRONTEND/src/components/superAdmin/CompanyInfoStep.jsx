@@ -99,19 +99,6 @@ export default function CompanyInfoStep({ company, setCompany, onNext }) {
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-            <FileText size={12} className="text-indigo-500" />
-            GST Number
-          </label>
-          <input
-            type="text"
-            value={company.gstNumber}
-            onChange={(e) => setCompany({...company, gstNumber: e.target.value})}
-            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm font-semibold hover:border-slate-300"
-            placeholder="Enter GST number (if applicable)"
-          />
-        </div>
 
         <div className="space-y-2">
           <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">

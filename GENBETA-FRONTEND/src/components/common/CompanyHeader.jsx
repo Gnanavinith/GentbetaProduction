@@ -38,12 +38,6 @@ export default function CompanyHeader() {
                   {user.companyName || 'Company Name'}
                 </h1>
                 <div className="flex flex-col gap-0.5 mt-1">
-                  {user.companyGst && (
-                    <div className="text-[11px] text-slate-500 leading-none">
-                      <span className="text-slate-400 font-medium">REG/GST: </span>
-                      <span className="font-semibold text-slate-600">{user.companyGst}</span>
-                    </div>
-                  )}
                   {user.companyAddress && (
                     <div className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 max-w-2xl">
                       {user.companyAddress}

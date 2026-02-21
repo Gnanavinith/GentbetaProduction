@@ -9,7 +9,6 @@ export default function CompanyDetailsSection({ company }) {
         Company Details
       </h3>
       <div className="space-y-5">
-        <DetailRow icon={<Hash size={18} className="text-indigo-500" />} label="GST Number" value={company.gstNumber} />
         <DetailRow icon={<User size={18} className="text-violet-500" />} label="Contact Phone" value={company.contactPhone} />
         <DetailRow icon={<Mail size={18} className="text-blue-500" />} label="Email Address" value={company.contactEmail} isEmail />
         <DetailRow icon={<MapPin size={18} className="text-rose-500" />} label="Official Address" value={company.address} isAddress />

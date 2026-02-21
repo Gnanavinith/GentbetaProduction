@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { assignmentApi } from "../../api/assignment.api";
 import { formApi } from "../../api/form.api";
 import FormRenderer from "../../components/FormRenderer/FormRenderer";
+import ApprovalWorkflowDisplay from "../../components/forms/ApprovalWorkflowDisplay";
 import { useAuth } from "../../context/AuthContext";
 import { ArrowLeft, Loader2, FileText, User, Calendar, AlertCircle } from "lucide-react";
 
@@ -511,6 +512,13 @@ export default function FillFormPage() {
             </div>
           </div>
         </div>
+
+        {/* Approval Workflow Display */}
+        {form && (
+          <div className="px-6 pt-6">
+            <ApprovalWorkflowDisplay form={form} className="mb-6" />
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
