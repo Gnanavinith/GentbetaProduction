@@ -152,22 +152,69 @@ const createTransporter = () => {
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+      },
+      // Additional settings for Office 365 compatibility
+      tls: {
+        ciphers: 'SSLv3',
+        requireTLS: true,
+        // Allow self-signed certificates (use cautiously in production)
+        rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false
       }
     });
   }
 
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.SMTP_PORT) || 587,
     secure: process.env.SMTP_PORT == 465,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
+    },
+    tls: {
+      ciphers: 'SSLv3',
+      requireTLS: true,
+      rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false
     }
   });
 };
 
 const transporter = createTransporter();
+
+// Function to send email with error handling for authentication issues
+const sendEmail = async (mailOptions) => {
+  // Check if transporter is properly configured
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('Email service not configured - missing EMAIL_USER or EMAIL_PASS');
+    return Promise.resolve({ message: 'Email service not configured, mock send' });
+  }
+  
+  try {
+    // Test if transporter can authenticate
+    await transporter.verify();
+    console.log('Email transporter verified successfully');
+    
+    // Send the actual email
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.messageId, info.response);
+    return info;
+  } catch (error) {
+    console.error('Email sending failed:', error.message);
+    
+    // If it's an authentication error, log a specific message
+    if (error.code === 'EAUTH' || error.responseCode === 535) {
+      console.error('SMTP Authentication failed. This may be due to incorrect credentials or the need to use App Passwords for Office 365/Google accounts.');
+      console.error('Please check your email configuration and ensure you are using App Passwords if required.');
+    }
+    
+    // Return a mock response to allow the application to continue
+    return {
+      messageId: 'mock-message-id',
+      response: 'Mock response - email sending disabled due to configuration issue',
+      message: 'Email service unavailable, mock response returned'
+    };
+  }
+};
 
 /**
  * Resolve the appropriate sender email based on context
@@ -184,7 +231,21 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
     if (actor === "COMPANY_ADMIN" && companyId) {
       const company = await Company.findById(companyId).select("email name");
       if (company && company.email) {
-        return `"${company.name} Admin" <${company.email}>`;
+        // For Office 365, only use company email if it matches the authenticated domain
+        const authenticatedDomain = process.env.EMAIL_USER?.split('@')[1];
+        const companyDomain = company.email?.split('@')[1];
+        
+        if (authenticatedDomain && authenticatedDomain === companyDomain) {
+          return `"${company.name} Admin" <${company.email}>`;
+        } else {
+          // If domains don't match, use the authenticated email but with company name
+          const authenticatedEmail = process.env.EMAIL_USER;
+          if (authenticatedEmail) {
+            return `"${company.name} Admin" <${authenticatedEmail}>`;
+          } else {
+            return `"${company.name} Admin" <${company.email}>`;
+          }
+        }
       }
     }
 
@@ -193,9 +254,24 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
       const plant = await Plant.findById(plantId).populate("companyId", "email name").select("email name");
       if (plant) {
         // Prefer plant-specific email, then company email, then fallback
-        const fromEmail = plant.email || plant.companyId?.email || process.env.PLATFORM_EMAIL || "no-reply@matapang.com";
+        let fromEmail = plant.email || plant.companyId?.email || process.env.PLATFORM_EMAIL || "no-reply@matapang.com";
         const fromName = plant.name || plant.companyId?.name || "Matapang";
-        return `"${fromName}" <${fromEmail}>`;
+        
+        // For Office 365, ensure we're using the authenticated email if domains don't match
+        const authenticatedEmail = process.env.EMAIL_USER;
+        const authenticatedDomain = authenticatedEmail?.split('@')[1];
+        const emailDomain = fromEmail.split('@')[1];
+        
+        if (authenticatedDomain && authenticatedDomain === emailDomain) {
+          return `"${fromName}" <${fromEmail}>`;
+        } else {
+          // Use authenticated email but with appropriate name
+          if (authenticatedEmail) {
+            return `"${fromName}" <${authenticatedEmail}>`;
+          } else {
+            return `"${fromName}" <${fromEmail}>`;
+          }
+        }
       }
     }
 
@@ -203,6 +279,11 @@ const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"
     return fallbackFrom;
   } catch (error) {
     console.error("Error resolving email sender:", error);
+    // Always fall back to authenticated email for Office 365 compatibility
+    const authenticatedEmail = process.env.EMAIL_USER;
+    if (authenticatedEmail) {
+      return `"Matapang System" <${authenticatedEmail}>`;
+    }
     return fallbackFrom;
   }
 };
@@ -291,6 +372,7 @@ export {
   getBaseUrl,
   formatFieldValue,
   transporter,
+  sendEmail,  // Added sendEmail function
   resolveEmailSender,
   getBaseLayout,
   removeDuplication

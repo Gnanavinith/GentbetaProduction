@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 
 // Environment-based configuration
 const API_BASE_URL = import.meta.env.DEV
-  ? "" // dev → Vite proxy handles /api
+  ? import.meta.env.VITE_API_URL || "http://localhost:5000" // dev → configurable backend URL
   : import.meta.env.VITE_API_URL || "https://app.matapangtech.com";
 
 // Create axios instance with default config

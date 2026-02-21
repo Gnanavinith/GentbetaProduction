@@ -3,6 +3,7 @@ import {
   getBaseUrl, 
   formatFieldValue, 
   transporter, 
+  sendEmail,  // Added sendEmail function
   resolveEmailSender, 
   getBaseLayout 
 } from '../email.service.js';
@@ -107,7 +108,7 @@ export const sendWelcomeEmail = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendEmail(mailOptions);
     console.log("Welcome email sent to %s: %s", to, info.messageId);
     return info;
   } catch (error) {
@@ -173,7 +174,7 @@ export const sendPlantCreatedEmail = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendEmail(mailOptions);
     console.log("Plant created email sent: %s", info.messageId);
     return info;
   } catch (error) {
@@ -237,7 +238,7 @@ export const sendProfileUpdateNotification = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendEmail(mailOptions);
     console.log("Profile update notification sent: %s", info.messageId);
     return info;
   } catch (error) {

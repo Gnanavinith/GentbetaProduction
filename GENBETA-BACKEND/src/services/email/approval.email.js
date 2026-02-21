@@ -3,6 +3,7 @@ import {
   getBaseUrl, 
   formatFieldValue, 
   transporter, 
+  sendEmail,  // Added sendEmail function
   resolveEmailSender, 
   getBaseLayout,
   removeDuplication 
@@ -55,7 +56,7 @@ export const sendApprovalEmail = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendEmail(mailOptions);
     console.log("Email sent: %s", info.messageId);
     return info;
   } catch (error) {
@@ -166,7 +167,7 @@ export const sendSubmissionNotificationToApprover = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendEmail(mailOptions);
     return info;
   } catch (error) {
     console.error("Submission notification failed:", error);
@@ -223,7 +224,7 @@ export const sendFormCreatedApproverNotification = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendEmail(mailOptions);
     console.log("Form created approver notification sent: %s", info.messageId);
     return info;
   } catch (error) {
@@ -305,7 +306,7 @@ export const sendApprovalStatusNotificationToPlant = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendEmail(mailOptions);
     console.log("Approval status notification to plant sent: %s", info.messageId);
     return info;
   } catch (error) {

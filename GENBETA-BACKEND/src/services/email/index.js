@@ -9,6 +9,7 @@ export {
   getBaseUrl,
   formatFieldValue,
   transporter,
+  sendEmail,  // Added sendEmail function
   resolveEmailSender,
   getBaseLayout
 } from '../email.service.js';
