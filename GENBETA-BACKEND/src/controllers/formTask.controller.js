@@ -8,6 +8,7 @@ import Plant from "../models/Plant.model.js";
 import { sendApprovalEmail, sendSubmissionNotificationToApprover } from "../services/email/index.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import fs from "fs";
+import { isCompanyOverLimit } from "../utils/planLimits.js";
 
 export const getAssignedTasks = async (req, res) => {
   try {

@@ -10,6 +10,7 @@ import {
 } from "../controllers/formTask.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/role.middleware.js";
+import { enforcePlanLimits } from "../middlewares/planEnforcement.middleware.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -48,9 +49,9 @@ const upload = multer({
 
 router.get("/assigned", auth, authorize(["EMPLOYEE"]), getAssignedTasks);
 router.get("/stats", auth, authorize(["EMPLOYEE"]), getTaskStats);
-router.post("/", auth, authorize(["PLANT_ADMIN"]), createTasks);
-router.post("/submit-direct/:formId", auth, authorize(["EMPLOYEE"]), upload.any(), submitFormDirectly);
+router.post("/", auth, authorize(["PLANT_ADMIN"]), enforcePlanLimits("submission"), createTasks);
+router.post("/submit-direct/:formId", auth, authorize(["EMPLOYEE"]), enforcePlanLimits("submission"), upload.any(), submitFormDirectly);
 router.get("/:taskId", auth, authorize(["EMPLOYEE"]), getTaskById);
-router.post("/:taskId/submit", auth, authorize(["EMPLOYEE"]), upload.any(), submitTask);
+router.post("/:taskId/submit", auth, authorize(["EMPLOYEE"]), enforcePlanLimits("submission"), upload.any(), submitTask);
 
 export default router;

@@ -240,14 +240,12 @@ export const sendFinalApprovalNotificationToPlant = async (
     </div>
   `;
 
-  const fromAddress = approverEmail && approverName
-    ? `"${approverName}" <${approverEmail}>`
-    : await resolveEmailSender({
-        actor,
-        companyId,
-        plantId: plantIdParam,
-        fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
-      });
+  const fromAddress = await resolveEmailSender({
+    actor,
+    companyId,
+    plantId: plantIdParam,
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
+  });
 
   const mailOptions = {
     from: fromAddress,

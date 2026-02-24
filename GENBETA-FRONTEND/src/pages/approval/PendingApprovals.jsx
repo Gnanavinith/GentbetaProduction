@@ -130,6 +130,7 @@ export default function PendingApprovals() {
                         <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Form Details</th>
                         <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Submitted By</th>
                         <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Submitted On</th>
+                        <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Approval Progress</th>
                         <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">Status</th>
                         <th className="px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider text-right">Actions</th>
                       </tr>
@@ -183,6 +184,40 @@ export default function PendingApprovals() {
                             </div>
                           </td>
                           <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between text-xs mb-1">
+                                  <span className="text-slate-600">Level {sub.currentLevel || 1} of {sub.templateId?.approvalFlow?.length || sub.formId?.approvalFlow?.length || 1}</span>
+                                  <span className="font-medium text-slate-800">
+                                    {sub.templateId?.approvalFlow?.length ? 
+                                      (sub.templateId.approvalFlow.length - (sub.currentLevel || 1) + 1) : 
+                                      (sub.formId?.approvalFlow?.length ? 
+                                        (sub.formId.approvalFlow.length - (sub.currentLevel || 1) + 1) : 0)
+                                    } pending
+                                  </span>
+                                </div>
+                                {/* Show current approver name */}
+                                {sub.templateId?.approvalFlow && sub.templateId.approvalFlow.length > 0 && (
+                                  <div className="text-xs text-slate-500 mt-1">
+                                    Current: {
+                                      sub.templateId.approvalFlow.find(f => f.level === (sub.currentLevel || 1))?.approverId?.name ||
+                                      sub.templateId.approvalFlow.find(f => f.level === (sub.currentLevel || 1))?.name ||
+                                      `Approver ${sub.currentLevel || 1}`
+                                    }
+                                  </div>
+                                )}
+                                <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2">
+                                  <div 
+                                    className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300"
+                                    style={{ 
+                                      width: `${((sub.currentLevel || 1) / (sub.templateId?.approvalFlow?.length || sub.formId?.approvalFlow?.length || 1)) * 100}%` 
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
                             {sub.isMyTurn ? (
                               <div className="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded-full text-xs font-medium">
                                 <Clock className="w-3.5 h-3.5" />
@@ -197,6 +232,16 @@ export default function PendingApprovals() {
                                 {sub.pendingApproverName && (
                                   <p className="text-xs text-amber-700 mt-1">
                                     Waiting for {sub.pendingApproverName}
+                                  </p>
+                                )}
+                                {/* Show current approver name from approval flow */}
+                                {!sub.pendingApproverName && sub.templateId?.approvalFlow && sub.templateId.approvalFlow.length > 0 && (
+                                  <p className="text-xs text-amber-700 mt-1">
+                                    Current approver: {
+                                      sub.templateId.approvalFlow.find(f => f.level === (sub.currentLevel || 1))?.approverId?.name ||
+                                      sub.templateId.approvalFlow.find(f => f.level === (sub.currentLevel || 1))?.name ||
+                                      `Approver ${sub.currentLevel || 1}`
+                                    }
                                   </p>
                                 )}
                               </div>

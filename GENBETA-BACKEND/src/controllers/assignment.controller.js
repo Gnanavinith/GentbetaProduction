@@ -219,3 +219,38 @@ export const getAssignmentById = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch assignment" });
   }
 };
+
+export const updateAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const assignment = await Assignment.findById(id);
+    if (!assignment) {
+      return res.status(404).json({ success: false, message: "Assignment not found" });
+    }
+
+    // Authorization check - only the assigned employee or plant admin can update
+    if (req.user.role !== "PLANT_ADMIN" && assignment.employeeId.toString() !== req.user.userId) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    if (status) {
+      assignment.status = status;
+      if (status === "SUBMITTED") {
+        assignment.submittedAt = new Date();
+      }
+    }
+
+    const updated = await assignment.save();
+
+    res.json({
+      success: true,
+      message: "Assignment updated successfully",
+      data: updated
+    });
+  } catch (error) {
+    console.error("Update assignment error:", error);
+    res.status(500).json({ success: false, message: "Failed to update assignment" });
+  }
+};

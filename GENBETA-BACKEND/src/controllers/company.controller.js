@@ -546,19 +546,26 @@ export const getCompanyUsage = async (req, res) => {
 
 export const updateCompanyPlan = async (req, res) => {
   try {
+    console.log("Backend: updateCompanyPlan called with:", req.body);
+    console.log("Backend: company ID:", req.params.id);
+    
     const { plan, customLimits } = req.body;
     const validPlans = ["SILVER", "GOLD", "PREMIUM", "CUSTOM"];
     
     if (!plan || !validPlans.includes(plan.toUpperCase())) {
+      console.log("Backend: Invalid plan:", plan);
       return res.status(400).json({ message: "Invalid plan. Choose from: Silver, Gold, Premium, Custom" });
     }
 
     const company = await Company.findById(req.params.id);
+    console.log("Backend: Found company:", company ? "Yes" : "No");
     if (!company) {
+      console.log("Backend: Company not found for ID:", req.params.id);
       return res.status(404).json({ message: "Company not found" });
     }
 
     const normalizedPlan = plan.toUpperCase();
+    console.log("Backend: Normalized plan:", normalizedPlan);
     
     company.subscription = {
       ...company.subscription,
@@ -567,11 +574,14 @@ export const updateCompanyPlan = async (req, res) => {
       billingCycle: "manual",
       customLimits: normalizedPlan === "CUSTOM" ? customLimits : undefined
     };
-
+    
+    console.log("Backend: Saving company with subscription:", company.subscription);
     await company.save();
+    console.log("Backend: Company saved successfully");
 
     // Get updated usage details
     const usageDetails = await getCompanySubscriptionDetails(req.params.id);
+    console.log("Backend: Usage details:", usageDetails);
 
     res.json({ 
       message: `Plan updated to ${plan} successfully`,

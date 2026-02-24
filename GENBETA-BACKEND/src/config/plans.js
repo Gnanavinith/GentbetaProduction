@@ -10,6 +10,9 @@ export const PLANS = {
       maxFormsPerPlant: 10,
       maxEmployeesPerPlant: 10,
       approvalLevels: 2,
+      maxSubmissionsPerMonth: 300,
+      maxApprovalsPerMonth: 300,
+      maxNotificationsPerMonth: 1000,
     },
     features: {
       dashboard: "basic",
@@ -39,6 +42,9 @@ export const PLANS = {
       maxFormsPerPlant: 25,
       maxEmployeesPerPlant: 50,
       approvalLevels: 5,
+      maxSubmissionsPerMonth: 2000,
+      maxApprovalsPerMonth: 2000,
+      maxNotificationsPerMonth: 5000,
     },
     features: {
       dashboard: "advanced",
@@ -71,6 +77,9 @@ export const PLANS = {
       maxFormsPerPlant: -1,
       maxEmployeesPerPlant: -1,
       approvalLevels: -1,
+      maxSubmissionsPerMonth: -1,
+      maxApprovalsPerMonth: -1,
+      maxNotificationsPerMonth: -1,
     },
     features: {
       dashboard: "enterprise",

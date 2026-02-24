@@ -17,6 +17,7 @@ import {
 import crypto from "crypto";
 import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
 import mongoose from "mongoose";
+import { createNotification } from "../utils/notify.js";
 
 /* ======================================================
    APPROVAL TASK (INTERNAL WORKFLOW)
@@ -533,6 +534,53 @@ export const processApproval = async (req, res) => {
                 formId,
                 submissionId
               );
+              
+              // Create notification for the next approver
+              try {
+                await createNotification({
+                  userId: nextApprover._id,
+                  title: "Approval Required",
+                  message: `Form ${form.formName || form.templateName} waiting for your approval`,
+                  link: `/employee/approvals/${submission._id}`
+                });
+              } catch (notificationError) {
+                console.error("Error creating approval notification:", notificationError);
+              }
+            }
+            
+            // Create notification for the submitter to inform them their form moved to the next approval level
+            if (submitter) {
+              try {
+                await createNotification({
+                  userId: submitter._id,
+                  title: "Form In Progress",
+                  message: `Your form "${form.formName || form.templateName}" has been approved by ${currentApprover?.name || "an approver"} and moved to the next approval level`,
+                  link: `/employee/submissions/${submission._id}`
+                });
+                console.log(`Progress notification sent to submitter ${submitter._id} for submission ${submission._id}`);
+              } catch (notificationError) {
+                console.error("Error creating progress notification:", notificationError);
+              }
+            }
+            
+            // Also create notification for the plant admin to track form progress
+            const plantAdmin = await User.findOne({
+              plantId: submission.plantId,
+              role: "PLANT_ADMIN"
+            });
+            
+            if (plantAdmin) {
+              try {
+                await createNotification({
+                  userId: plantAdmin._id,
+                  title: "Form In Progress",
+                  message: `Form "${form.formName || form.templateName}" has been approved by ${currentApprover?.name || "an approver"} and moved to the next approval level`,
+                  link: `/plant/submissions/${submission._id}`
+                });
+                console.log(`Progress notification sent to plant admin ${plantAdmin._id} for submission ${submission._id}`);
+              } catch (notificationError) {
+                console.error("Error creating progress notification for plant admin:", notificationError);
+              }
             }
           } catch (emailError) {
             console.error("Failed to notify next approver:", emailError);
@@ -581,6 +629,41 @@ export const processApproval = async (req, res) => {
                 submission.plantId
               );
             }
+            
+            // Create notification for the plant admin to inform them a form has been fully approved
+            const plantAdmin = await User.findOne({
+              plantId: submission.plantId,
+              role: "PLANT_ADMIN"
+            });
+            
+            if (plantAdmin) {
+              try {
+                await createNotification({
+                  userId: plantAdmin._id,
+                  title: "Form Approved",
+                  message: `Form "${form.formName || form.templateName}" has been fully approved`,
+                  link: `/plant/submissions/${submission._id}`
+                });
+                console.log(`Final approval notification sent to plant admin ${plantAdmin._id} for submission ${submission._id}`);
+              } catch (notificationError) {
+                console.error("Error creating final approval notification:", notificationError);
+              }
+            }
+            
+            // Also create notification for the submitter
+            if (submitter) {
+              try {
+                await createNotification({
+                  userId: submitter._id,
+                  title: "Form Approved",
+                  message: `Your form "${form.formName || form.templateName}" has been fully approved`,
+                  link: `/employee/submissions/${submission._id}`
+                });
+                console.log(`Final approval notification sent to submitter ${submitter._id} for submission ${submission._id}`);
+              } catch (notificationError) {
+                console.error("Error creating final approval notification for submitter:", notificationError);
+              }
+            }
           } catch (emailError) {
             console.error("Failed to notify submitter of final approval:", emailError);
           }
@@ -589,6 +672,8 @@ export const processApproval = async (req, res) => {
     }
 
     await submission.save();
+    
+    // Create notifications after saving the submission to ensure data consistency
 
     // Send notification to plant admin about approval status (non-blocking)
     (async () => {

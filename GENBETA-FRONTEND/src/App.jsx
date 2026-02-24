@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -14,6 +16,7 @@ const LoadingSpinner = () => (
 
 // Lazy-loaded components
 const Login = lazy(() => import("./pages/Login"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 
 // Super Admin Pages
 const SuperAdminDashboard = lazy(() => import("./pages/superAdmin/Dashboard"));
@@ -86,6 +89,7 @@ function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Toaster position="top-right" reverseOrder={false} />
+      <ToastContainer position="top-right" autoClose={3000} />
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
         {/* Public Routes */}
@@ -161,6 +165,11 @@ function App() {
         {/* Profile Route (Shared) */}
         <Route element={<ProtectedRoute roles={["SUPER_ADMIN", "COMPANY_ADMIN", "PLANT_ADMIN", "EMPLOYEE"]}><MainLayout /></ProtectedRoute>}>
           <Route path="/profile" element={<Profile />} />
+        </Route>
+        
+        {/* Notifications Route (Shared) */}
+        <Route element={<ProtectedRoute roles={["SUPER_ADMIN", "COMPANY_ADMIN", "PLANT_ADMIN", "EMPLOYEE"]}><MainLayout /></ProtectedRoute>}>
+          <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
 
         {/* Catch all */}

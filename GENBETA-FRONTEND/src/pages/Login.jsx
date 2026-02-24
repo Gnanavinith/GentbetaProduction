@@ -223,12 +223,9 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ── RIGHT PANEL – Colorful gradient login form ── */}
+      {/* ── RIGHT PANEL – Black background login form ── */}
       <div
-        className="flex-1 lg:w-1/2 min-h-screen flex items-center justify-center relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
-        }}
+        className="flex-1 lg:w-1/2 min-h-screen flex items-center justify-center relative overflow-hidden bg-black"
       >
         {/* Decorative orbs */}
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-20 blur-3xl"
@@ -270,11 +267,7 @@ export default function Login() {
               boxShadow: "0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
             }}
           >
-            {/* Colourful top accent bar */}
-            <div
-              className="absolute top-0 left-8 right-8 h-0.5 rounded-full"
-              style={{ background: "linear-gradient(90deg, #7c3aed, #06b6d4, #f59e0b)" }}
-            />
+
 
             {/* Header */}
             <div className="mb-8">
@@ -314,7 +307,7 @@ export default function Login() {
                 </label>
                 <div className="relative">
                   <Mail
-                    className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#RRGGBBAA]"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white"
                     style={{width: 18, height: 18 }}
                   />
                   <input
@@ -351,7 +344,7 @@ export default function Login() {
                 </label>
                 <div className="relative">
                   <Lock
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#RRGGBBAA]"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-white"
                     style={{width: 18, height: 18 }}
                   />
                   <input
@@ -380,7 +373,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors text-[#RRGGBBAA]"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors text-white"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -440,9 +433,9 @@ export default function Login() {
               </div>
               <p className="text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
                 Need help?{" "}
-                <a href="mailto:support@matapang.com"
+                <a href="mailto:admin@matapangtech.com"
                   className="underline underline-offset-2 hover:text-white/50 transition-colors text-amber-50">
-                  Contact your administrator
+                  admin@matapangtech.com
                 </a>
               </p>
             </div>

@@ -5,7 +5,8 @@ import {
   getMyAssignments, 
   getPlantAssignments, 
   deleteAssignment,
-  getAssignmentById 
+  getAssignmentById,
+  updateAssignment
 } from "../controllers/assignment.controller.js";
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.post("/assign", checkRole(["PLANT_ADMIN"]), assignTemplateToEmployees);
 router.get("/plant", checkRole(["PLANT_ADMIN"]), getPlantAssignments);
 
 router.get("/:id", getAssignmentById);
+router.patch("/:id", updateAssignment);
 router.delete("/:id", checkRole(["PLANT_ADMIN"]), deleteAssignment);
 
 export default router;

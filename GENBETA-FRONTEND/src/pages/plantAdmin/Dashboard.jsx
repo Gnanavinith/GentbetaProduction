@@ -199,9 +199,7 @@ export default function PlantAdminDashboard() {
           <button onClick={handleExport} className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold border border-gray-200 transition-all shadow-sm text-sm">
             <Download className="w-4 h-4" /> Export
           </button>
-          <Link to="/plant/forms/create/select" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md shadow-indigo-100 transition-all text-sm">
-            <Plus className="w-4 h-4" /> Create Facility
-          </Link>
+          
         </div>
       </div>
 
@@ -271,10 +269,7 @@ export default function PlantAdminDashboard() {
           <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
             <h2 className="text-base font-bold text-gray-900 mb-2 tracking-tight">Quick Actions</h2>
             <div className="grid grid-cols-1 gap-1.5">
-              <Link to="/plant/forms/create/select" className="flex items-center gap-2 p-2 rounded-md border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all group">
-                <div className="p-1.5 bg-indigo-50 group-hover:bg-white rounded-md transition-colors"><Plus className="w-3.5 h-3.5 text-indigo-600" /></div>
-                <div><p className="font-black text-xs text-gray-900">Create Facility</p><p className="text-[9px] font-bold text-gray-400">New form or template</p></div>
-              </Link>
+              
               <Link to="/plant/forms" className="flex items-center gap-2 p-2 rounded-md border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all group">
                 <div className="p-1.5 bg-purple-50 group-hover:bg-white rounded-md transition-colors"><FileText className="w-3.5 h-3.5 text-purple-600" /></div>
                 <div><p className="font-black text-xs text-gray-900">Manage Forms</p><p className="text-[9px] font-bold text-gray-400">Edit and assign</p></div>

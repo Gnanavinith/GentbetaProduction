@@ -150,14 +150,12 @@ export const sendSubmissionNotificationToApprover = async (
     </div>
   `;
 
-  const fromAddress = submitterEmail
-    ? `"${submitterName}" <${submitterEmail}>`
-    : await resolveEmailSender({
-        actor,
-        companyId,
-        plantId,
-        fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
-      });
+  const fromAddress = await resolveEmailSender({
+    actor,
+    companyId,
+    plantId,
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
+  });
 
   const mailOptions = {
     from: fromAddress,
@@ -289,14 +287,12 @@ export const sendApprovalStatusNotificationToPlant = async (
     ? `[Form Approved] ${submissionId || formId || 'FORM-ID'} | Level ${level} Approved by ${approverName}`
     : `[Form Rejected] ${submissionId || formId || 'FORM-ID'} | Level ${level} Rejected by ${approverName}`;
 
-  const fromAddress = approverEmail
-    ? `"${approverName}" <${approverEmail}>`
-    : await resolveEmailSender({
-        actor,
-        companyId,
-        plantId: plantIdParam || plantId,
-        fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
-      });
+  const fromAddress = await resolveEmailSender({
+    actor,
+    companyId,
+    plantId: plantIdParam || plantId,
+    fallbackFrom: `"Matapang" <${process.env.EMAIL_USER || process.env.SMTP_FROM || 'no-reply@matapang.com'}>`
+  });
 
   const mailOptions = {
     from: fromAddress,

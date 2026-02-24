@@ -1,16 +1,17 @@
 import FormTemplate from "../models/FormTemplate.model.js";
 import FormSubmission from "../models/FormSubmission.model.js";
-import { validateFormCreation } from "../utils/planLimits.js";
+import { checkFormCreationLimit } from "../utils/subscriptionValidator.js";
 
 export const createTemplate = async (req, res) => {
   try {
     const { templateName, description, fields, workflow, status } = req.body;
 
-    const validation = await validateFormCreation(req.user.companyId, req.user.plantId);
+    const validation = await checkFormCreationLimit(req.user.plantId, req.user.companyId);
     if (!validation.allowed) {
       return res.status(403).json({ 
         success: false,
         message: validation.message,
+        overLimit: true,
         upgradeRequired: validation.upgradeRequired,
         currentCount: validation.currentCount,
         limit: validation.limit

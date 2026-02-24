@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { toast as toastifyToast } from "react-toastify";
 import { assignmentApi } from "../../api/assignment.api";
 import { formApi } from "../../api/form.api";
 import FormRenderer from "../../components/FormRenderer/FormRenderer";
@@ -388,9 +389,24 @@ export default function FillFormPage() {
           replace: true
         });
       } else {
-        const msg = response.message || "Failed to submit form";
-        setError(msg);
-        toast.error(msg);
+        if (response.overLimit) {
+          // Show special toast for limit exceeded using toastify
+          toastifyToast.error(response.message || "Plan limit exceeded. Please upgrade your subscription.", {
+            position: "top-right",
+            autoClose: 8000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+          
+          // Add to error state as well
+          setError(response.message || "Plan limit exceeded. Please upgrade your subscription.");
+        } else {
+          const msg = response.message || "Failed to submit form";
+          setError(msg);
+          toast.error(msg);
+        }
         isSubmittedRef.current = false;
       }
     } catch (err) {

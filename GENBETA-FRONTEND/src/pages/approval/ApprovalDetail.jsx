@@ -10,12 +10,15 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  User2,
-  CalendarDays,
+  User,
+  Calendar,
+  AlertTriangle,
+  FileText,
   FileCheck,
   AlertCircle,
   ChevronRight,
-  Send
+  Send,
+  Users
 } from "lucide-react";
 import Loader from "../../components/common/Loader.jsx";
 
@@ -218,6 +221,25 @@ export default function ApprovalDetail() {
   const template = submission.formId;
   const { approvalHistory, isMyTurn, pendingApproverName } = submission;
   const submitterName = submission.submittedBy?.name || "Employee";
+  
+  // Calculate pending approvers and get approver names
+  const flow = template?.approvalFlow || [];
+  const currentLevel = submission.currentLevel || 1;
+  const totalApprovers = flow.length;
+  const pendingApprovers = totalApprovers - (currentLevel - 1);
+  const completedApprovers = currentLevel - 1;
+  
+  // Get approver names for display
+  const approverNames = flow.map(level => {
+    const approver = level.approverId;
+    if (approver && typeof approver === 'object' && approver.name) {
+      return approver.name;
+    } else if (approver && typeof approver === 'string') {
+      // If it's just an ID, we'll show a placeholder
+      return `Approver ${level.level}`;
+    }
+    return `Approver ${level.level}`;
+  });
 
   const statusConfig = {
     APPROVED: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", icon: CheckCircle2, label: "Approved" },
@@ -249,11 +271,11 @@ export default function ApprovalDetail() {
                 </h1>
                 <div className="flex flex-wrap items-center gap-4 text-indigo-100 text-sm">
                   <span className="inline-flex items-center gap-1.5">
-                    <User2 size={14} />
+                    <User size={14} />
                     {submitterName}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <CalendarDays size={14} />
+                    <Calendar size={14} />
                     {new Date(submission.createdAt).toLocaleDateString("en-US", {
                       year: "numeric",
                       month: "short",
@@ -270,6 +292,112 @@ export default function ApprovalDetail() {
           </div>
 
           <div className="p-6 space-y-6">
+            {/* Approval Progress Section */}
+            {totalApprovers > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-600" />
+                    Approval Progress
+                  </h3>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-gray-500">Level {currentLevel} of {totalApprovers}</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      submission.status === 'APPROVED' 
+                        ? 'bg-green-100 text-green-800' 
+                        : submission.status === 'REJECTED'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {submission.status === 'APPROVED' ? 'Completed' : 
+                       submission.status === 'REJECTED' ? 'Rejected' : 'In Progress'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${(completedApprovers / totalApprovers) * 100}%` }}
+                    ></div>
+                  </div>
+                  
+                  {/* Approver List */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-700">Approval Sequence:</h4>
+                    <div className="space-y-2">
+                      {flow.map((level, index) => {
+                        const isCompleted = index < currentLevel - 1;
+                        const isCurrent = index === currentLevel - 1;
+                        const isPending = index > currentLevel - 1;
+                        const approverName = approverNames[index] || `Approver ${level.level}`;
+                        
+                        return (
+                          <div 
+                            key={level.level} 
+                            className={`flex items-center gap-3 p-3 rounded-lg border ${
+                              isCompleted 
+                                ? 'bg-green-50 border-green-200' 
+                                : isCurrent 
+                                ? 'bg-amber-50 border-amber-200' 
+                                : 'bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                              isCompleted 
+                                ? 'bg-green-500 text-white' 
+                                : isCurrent 
+                                ? 'bg-amber-500 text-white' 
+                                : 'bg-gray-300 text-gray-600'
+                            }`}>
+                              {level.level}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-800">{approverName}</div>
+                              <div className={`text-xs ${
+                                isCompleted 
+                                  ? 'text-green-600' 
+                                  : isCurrent 
+                                  ? 'text-amber-600' 
+                                  : 'text-gray-500'
+                              }`}>
+                                {isCompleted ? 'Approved' : isCurrent ? 'Current Approver' : 'Pending'}
+                              </div>
+                            </div>
+                            {isCompleted && (
+                              <CheckCircle2 className="w-5 h-5 text-green-500" />
+                            )}
+                            {isCurrent && (
+                              <Clock className="w-5 h-5 text-amber-500" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Current Approver Info */}
+                  {submission.status !== 'APPROVED' && submission.status !== 'REJECTED' && isMyTurn && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold text-blue-800">
+                            Your Turn to Approve
+                          </p>
+                          <p className="text-sm text-blue-600">
+                            You are the current approver for this submission
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {!isMyTurn && submission.status === "PENDING_APPROVAL" && (
               <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
                 <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">

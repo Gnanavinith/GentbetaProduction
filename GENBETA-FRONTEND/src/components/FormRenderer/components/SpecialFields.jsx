@@ -28,6 +28,9 @@ export default function SpecialFields({
 }) {
   const fieldId = field.fieldId || field.id || field.name;
   const { user } = useAuth();
+  
+  // Set the appropriate upload function based on field type
+  const uploadFunction = field.type === 'image' ? uploadImage : uploadFile;
 
   // Ensure auto-user fields are populated on initial render
   useEffect(() => {
@@ -82,6 +85,13 @@ export default function SpecialFields({
     try {
       setUploadProgress(prev => ({ ...prev, [id]: 0 }));
       
+      // Validate file size against field configuration
+      const maxSize = (field.maxFileSize || 5) * 1024 * 1024; // Convert MB to bytes
+      if (file.size > maxSize) {
+        toast.error(`File size exceeds maximum allowed size of ${field.maxFileSize || 5}MB`);
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadstart = () => {
         setUploadProgress(prev => ({ ...prev, [id]: 10 }));
@@ -99,17 +109,41 @@ export default function SpecialFields({
           const base64 = e.target.result;
           setUploadProgress(prev => ({ ...prev, [id]: 75 }));
           
-          // Use appropriate upload function based on field type
-          const uploadFunction = field.type === 'image' ? uploadImage : uploadFile;
-          const uploadResponse = await uploadFunction(base64, 'submissions');
+          console.log('[SpecialFields] Starting upload for:', { 
+            fieldId: id, 
+            fileName: file.name, 
+            fileType: file.type,
+            fileSize: file.size,
+            fieldType: field.type
+          });
+          
+          const uploadResponse = await uploadFunction(base64, 'submissions', file.name);
           
           // Debug: Log the upload response structure
           console.log('[SpecialFields] Upload response:', uploadResponse);
           
           setUploadProgress(prev => ({ ...prev, [id]: 100 }));
           
-          setFiles(prev => ({ ...prev, [id]: { ...file, url: uploadResponse.url } }));
-          update(id, uploadResponse.url);
+          // Store both the URL and file metadata
+          setFiles(prev => ({ 
+            ...prev, 
+            [id]: { 
+              ...file, 
+              url: uploadResponse.url,
+              publicId: uploadResponse.publicId,
+              resourceType: uploadResponse.resourceType
+            } 
+          }));
+          
+          // Update form data with the file information object instead of just the URL
+          update(id, {
+            url: uploadResponse.url,
+            filename: file.name,
+            mimetype: file.type,
+            size: file.size,
+            publicId: uploadResponse.publicId,
+            resourceType: uploadResponse.resourceType
+          });
           
           setTimeout(() => {
             setUploadProgress(prev => {
@@ -121,17 +155,28 @@ export default function SpecialFields({
           
           toast.success('File uploaded successfully!');
         } catch (error) {
-          console.error('Upload error:', error);
+          console.error('[SpecialFields] Upload error details:', {
+            error: error,
+            message: error.message,
+            stack: error.stack,
+            fieldId: id,
+            fileName: file.name
+          });
+          
           setUploadProgress(prev => {
             const newProgress = { ...prev };
             delete newProgress[id];
             return newProgress;
           });
-          toast.error('Failed to upload file');
+          
+          // Show more specific error message
+          const errorMessage = error.response?.data?.error || error.message || 'Failed to upload file';
+          toast.error(`Upload failed: ${errorMessage}`);
         }
       };
       
       reader.onerror = () => {
+        console.error('[SpecialFields] FileReader error for file:', file.name);
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[id];
@@ -142,7 +187,11 @@ export default function SpecialFields({
       
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error('File processing error:', error);
+      console.error('[SpecialFields] File processing error:', {
+        error: error,
+        message: error.message,
+        stack: error.stack
+      });
       toast.error('Failed to process file');
     }
   };
@@ -235,7 +284,7 @@ export default function SpecialFields({
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-green-900 truncate max-w-xs">
-                        {value.split("/").pop()}
+                        {typeof value === 'object' ? value.filename : value.split("/").pop()}
                       </p>
                       <p className="text-xs text-green-600 mt-0.5">Upload complete</p>
                     </div>
@@ -252,9 +301,13 @@ export default function SpecialFields({
               </div>
               {readOnly && (
                 <a 
-                  href={value.includes('cloudinary.com') && value.toLowerCase().includes('.pdf')
-                    ? value.replace('/upload/', '/upload/f_auto/')
-                    : value}
+                  href={typeof value === 'object' 
+                    ? (value.url.includes('cloudinary.com') && value.filename?.toLowerCase().includes('.pdf')
+                      ? value.url.replace('/upload/', '/upload/f_auto/')
+                      : value.url)
+                    : (value.includes('cloudinary.com') && value.toLowerCase().includes('.pdf')
+                      ? value.replace('/upload/', '/upload/f_auto/')
+                      : value)}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="block text-xs text-indigo-600 hover:text-indigo-700 font-medium truncate bg-indigo-50 p-3 rounded-lg border border-indigo-200"

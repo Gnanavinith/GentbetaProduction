@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { sendSubmissionNotificationToApprover } from "../services/email/index.js";
 import fs from "fs";
+import { createNotification } from "../utils/notify.js";
 
 /* ======================================================
    CREATE SUBMISSION
@@ -82,6 +83,47 @@ export const createSubmission = async (req, res) => {
     };
 
     const submission = await FormSubmission.create(submissionData);
+
+    // Trigger notification to plant admin when employee submits form
+    if (initialStatus === "PENDING_APPROVAL") {
+      try {
+        // Find the plant admin for this submission
+        const plantAdmin = await User.findOne({
+          plantId: user.plantId,
+          role: "PLANT_ADMIN"
+        });
+
+        if (plantAdmin) {
+          await createNotification({
+            userId: plantAdmin._id,
+            title: "New Form Submitted",
+            message: `${user.name} submitted ${form.formName}`,
+            link: `/plant/submissions`
+          });
+          console.log(`Notification sent to plant admin ${plantAdmin._id} for form submission`);
+        }
+        
+        // Also notify the first approver in the workflow
+        if (form.approvalFlow && form.approvalFlow.length > 0) {
+          // Find the first level approver in the workflow
+          const firstLevelApprover = form.approvalFlow.find(level => level.level === 1);
+          if (firstLevelApprover && firstLevelApprover.approverId) {
+            const approver = await User.findById(firstLevelApprover.approverId);
+            if (approver) {
+              await createNotification({
+                userId: approver._id,
+                title: "Approval Required",
+                message: `Form ${form.formName} waiting for your approval`,
+                link: `/employee/approvals/${submission._id}`
+              });
+              console.log(`Notification sent to approver ${approver._id} for form approval`);
+            }
+          }
+        }
+      } catch (notificationError) {
+        console.error("Error creating notification:", notificationError);
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -192,11 +234,71 @@ export const getSubmissionById = async (req, res) => {
     }
 
     // Authorization check
-    if (req.user.role === "EMPLOYEE" && submission.submittedBy._id.toString() !== req.user.userId) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Access denied" 
-      });
+    if (req.user.role === "EMPLOYEE") {
+      console.log("Employee access check for submission:", submission._id);
+      console.log("User ID:", req.user.userId);
+      console.log("Submitter ID:", submission.submittedBy._id.toString());
+      console.log("Submission status:", submission.status);
+      console.log("Current level:", submission.currentLevel);
+      
+      // Allow the submitter to view their own submission
+      if (submission.submittedBy._id.toString() === req.user.userId) {
+        console.log("User is submitter - allowing access");
+        // User is the submitter - allow access
+      } 
+      // Allow approvers to view submissions they need to approve
+      else if (submission.status === "PENDING_APPROVAL" && submission.currentLevel > 0) {
+        console.log("Checking approver access");
+        // Check if this user is the approver for the current level
+        const form = submission.formId;
+        console.log("Form approval flow:", JSON.stringify(form?.approvalFlow, null, 2));
+        const flow = form?.approvalFlow || [];
+        const currentApprover = flow.find(f => f.level === submission.currentLevel);
+        console.log("Current approver level:", submission.currentLevel);
+        console.log("Found approver:", JSON.stringify(currentApprover, null, 2));
+        
+        if (currentApprover) {
+          // Handle different possible structures for approverId
+          let approverId = null;
+          if (currentApprover.approverId) {
+            if (typeof currentApprover.approverId === 'string') {
+              approverId = currentApprover.approverId;
+            } else if (currentApprover.approverId._id) {
+              approverId = currentApprover.approverId._id.toString();
+            } else if (currentApprover.approverId.toString) {
+              approverId = currentApprover.approverId.toString();
+            }
+          }
+          
+          console.log("Approver ID:", approverId);
+          console.log("User ID:", req.user.userId.toString());
+          
+          if (approverId && approverId === req.user.userId.toString()) {
+            console.log("User is current approver - allowing access");
+            // User is the current approver - allow access
+          } else {
+            console.log("User is not current approver");
+            console.log("Expected approver ID:", approverId);
+            console.log("Actual user ID:", req.user.userId.toString());
+            return res.status(403).json({ 
+              success: false, 
+              message: "Access denied - you are not the current approver for this submission" 
+            });
+          }
+        } else {
+          console.log("No approver found for current level");
+          return res.status(403).json({ 
+            success: false, 
+            message: "Access denied - no approver found for current level" 
+          });
+        }
+      } else {
+        console.log("User cannot access this submission");
+        return res.status(403).json({ 
+          success: false, 
+          message: "Access denied - you can only view your own submissions or submissions you need to approve" 
+        });
+      }
     }
 
     res.json({
@@ -361,6 +463,47 @@ export const submitDraft = async (req, res) => {
     }
 
     const updated = await submission.save();
+
+    // Trigger notification to plant admin when employee submits form
+    if (newStatus === "PENDING_APPROVAL") {
+      try {
+        // Find the plant admin for this submission
+        const plantAdmin = await User.findOne({
+          plantId: submission.plantId,
+          role: "PLANT_ADMIN"
+        });
+
+        if (plantAdmin) {
+          await createNotification({
+            userId: plantAdmin._id,
+            title: "New Form Submitted",
+            message: `${submission.submittedByName} submitted ${form.formName}`,
+            link: `/plant/submissions`
+          });
+          console.log(`Notification sent to plant admin ${plantAdmin._id} for form submission from submitDraft`);
+        }
+        
+        // Also notify the first approver in the workflow
+        if (form.approvalFlow && form.approvalFlow.length > 0) {
+          // Find the first level approver in the workflow
+          const firstLevelApprover = form.approvalFlow.find(level => level.level === 1);
+          if (firstLevelApprover && firstLevelApprover.approverId) {
+            const approver = await User.findById(firstLevelApprover.approverId);
+            if (approver) {
+              await createNotification({
+                userId: approver._id,
+                title: "Approval Required",
+                message: `Form ${form.formName} waiting for your approval`,
+                link: `/employee/approvals/${submission._id}`
+              });
+              console.log(`Notification sent to approver ${approver._id} for form approval from submitDraft`);
+            }
+          }
+        }
+      } catch (notificationError) {
+        console.error("Error creating notification:", notificationError);
+      }
+    }
 
     res.json({
       success: true,

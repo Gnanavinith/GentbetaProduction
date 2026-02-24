@@ -16,8 +16,13 @@ export const uploadToCloudinary = (fileBuffer, folder = 'logos', fileName = null
     if (fileName) {
       const ext = fileName.split('.').pop()?.toLowerCase();
       // Explicitly set to 'raw' for documents to ensure correct handling
+      // This prevents PDFs from being treated as images
       if (['pdf', 'doc', 'docx', 'txt', 'csv', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
         resourceType = 'raw';
+      }
+      // Explicitly set to 'image' for image files
+      else if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(ext)) {
+        resourceType = 'image';
       }
     }
     

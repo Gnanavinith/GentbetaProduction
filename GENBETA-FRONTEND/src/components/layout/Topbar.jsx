@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Menu, User, Building2, ChevronDown, Settings } from "lucide-react";
 import logo from "../../assets/MatapanLogo.png";
+import Notifications from "./Notifications";
 
 export default function Topbar({ onMenuClick }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -82,6 +83,9 @@ export default function Topbar({ onMenuClick }) {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
+
+          {/* Notifications */}
+          <Notifications />
 
           {/* Profile Dropdown */}
           <div className="relative">

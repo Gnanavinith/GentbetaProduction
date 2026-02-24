@@ -68,6 +68,26 @@ export const assignmentApi = {
 
   submitAssignment: async (id, data, files = []) => {
     try {
+      // First, get the assignment details to get the template ID
+      const assignmentResponse = await api.get(`/api/assignments/${id}`);
+      if (!assignmentResponse.data.success) {
+        return {
+          success: false,
+          message: assignmentResponse.data.message || "Failed to fetch assignment details"
+        };
+      }
+
+      const assignment = assignmentResponse.data.data;
+      const templateId = assignment.templateId?._id || assignment.templateId;
+
+      if (!templateId) {
+        return {
+          success: false,
+          message: "Template ID not found in assignment"
+        };
+      }
+
+      // Use the direct submission approach with the template ID
       const formData = new FormData();
       formData.append("data", JSON.stringify(data));
 
@@ -75,14 +95,34 @@ export const assignmentApi = {
         formData.append(file.fieldId, file.file);
       });
 
-      const response = await api.post(`/api/formTask/${id}/submit`, formData, {
+      const response = await api.post(`/api/form-task/submit-direct/${templateId}`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
+      
+      // If submission was successful, update the assignment status
+      if (response.data.success) {
+        try {
+          await api.patch(`/api/assignments/${id}`, { status: "SUBMITTED" });
+        } catch (updateError) {
+          console.warn("Failed to update assignment status:", updateError);
+          // Don't fail the submission if assignment update fails
+        }
+      }
+      
       return response.data;
     } catch (error) {
+      const errorResponse = error.response?.data;
+      if (errorResponse?.overLimit) {
+        return {
+          success: false,
+          message: errorResponse.message || "Plan limit exceeded. Please upgrade your subscription.",
+          overLimit: true,
+          overLimitDetails: errorResponse.overLimitDetails
+        };
+      }
       return {
         success: false,
-        message: error.response?.data?.message || error.message,
+        message: errorResponse?.message || error.message,
       };
     }
   },
@@ -101,9 +141,18 @@ export const assignmentApi = {
       });
       return response.data;
     } catch (error) {
+      const errorResponse = error.response?.data;
+      if (errorResponse?.overLimit) {
+        return {
+          success: false,
+          message: errorResponse.message || "Plan limit exceeded. Please upgrade your subscription.",
+          overLimit: true,
+          overLimitDetails: errorResponse.overLimitDetails
+        };
+      }
       return {
         success: false,
-        message: error.response?.data?.message || error.message,
+        message: errorResponse?.message || error.message,
       };
     }
   },

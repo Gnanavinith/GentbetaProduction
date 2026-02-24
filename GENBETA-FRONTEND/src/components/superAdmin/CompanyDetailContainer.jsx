@@ -67,12 +67,20 @@ export default function CompanyDetailContainer() {
 
   const handlePlanUpdate = async () => {
     try {
+      console.log("Starting plan update for company:", id);
+      console.log("Selected plan:", selectedPlan);
+      console.log("Custom limits:", selectedPlan === "CUSTOM" ? customLimits : undefined);
+      
       setUpdatingPlan(true);
       const payload = { 
         plan: selectedPlan,
         customLimits: selectedPlan === "CUSTOM" ? customLimits : undefined
       };
+      
+      console.log("Sending payload to API:", payload);
       const response = await companyApi.updatePlan(id, payload.plan, payload.customLimits);
+      console.log("API response:", response);
+      
       toast.success(`Plan updated to ${selectedPlan} successfully`);
       
       // Update company data with new usage details
@@ -89,6 +97,8 @@ export default function CompanyDetailContainer() {
       setShowOverLimitWarning(false); // Hide warning after successful upgrade
     } catch (err) {
       console.error("Plan update error:", err);
+      console.error("Error response:", err?.response);
+      console.error("Error message:", err?.message);
       toast.error(err?.response?.data?.message || err?.message || "Failed to update plan");
       setError(err?.message || "Failed to update plan");
     } finally {

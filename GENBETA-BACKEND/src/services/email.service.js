@@ -111,14 +111,80 @@ const formatFieldValue = (value, fieldType = "text") => {
       return userFields.join(" | ");
     }
     
-    // File upload object
-    if (value.url && value.originalName) {
-      return `${value.originalName} (${value.url})`;
+    // File upload object - cleaner display with clickable link
+    if (value.url && (value.originalName || value.filename)) {
+      const fileName = value.originalName || value.filename;
+      const fileSize = value.size ? ` (${(value.size / 1024 / 1024).toFixed(2)} MB)` : '';
+      // Create clickable link for file
+      return `<a href="${value.url}" target="_blank" style="color: #4f46e5; text-decoration: underline;">${fileName}${fileSize}</a>`;
     }
     
-    // Generic object - convert to JSON string for display
+    // Handle Cloudinary file objects (raw resource type)
+    if (value.url && value.resourceType === 'raw') {
+      // Extract filename from URL if not provided directly
+      const fileName = value.filename || value.originalName || value.url.split('/').pop() || 'Document';
+      const fileSize = value.size ? ` (${(value.size / 1024 / 1024).toFixed(2)} MB)` : '';
+      // Create clickable link for file
+      return `<a href="${value.url}" target="_blank" style="color: #4f46e5; text-decoration: underline;">${fileName}${fileSize}</a>`;
+    }
+    
+    // Handle general file objects
+    if (value.url && value.mimetype) {
+      const fileName = value.filename || value.originalName || 'Uploaded File';
+      const fileSize = value.size ? ` (${(value.size / 1024 / 1024).toFixed(2)} MB)` : '';
+      // Create clickable link for file
+      return `<a href="${value.url}" target="_blank" style="color: #4f46e5; text-decoration: underline;">${fileName}${fileSize}</a>`;
+    }
+    
+    // Check if this is a grid/table object with row-column structure like {"row-1": {"col1": "value", "col2": "value"}}
+    const keys = Object.keys(value);
+    if (keys.some(key => key.startsWith('row') || key.startsWith('Row'))) {
+      // This is a grid with rows containing columns
+      return Object.entries(value)
+        .map(([rowKey, rowValue]) => {
+          if (typeof rowValue === 'object' && rowValue !== null) {
+            // Format the row values as column pairs
+            const colValues = [];
+            Object.entries(rowValue).forEach(([colKey, colVal]) => {
+              colValues.push(`${colKey}: ${String(colVal)}`);
+            });
+            return `${rowKey}: ${colValues.join(', ')}`;
+          } else {
+            // If rowValue is not an object, just return as is
+            return `${rowKey}: ${JSON.stringify(rowValue)}`;
+          }
+        })
+        .join('<br/>');
+    }
+    
+    // Check if this is a flat column object like {"col1": "value", "col2": "value"}
+    if (keys.some(key => key.startsWith('col') || key.startsWith('Col'))) {
+      // Display grid/table object as a formatted string
+      return Object.entries(value)
+        .map(([colKey, colValue]) => `${colKey}: ${JSON.stringify(colValue)}`)
+        .join('<br/>');
+    }
+    
+    // Generic object - convert to clean string representation
     try {
-      return JSON.stringify(value, null, 2);
+      // For objects that are not file uploads or auto-user, create a cleaner display
+      const cleanObject = {};
+      Object.keys(value).forEach(key => {
+        // Skip technical fields that users don't need to see
+        if (!['mimetype', 'size', 'publicId', 'resourceType', 'fieldname', 'originalName', 'filename'].includes(key)) {
+          cleanObject[key] = value[key];
+        }
+      });
+      
+      // If we have meaningful fields left, display them
+      if (Object.keys(cleanObject).length > 0) {
+        return Object.entries(cleanObject)
+          .map(([key, val]) => `${key}: ${String(val)}`)
+          .join(', ');
+      }
+      
+      // Fallback to simple string representation
+      return "[File Attachment]";
     } catch (e) {
       return "[Complex Data]";
     }
@@ -186,6 +252,7 @@ const sendEmail = async (mailOptions) => {
   // Check if transporter is properly configured
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.warn('Email service not configured - missing EMAIL_USER or EMAIL_PASS');
+    console.warn('Email will be mocked but notification creation will continue');
     return Promise.resolve({ message: 'Email service not configured, mock send' });
   }
   
@@ -194,12 +261,17 @@ const sendEmail = async (mailOptions) => {
     await transporter.verify();
     console.log('Email transporter verified successfully');
     
+    // Log email details before sending
+    console.log('Attempting to send email to:', mailOptions.to);
+    console.log('Email subject:', mailOptions.subject);
+    
     // Send the actual email
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.messageId, info.response);
+    console.log('Email sent successfully:', info.messageId, info.response);
     return info;
   } catch (error) {
     console.error('Email sending failed:', error.message);
+    console.error('Failed email details - to:', mailOptions.to, 'subject:', mailOptions.subject);
     
     // If it's an authentication error, log a specific message
     if (error.code === 'EAUTH' || error.responseCode === 535) {
@@ -222,61 +294,33 @@ const sendEmail = async (mailOptions) => {
  */
 const resolveEmailSender = async ({ actor, companyId, plantId, fallbackFrom = '"Matapang" <no-reply@matapang.com>' }) => {
   try {
-    // Super Admin level - use platform identity
+    // Always use the authenticated email for Office 365 compatibility
+    // This prevents the SendAsDenied error by ensuring we only send from the authenticated address
+    const authenticatedEmail = process.env.EMAIL_USER;
+    if (!authenticatedEmail) {
+      return fallbackFrom;
+    }
+    
+    // Super Admin level
     if (actor === "SUPER_ADMIN") {
-      return process.env.PLATFORM_EMAIL || '"Matapang Platform" <no-reply@matapang.com>';
+      return `"Matapang Platform" <${authenticatedEmail}>`;
     }
 
-    // Company Admin level - use company email if available
+    // Company Admin level
     if (actor === "COMPANY_ADMIN" && companyId) {
-      const company = await Company.findById(companyId).select("email name");
-      if (company && company.email) {
-        // For Office 365, only use company email if it matches the authenticated domain
-        const authenticatedDomain = process.env.EMAIL_USER?.split('@')[1];
-        const companyDomain = company.email?.split('@')[1];
-        
-        if (authenticatedDomain && authenticatedDomain === companyDomain) {
-          return `"${company.name} Admin" <${company.email}>`;
-        } else {
-          // If domains don't match, use the authenticated email but with company name
-          const authenticatedEmail = process.env.EMAIL_USER;
-          if (authenticatedEmail) {
-            return `"${company.name} Admin" <${authenticatedEmail}>`;
-          } else {
-            return `"${company.name} Admin" <${company.email}>`;
-          }
-        }
-      }
+      const company = await Company.findById(companyId).select("name");
+      return `"${company?.name || 'Company'} Admin" <${authenticatedEmail}>`;
     }
 
-    // Plant Admin level - use plant email, fallback to company email
+    // Plant Admin or Employee level
     if ((actor === "PLANT_ADMIN" || actor === "EMPLOYEE") && plantId) {
-      const plant = await Plant.findById(plantId).populate("companyId", "email name").select("email name");
-      if (plant) {
-        // Prefer plant-specific email, then company email, then fallback
-        let fromEmail = plant.email || plant.companyId?.email || process.env.PLATFORM_EMAIL || "no-reply@matapang.com";
-        const fromName = plant.name || plant.companyId?.name || "Matapang";
-        
-        // For Office 365, ensure we're using the authenticated email if domains don't match
-        const authenticatedEmail = process.env.EMAIL_USER;
-        const authenticatedDomain = authenticatedEmail?.split('@')[1];
-        const emailDomain = fromEmail.split('@')[1];
-        
-        if (authenticatedDomain && authenticatedDomain === emailDomain) {
-          return `"${fromName}" <${fromEmail}>`;
-        } else {
-          // Use authenticated email but with appropriate name
-          if (authenticatedEmail) {
-            return `"${fromName}" <${authenticatedEmail}>`;
-          } else {
-            return `"${fromName}" <${fromEmail}>`;
-          }
-        }
-      }
+      const plant = await Plant.findById(plantId).populate("companyId", "name").select("name");
+      const fromName = plant?.name || plant?.companyId?.name || "Matapang";
+      return `"${fromName}" <${authenticatedEmail}>`;
     }
 
-    // Fallback to default
-    return fallbackFrom;
+    // Fallback to authenticated email
+    return `"Matapang System" <${authenticatedEmail}>`;
   } catch (error) {
     console.error("Error resolving email sender:", error);
     // Always fall back to authenticated email for Office 365 compatibility
@@ -299,7 +343,7 @@ const getBaseLayout = (content, company = {}, plant = {}, showLoginButton = fals
 
   const plantInfoHtml = (plant && plant.name)
     ? `<div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #4f46e5; margin-bottom: 20px; border-radius: 0 4px 4px 0;">
-         <p style="margin: 0; color: #475569; font-size: 14px;"><strong>Plant:</strong> ${plant.name} ${plant.plantNumber ? `(\${plant.plantNumber})` : ''}</p>
+         <p style="margin: 0; color: #475569; font-size: 14px;"><strong>Plant:</strong> ${plant.name} ${plant.plantNumber ? `(${plant.plantNumber})` : ''}</p>
          ${plant.location ? `<p style="margin: 0; color: #475569; font-size: 14px;"><strong>Location:</strong> ${plant.location}</p>` : ''}
        </div>`
     : '';

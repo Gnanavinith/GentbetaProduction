@@ -39,8 +39,16 @@ export const companyApi = {
     }
   },
   updatePlan: async (id, plan, customLimits) => {
-    const response = await api.put(`/api/companies/${id}/plan`, { plan, customLimits });
-    return response.data;
+    console.log("API: updatePlan called with:", { id, plan, customLimits });
+    try {
+      const response = await api.put(`/api/companies/${id}/plan`, { plan, customLimits });
+      console.log("API: updatePlan response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("API: updatePlan error:", error);
+      console.error("API: error response:", error?.response?.data);
+      throw error;
+    }
   },
   getCompanyUsage: async (companyId) => {
     const response = await api.get(`/api/companies/${companyId}/usage`);

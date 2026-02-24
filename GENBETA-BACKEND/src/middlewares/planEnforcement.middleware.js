@@ -1,4 +1,5 @@
 import { isCompanyOverLimit, validateFormCreation } from "../utils/planLimits.js";
+import { checkSubmissionLimit, checkApprovalLimit, checkNotificationLimit } from "../utils/subscriptionValidator.js";
 
 /**
  * Middleware to check if company is over plan limits
@@ -71,16 +72,36 @@ export const enforcePlanLimits = (resourceType) => {
       // For other resources, use company-wide limits
       const overLimitStatus = await isCompanyOverLimit(companyId);
       
-      // If not over limit, allow operation
-      if (!overLimitStatus.overLimit) {
-        return next();
-      }
-
       // Check specific resource type limits
       let isBlocked = false;
       let message = "";
       
       switch (resourceType) {
+        case "submission":
+          const submissionValidation = await checkSubmissionLimit(req.user.userId, req.user.plantId, companyId);
+          if (submissionValidation.allowed) {
+            return next();
+          } else {
+            isBlocked = true;
+            message = submissionValidation.message;
+          }
+          break;
+        
+        case "approval":
+          const approvalValidation = await checkApprovalLimit(req.user.userId, req.user.plantId, companyId);
+          if (approvalValidation.allowed) {
+            return next();
+          } else {
+            isBlocked = true;
+            message = approvalValidation.message;
+          }
+          break;
+        
+        case "notification":
+          // Notifications are unlimited for all plans - they're critical for user experience
+          return next();
+          break;
+          
         case "plant":
           if (overLimitStatus.isOverPlantLimit) {
             isBlocked = true;
@@ -96,11 +117,14 @@ export const enforcePlanLimits = (resourceType) => {
           break;
           
         default:
-          // For general operations, only block if severely over limit
+          // For general operations, only block if over limit
           if (overLimitStatus.overLimit) {
             isBlocked = true;
             message = `Plan limit exceeded. Please upgrade your subscription to continue.`;
+          } else {
+            return next();
           }
+          break;
       }
 
       if (isBlocked) {

@@ -8,6 +8,8 @@ import Plant from "../models/Plant.model.js";
 import { sendApprovalEmail, sendFormCreatedApproverNotification } from "../services/email/index.js";
 import { generateCacheKey, getFromCache, setInCache, deleteFromCache, warmCache, getCacheStats } from "../utils/cache.js";
 import { generateFormId } from "../utils/formIdGenerator.js";
+import { checkFormCreationLimit } from "../utils/subscriptionValidator.js";
+import { createNotification } from "../utils/notify.js";
 
 // Helper function to validate layout structure
 function validateLayoutStructure(fields) {
@@ -40,6 +42,19 @@ export const createForm = async (req, res) => {
       ? sections.flatMap(s => s.fields || [])
       : (fields || []);
     validateLayoutStructure(allFieldsToValidate);
+
+    // Check form creation limit before creating the form
+    const limitCheck = await checkFormCreationLimit(req.user.plantId, req.user.companyId);
+    if (!limitCheck.allowed) {
+      return res.status(403).json({
+        success: false,
+        message: limitCheck.message,
+        overLimit: true,
+        upgradeRequired: limitCheck.upgradeRequired,
+        currentCount: limitCheck.currentCount,
+        limit: limitCheck.limit
+      });
+    }
 
     // Generate formId if not provided
     let finalFormId = providedFormId || generateFormId(formName);
@@ -113,6 +128,29 @@ export const createForm = async (req, res) => {
       message: "Form created successfully",
       form
     });
+
+    // Trigger notification to assigned employees when form is published during creation
+    if (form.status === 'PUBLISHED' || form.status === 'APPROVED') {
+      try {
+        // Find all employees assigned to this plant
+        const employees = await User.find({
+          plantId: form.plantId,
+          role: "EMPLOYEE",
+          isActive: true
+        });
+
+        for (const employee of employees) {
+          await createNotification({
+            userId: employee._id,
+            title: "New Form Available",
+            message: `${form.formName} is now available`,
+            link: `/employee/forms-view`
+          });
+        }
+      } catch (notificationError) {
+        console.error("Error creating form published notification:", notificationError);
+      }
+    }
 
     // Send email notifications to all approvers (non-blocking)
     if (finalApprovalFlow.length > 0) {
@@ -376,6 +414,30 @@ export const updateForm = async (req, res) => {
             console.error("Failed to send workflow assignment notifications:", emailErr);
           }
         })();
+      }
+    }
+
+    // Trigger notification to assigned employees when form is published
+    if ((originalForm.status !== 'PUBLISHED' && updated.status === 'PUBLISHED') ||
+        (originalForm.status !== 'APPROVED' && updated.status === 'APPROVED')) {
+      try {
+        // Find all employees assigned to this plant
+        const employees = await User.find({
+          plantId: updated.plantId,
+          role: "EMPLOYEE",
+          isActive: true
+        });
+
+        for (const employee of employees) {
+          await createNotification({
+            userId: employee._id,
+            title: "New Form Available",
+            message: `${updated.formName} is now available`,
+            link: `/employee/forms-view`
+          });
+        }
+      } catch (notificationError) {
+        console.error("Error creating form published notification:", notificationError);
       }
     }
 
