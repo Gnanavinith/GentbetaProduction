@@ -289,10 +289,7 @@ export default function Profile() {
 
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Plant Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <DetailItem icon={<Hash size={18} />} label="Plant Number" value={plantData.plant?.plantNumber} />
                   <DetailItem icon={<MapPin size={18} />} label="Location" value={plantData.plant?.location} />
-                  <DetailItem icon={<Users size={18} />} label="Total Employees" value={plantData.employeeCount} />
-                  <DetailItem icon={<Calendar size={18} />} label="Created On" value={formatDate(plantData.plant?.createdAt)} />
                 </div>
               </div>
 
@@ -306,7 +303,6 @@ export default function Profile() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <DetailItem icon={<Building2 size={18} />} label="Company Name" value={plantData.company.name} />
-                    <DetailItem icon={<Globe size={18} />} label="Industry" value={plantData.company.industry} />
                   </div>
                 </div>
               )}

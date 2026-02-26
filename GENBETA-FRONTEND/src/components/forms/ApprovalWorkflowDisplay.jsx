@@ -24,38 +24,81 @@ export default function ApprovalWorkflowDisplay({ form, className = "" }) {
   const fetchApproverDetails = async () => {
     setLoading(true);
     try {
-      // Since we know the approver details, use them directly instead of API calls
-      const knownApprovers = {
-        '6989d3742d3502e3c89d6d90': {
-          name: 'aravind',
-          email: 'varavind746@gmail.com',
-          position: 'Approver'
-        },
-        '6989d39f2d3502e3c89d6dcb': {
-          name: 'gnanavinith',
-          email: 'gnanavinith@gmail.com',
-          position: 'Approver'
-        }
-      };
-      
-      // Map the approval flow with known approver details
-      const approverDetails = form.approvalFlow.map(level => {
+      // Map the approval flow with approver details
+      // First try to get the approver details from the API
+      const approverDetailsPromises = form.approvalFlow.map(async (level) => {
         const approverId = level.approverId?._id || level.approverId || null;
-        const knownDetails = approverId ? knownApprovers[approverId] : null;
         
+        if (approverId) {
+          try {
+            // Try to fetch actual user details
+            const response = await userApi.getUserById(approverId);
+            if (response.success && response.data) {
+              return {
+                ...level,
+                approverDetails: {
+                  name: response.data.name,
+                  email: response.data.email,
+                  position: response.data.role || 'Approver'
+                }
+              };
+            }
+          } catch (err) {
+            console.warn(`Could not fetch details for approver ${approverId}:`, err);
+          }
+        }
+        
+        // Fallback to available information
+        // Check if approver details are already populated
+        if (level.approverId && typeof level.approverId === 'object' && level.approverId.name) {
+          return {
+            ...level,
+            approverDetails: {
+              name: level.approverId.name,
+              email: level.approverId.email || `approver${level.level || (form.approvalFlow.indexOf(level) + 1)}@example.com`,
+              position: level.description || 'Approver'
+            }
+          };
+        }
+                
         return {
           ...level,
-          approverDetails: knownDetails || {
-            name: level.name || `Approver ${level.level}`,
-            email: `approver${level.level}@example.com`,
-            position: 'Approver'
+          approverDetails: {
+            name: level.name || `Approver ${level.level || (form.approvalFlow.indexOf(level) + 1)}`,
+            email: `approver${level.level || (form.approvalFlow.indexOf(level) + 1)}@example.com`,
+            position: level.description || 'Approver'
           }
         };
       });
       
+      const approverDetails = await Promise.all(approverDetailsPromises);
       setApprovers(approverDetails);
     } catch (error) {
       console.error("Error fetching approver details:", error);
+      // Fallback: set approvers with basic information
+      const fallbackApprovers = form.approvalFlow.map((level, index) => {
+        // Check if approver details are already populated
+        if (level.approverId && typeof level.approverId === 'object' && level.approverId.name) {
+          return {
+            ...level,
+            approverDetails: {
+              name: level.approverId.name,
+              email: level.approverId.email || `approver${level.level || (index + 1)}@example.com`,
+              position: level.description || 'Approver'
+            }
+          };
+        }
+        
+        return {
+          ...level,
+          approverDetails: {
+            name: level.name || `Approver ${level.level || (index + 1)}`,
+            email: `approver${level.level || (index + 1)}@example.com`,
+            position: level.description || 'Approver'
+          }
+        };
+      });
+      setApprovers(fallbackApprovers);
     } finally {
       setLoading(false);
     }
@@ -75,6 +118,9 @@ export default function ApprovalWorkflowDisplay({ form, className = "" }) {
     );
   }
 
+  // Find current pending approver
+  const currentPendingApprover = form.approvalFlow.find(level => level.level === 1) || form.approvalFlow[0];
+
   return (
     <div className={`bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden ${className}`}>
       {/* Header */}
@@ -83,9 +129,19 @@ export default function ApprovalWorkflowDisplay({ form, className = "" }) {
           <ShieldCheck className="w-5 h-5 text-indigo-600" />
           <h3 className="font-semibold text-gray-800">Approval Workflow</h3>
         </div>
-        <p className="text-xs text-gray-600 mt-1">
-          {form.approvalFlow.length} level{form.approvalFlow.length > 1 ? 's' : ''} required for approval
-        </p>
+        <div className="mt-2">
+          <p className="text-xs text-gray-600">
+            {form.approvalFlow.length} level{form.approvalFlow.length > 1 ? 's' : ''} required for approval
+          </p>
+          {currentPendingApprover && (
+            <div className="mt-2">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                <Clock className="w-3 h-3 mr-1" />
+                Pending: {currentPendingApprover.approverDetails?.name || currentPendingApprover.approverId?.name || currentPendingApprover.name || `Approver ${currentPendingApprover.level}`}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Workflow Steps */}
@@ -107,9 +163,9 @@ export default function ApprovalWorkflowDisplay({ form, className = "" }) {
           <div className="space-y-3">
             {approvers.map((level, index) => {
               const isLast = index === approvers.length - 1;
-              const approverName = level.approverDetails?.name || level.name || `Approver ${level.level}`;
-              const approverEmail = level.approverDetails?.email || "";
-              const approverPosition = level.approverDetails?.position || "Approver";
+              const approverName = level.approverDetails?.name || level.name || `Approver ${level.level || (index + 1)}`;
+              const approverEmail = level.approverDetails?.email || `approver${level.level || (index + 1)}@example.com`;
+              const approverPosition = level.approverDetails?.position || level.description || "Approver";
               
               return (
                 <div key={level.level || index} className="relative">
@@ -128,11 +184,11 @@ export default function ApprovalWorkflowDisplay({ form, className = "" }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                        <span className="font-medium text-gray-900 truncate">{approverName}</span>
+                        <span className="font-medium text-gray-900">{approverName}</span>
                       </div>
-                      <p className="text-sm text-gray-600 truncate">{approverPosition}</p>
+                      <p className="text-sm text-gray-600">{approverPosition}</p>
                       {approverEmail && (
-                        <p className="text-xs text-blue-600 truncate mt-1">{approverEmail}</p>
+                        <p className="text-xs text-blue-600 mt-1">{approverEmail}</p>
                       )}
                       {level.description && (
                         <p className="text-xs text-gray-500 mt-2">{level.description}</p>

@@ -1,4 +1,4 @@
-console.log("Starting backend server...");
+﻿console.log("Starting backend server...");
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -184,7 +184,7 @@ app.use("/api/notifications", notificationRoutes);
 await connectDB();
 await seedSuperAdmin();
 
-const PORT = process.env.PORT || 5000;
-app.listen(5000, "0.0.0.0", () => {
-  console.log("Server running on port 5000");
+const PORT = process.env.PORT || 5001;
+app.listen(5001, "0.0.0.0", () => {
+  console.log("Server running on port 5001");
 });

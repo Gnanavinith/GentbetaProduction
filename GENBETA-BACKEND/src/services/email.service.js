@@ -75,6 +75,143 @@ const getBaseUrl = () => {
   );
 };
 
+// Helper function to format grid/table data for email display
+const formatGridDataForEmail = (gridData, fieldDefinition = null, maxRows = 5, maxCols = 8, submissionLink = "#") => {
+  if (!gridData || typeof gridData !== 'object') return "—";
+  
+  const rows = Object.entries(gridData);
+  if (rows.length === 0) return "No data provided";
+  
+  const totalRows = rows.length;
+  const showLimitedView = totalRows > maxRows;
+  
+  // For very large tables (more than 10 rows and 10 columns), show a simple message instead
+  const gridColumnKeys = [...new Set(rows.flatMap(([rowKey, rowData]) => 
+    typeof rowData === 'object' && rowData !== null ? Object.keys(rowData) : []
+  ))];
+  
+  if (totalRows > 10 && gridColumnKeys.length > 10) {
+    return `<div style="padding: 15px; background-color: #fffbeb; border: 1px solid #fed7aa; border-radius: 6px; text-align: center; margin: 10px 0;">
+      <p style="margin: 0; color: #92400e; font-weight: 500; font-size: 14px;">
+        This table contains more than 10 rows and 10 columns.
+      </p>
+      <p style="margin: 8px 0 0 0; font-size: 13px; color: #92400e;">
+  Click below to review the full submission
+</p>
+    </div>`;
+  }
+  
+  // Extract column information from field definition or data
+  let columnLabels = {};
+  let rowLabels = {};
+  let allColumnKeys = [];
+  let hiddenColumns = 0;
+  
+  // Try to get labels from field definition
+  if (fieldDefinition) {
+    // Get column labels
+    if (fieldDefinition.columns && Array.isArray(fieldDefinition.columns)) {
+      fieldDefinition.columns.forEach(col => {
+        const colId = col.id || col.fieldId;
+        if (colId) {
+          columnLabels[colId] = col.label || col.question || colId;
+        }
+      });
+    }
+    
+    // Get row labels
+    if (fieldDefinition.items && Array.isArray(fieldDefinition.items)) {
+      fieldDefinition.items.forEach(item => {
+        const itemId = item.id || item.fieldId;
+        if (itemId) {
+          rowLabels[itemId] = item.label || item.question || item.title || itemId;
+        }
+      });
+    }
+  }
+  
+  // If no field definition, try to infer from data structure
+  if (Object.keys(columnLabels).length === 0) {
+    // Get all unique column keys from the data
+    allColumnKeys = [...new Set(rows.flatMap(([rowKey, rowData]) => 
+      typeof rowData === 'object' && rowData !== null ? Object.keys(rowData) : []
+    ))];
+    
+    // Limit columns if needed
+    const displayColumnKeys = showLimitedView ? allColumnKeys.slice(0, maxCols) : allColumnKeys;
+    hiddenColumns = showLimitedView ? allColumnKeys.length - maxCols : 0;
+    
+    // Create clean column labels for display columns only
+    displayColumnKeys.forEach((key, index) => {
+      if (key.startsWith('col') && key.match(/^col-?\d+$/)) {
+        // Extract numeric part from column keys like 'col1' or 'col-123'
+        const match = key.match(/^col-?(\d+)$/);
+        if (match) {
+          columnLabels[key] = `Column ${match[1]}`;
+        } else {
+          columnLabels[key] = key.replace(/^col-?/, 'Column ').replace(/^[A-Z]/, letter => letter);
+        }
+      } else if (key.match(/^col-\d+-\d+$/)) {
+        // Handle timestamp-like column IDs (e.g., col-1772108506186-0)
+        // Use simple sequential numbering for these
+        columnLabels[key] = `Column ${Object.keys(columnLabels).filter(k => k.match(/^col-\d+-\d+$/)).length + 3}`;
+      } else {
+        columnLabels[key] = key.replace(/^col-?/, '').replace(/^[a-z]/, letter => letter.toUpperCase()).replace(/([A-Z])/g, ' $1').trim();
+      }
+    });
+  }
+  
+  // Start building HTML table
+  let html = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0; background-color: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0;">';
+  
+  // Table header
+  html += '<thead><tr style="background-color: #f1f5f9;">';
+  html += '<th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 12px; color: #475569; border-bottom: 1px solid #e2e8f0;">Row</th>';
+  
+  Object.entries(columnLabels).forEach(([colKey, colLabel]) => {
+    html += `<th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 12px; color: #475569; border-bottom: 1px solid #e2e8f0;">${colLabel}</th>`;
+  });
+  
+  html += '</tr></thead><tbody>';
+  
+  // Table rows - limit if needed
+  const displayRows = showLimitedView ? rows.slice(0, maxRows) : rows;
+  const hiddenRows = showLimitedView ? totalRows - maxRows : 0;
+  
+  displayRows.forEach(([rowKey, rowData], index) => {
+    const rowLabel = rowLabels[rowKey] || `Row ${index + 1}`;
+    
+    html += `<tr style="${index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f8fafc;'}">`;
+    html += `<td style="padding: 8px; font-weight: 500; color: #334155; border-bottom: 1px solid #e2e8f0;">${rowLabel}</td>`;
+    
+    // Add column data
+    Object.entries(columnLabels).forEach(([colKey, colLabel]) => {
+      const cellValue = typeof rowData === 'object' && rowData !== null ? rowData[colKey] : '';
+      const displayValue = cellValue !== undefined && cellValue !== null ? String(cellValue) : '—';
+      
+      html += `<td style="padding: 8px; color: #475569; border-bottom: 1px solid #e2e8f0; font-size: 13px;">${displayValue}</td>`;
+    });
+    
+    html += '</tr>';
+  });
+  
+  // Add summary row if data is limited
+  if (showLimitedView) {
+    html += `<tr style="background-color: #fffbeb; border-top: 2px solid #fed7aa;">`;
+    html += `<td colspan="${Object.keys(columnLabels).length + 1}" style="padding: 12px; text-align: center; font-weight: 600; color: #92400e; font-size: 13px; border-bottom: none;">`;
+    html += `Showing ${maxRows} of ${totalRows} rows`;
+    if (hiddenColumns > 0) {
+      html += ` and ${maxCols} of ${allColumnKeys.length} columns`;
+    }
+    html += ` • <a href="#" style="color: #4f46e5; text-decoration: underline;">View complete data in the system</a>`;
+    html += `</td></tr>`;
+  }
+  
+  html += '</tbody></table>';
+  
+  return html;
+};
+
 // Helper function to format field values for email display
 const formatFieldValue = (value, fieldType = "text") => {
   // Handle null/undefined/empty values
@@ -136,33 +273,55 @@ const formatFieldValue = (value, fieldType = "text") => {
       return `<a href="${value.url}" target="_blank" style="color: #4f46e5; text-decoration: underline;">${fileName}${fileSize}</a>`;
     }
     
-    // Check if this is a grid/table object with row-column structure like {"row-1": {"col1": "value", "col2": "value"}}
+    // Check if this is a grid/table object with row-column structure
     const keys = Object.keys(value);
-    if (keys.some(key => key.startsWith('row') || key.startsWith('Row'))) {
-      // This is a grid with rows containing columns
-      return Object.entries(value)
-        .map(([rowKey, rowValue]) => {
-          if (typeof rowValue === 'object' && rowValue !== null) {
-            // Format the row values as column pairs
-            const colValues = [];
-            Object.entries(rowValue).forEach(([colKey, colVal]) => {
-              colValues.push(`${colKey}: ${String(colVal)}`);
-            });
-            return `${rowKey}: ${colValues.join(', ')}`;
-          } else {
-            // If rowValue is not an object, just return as is
-            return `${rowKey}: ${JSON.stringify(rowValue)}`;
-          }
-        })
-        .join('<br/>');
+    
+    // Enhanced grid detection - look for various patterns
+    const hasRowPattern = keys.some(key => 
+      key.startsWith('row') || key.startsWith('Row') || 
+      key.startsWith('item') || key.startsWith('Item') ||
+      key.match(/^\d+$/) // numeric keys
+    );
+    
+    const hasColPattern = keys.some(key => 
+      key.startsWith('col') || key.startsWith('Col') || 
+      key.startsWith('column') || key.startsWith('Column')
+    );
+    
+    // Check if this is a nested grid structure like {"row-1": {"col1": "value", "col2": "value"}}
+    if (hasRowPattern) {
+      // This is a grid with rows containing columns - use the new clean formatting
+      return formatGridDataForEmail(value, fieldType === 'grid-table' ? { type: 'grid-table' } : null);
     }
     
     // Check if this is a flat column object like {"col1": "value", "col2": "value"}
-    if (keys.some(key => key.startsWith('col') || key.startsWith('Col'))) {
+    if (hasColPattern) {
       // Display grid/table object as a formatted string
       return Object.entries(value)
-        .map(([colKey, colValue]) => `${colKey}: ${JSON.stringify(colValue)}`)
+        .map(([colKey, colValue]) => `${colKey}: ${String(colValue)}`)
         .join('<br/>');
+    }
+    
+    // Check for generic nested object that might be grid data
+    if (keys.length > 0 && typeof value[keys[0]] === 'object') {
+      // This might be a grid structure - try to format it
+      const formattedEntries = Object.entries(value)
+        .map(([key, val]) => {
+          if (typeof val === 'object' && val !== null) {
+            const nestedValues = Object.entries(val)
+              .map(([nestedKey, nestedVal]) => `${nestedKey}: ${String(nestedVal)}`)
+              .join(', ');
+            return `${key}: ${nestedValues}`;
+          } else {
+            return `${key}: ${String(val)}`;
+          }
+        })
+        .join('<br/>');
+      
+      // Only return this if it looks like meaningful grid data
+      if (formattedEntries.length > 20) {
+        return formattedEntries;
+      }
     }
     
     // Generic object - convert to clean string representation
@@ -355,14 +514,8 @@ const getBaseLayout = (content, company = {}, plant = {}, showLoginButton = fals
     </div>
   `;
 
-  const loginButtonHtml = `
-    <div style="text-align: center; margin: 25px 0;">
-      <a href="https://login.matapangtech.com/login" 
-         style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        Go to Login
-      </a>
-    </div>
-  `;
+  // Removed duplicate login button - using the one in email content instead
+  const loginButtonHtml = ``;
 
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; color: #334155;">
@@ -410,11 +563,78 @@ const removeDuplication = (name) => {
   return name;
 };
 
+// Function to generate a complete form data summary for emails
+const generateFormDataSummary = (formData, formFields = [], formDefinition = null, submissionLink = "#") => {
+  if (!formData || typeof formData !== 'object') return '<p>No form data available</p>';
+  
+  const entries = Object.entries(formData);
+  if (entries.length === 0) return '<p>No form data submitted</p>';
+  
+  // Create a field lookup for better labeling
+  const fieldLookup = {};
+  if (formFields && Array.isArray(formFields)) {
+    formFields.forEach(field => {
+      const fieldId = field.fieldId || field.id;
+      if (fieldId) {
+        fieldLookup[fieldId] = {
+          label: field.label || field.question || field.title || fieldId,
+          type: field.type || 'text',
+          ...field
+        };
+      }
+    });
+  }
+  
+  let html = '<div style="margin: 20px 0; padding: 15px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">';
+  html += '<h3 style="color: #334155; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #4f46e5; padding-bottom: 8px;">Form Data Summary</h3>';
+  
+  entries.forEach(([fieldId, value]) => {
+    // Skip technical fields
+    if (['_id', 'id', '__v', 'createdAt', 'updatedAt', 'submittedAt'].includes(fieldId)) return;
+    
+    const fieldInfo = fieldLookup[fieldId] || { label: fieldId.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()), type: 'text' };
+    
+    // Handle null/empty values
+    if (value === null || value === undefined || value === "") {
+      return; // Skip empty fields in summary
+    }
+    
+    html += `<div style="margin-bottom: 12px; padding: 10px; background-color: white; border-radius: 6px; border-left: 3px solid #4f46e5;">`;
+    html += `<div style="font-weight: 600; color: #334155; margin-bottom: 5px; font-size: 14px;">${fieldInfo.label}</div>`;
+    
+    // Format the value based on field type
+    let formattedValue;
+    if (typeof value === 'object' && value !== null) {
+      // Handle grid/table data with our new clean formatting
+      if (fieldInfo.type === 'grid-table' || 
+          (Object.keys(value).some(key => key.startsWith('item') || key.startsWith('row')))) {
+        // Use reasonable limits for email display (5 rows, 8 columns)
+        // Pass submission link for large tables
+        formattedValue = formatGridDataForEmail(value, fieldInfo, 5, 8, submissionLink);
+      } else {
+        // Handle other object types (file uploads, auto-user, etc.)
+        formattedValue = formatFieldValue(value, fieldInfo.type);
+      }
+    } else {
+      // Handle simple values
+      formattedValue = formatFieldValue(value, fieldInfo.type);
+    }
+    
+    html += `<div style="color: #475569; font-size: 13px; line-height: 1.4;">${formattedValue}</div>`;
+    html += `</div>`;
+  });
+  
+  html += `</div>`;
+  return html;
+};
+
 // Export the global helpers that were previously shared
 export {
   formatIST,
   getBaseUrl,
   formatFieldValue,
+  formatGridDataForEmail,
+  generateFormDataSummary,
   transporter,
   sendEmail,  // Added sendEmail function
   resolveEmailSender,

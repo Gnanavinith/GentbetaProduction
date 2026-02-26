@@ -5,7 +5,7 @@ import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
 import mongoose from "mongoose";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
-import { sendSubmissionNotificationToApprover } from "../services/email/index.js";
+import { sendSubmissionNotificationToApprover, sendSubmissionNotificationToPlant } from "../services/email/index.js";
 import fs from "fs";
 import { createNotification } from "../utils/notify.js";
 
@@ -101,6 +101,35 @@ export const createSubmission = async (req, res) => {
             link: `/plant/submissions`
           });
           console.log(`Notification sent to plant admin ${plantAdmin._id} for form submission`);
+          
+          // Send email notification to plant admin with form data
+          try {
+            const company = await Company.findById(user.companyId);
+            const plant = await Plant.findById(user.plantId);
+            
+            const submissionDetailViewLink = `${process.env.FRONTEND_URL || "https://login.matapangtech.com"}/plant/submissions/${submission._id?.toString() || ""}`;
+            
+            await sendSubmissionNotificationToPlant(
+              plantAdmin.email,
+              form.formName,
+              user.name,
+              submission.submittedAt,
+              "https://login.matapangtech.com/employee/approval/pending",
+              parsedData,
+              form.fields || [],
+              company || {},
+              plant || {},
+              user.plantId?.toString() || "",
+              form.formId || form._id?.toString() || "",
+              submission._id?.toString() || "",
+              "EMPLOYEE",
+              user.companyId,
+              submissionDetailViewLink
+            );
+            console.log(`Email notification sent to plant admin ${plantAdmin.email} for form submission`);
+          } catch (emailError) {
+            console.error("Failed to send email notification to plant admin:", emailError);
+          }
         }
         
         // Also notify the first approver in the workflow
@@ -481,6 +510,35 @@ export const submitDraft = async (req, res) => {
             link: `/plant/submissions`
           });
           console.log(`Notification sent to plant admin ${plantAdmin._id} for form submission from submitDraft`);
+          
+          // Send email notification to plant admin with form data
+          try {
+            const company = await Company.findById(submission.companyId);
+            const plant = await Plant.findById(submission.plantId);
+            
+            const submissionDetailViewLink = `${process.env.FRONTEND_URL || "https://login.matapangtech.com"}/plant/submissions/${submission._id?.toString() || ""}`;
+            
+            await sendSubmissionNotificationToPlant(
+              plantAdmin.email,
+              form.formName,
+              submission.submittedByName,
+              submission.submittedAt,
+              "https://login.matapangtech.com/employee/approval/pending",
+              submission.data || {},
+              form.fields || [],
+              company || {},
+              plant || {},
+              submission.plantId?.toString() || "",
+              form.formId || form._id?.toString() || "",
+              submission._id?.toString() || "",
+              "EMPLOYEE",
+              submission.companyId,
+              submissionDetailViewLink
+            );
+            console.log(`Email notification sent to plant admin ${plantAdmin.email} for form submission from submitDraft`);
+          } catch (emailError) {
+            console.error("Failed to send email notification to plant admin from submitDraft:", emailError);
+          }
         }
         
         // Also notify the first approver in the workflow

@@ -306,3 +306,21 @@ export const updateAdmin = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to update admin" });
   }
 };
+
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findById(id)
+      .select("name email role position phoneNumber createdAt");
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error("Get user by ID error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch user" });
+  }
+};

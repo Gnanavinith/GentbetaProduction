@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { submissionApi } from "../../api/submission.api";
 import FormRenderer from "../../components/FormRenderer/FormRenderer";
+import ApprovalWorkflowDisplay from "../../components/forms/ApprovalWorkflowDisplay";
 import { format } from "date-fns";
 
 // Helper function to extract all fields from form
@@ -46,7 +47,7 @@ const getFormFields = (form) => {
   return uniqueFields;
 };
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, currentLevel, totalLevels, form }) {
   const statusConfig = {
     DRAFT: { color: "bg-gray-100 text-gray-800", icon: FileText, label: "Draft" },
     SUBMITTED: { color: "bg-blue-100 text-blue-800", icon: Send, label: "Submitted" },
@@ -58,10 +59,22 @@ function StatusBadge({ status }) {
   const config = statusConfig[status] || statusConfig.DRAFT;
   const Icon = config.icon;
 
+  let displayLabel = config.label;
+  let calculatedTotalLevels = totalLevels;
+  
+  // Calculate total levels from form approval flow if not provided
+  if (!calculatedTotalLevels && form?.approvalFlow) {
+    calculatedTotalLevels = form.approvalFlow.length;
+  }
+  
+  if (status === 'PENDING_APPROVAL' && currentLevel && calculatedTotalLevels) {
+    displayLabel = `Level ${currentLevel}/${calculatedTotalLevels}`;
+  }
+
   return (
     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
       <Icon className="w-4 h-4 mr-2" />
-      {config.label}
+      {displayLabel}
     </span>
   );
 }
@@ -201,7 +214,7 @@ export default function SubmissionDetails() {
                 </button>
               </>
             )}
-            <StatusBadge status={submission.status} />
+            <StatusBadge status={submission.status} currentLevel={submission.currentLevel} totalLevels={submission.totalLevels} form={submission.formId} />
           </div>
         </div>
       </div>
@@ -236,11 +249,18 @@ export default function SubmissionDetails() {
             <FileText className="w-5 h-5 text-gray-400 mr-3" />
             <div>
               <p className="text-sm text-gray-600">Status</p>
-              <StatusBadge status={submission.status} />
+              <StatusBadge status={submission.status} currentLevel={submission.currentLevel} totalLevels={submission.totalLevels} form={submission.formId} />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Approval Workflow Display */}
+      {submission.formId && (
+        <div className="px-6 pt-6">
+          <ApprovalWorkflowDisplay form={submission.formId} className="mb-6" />
+        </div>
+      )}
 
       {/* Form Data */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -268,6 +288,49 @@ export default function SubmissionDetails() {
                       >
                         {fieldValue}
                       </a>
+                    ) : typeof fieldValue === 'object' && fieldValue !== null ? (
+                      // Handle grid/table objects in table format
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Row
+                              </th>
+                              {Object.values(fieldValue)[0] && typeof Object.values(fieldValue)[0] === 'object' ? 
+                                Object.keys(Object.values(fieldValue)[0]).map((colKey) => (
+                                  <th key={colKey} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {colKey}
+                                  </th>
+                                )) : 
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Value
+                              </th>
+                            }
+                          </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {Object.entries(fieldValue).map(([rowKey, rowValue], rowIndex) => (
+                              <tr key={rowKey} className="hover:bg-gray-50">
+                                <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  Row {rowIndex + 1}
+                                </td>
+                                {typeof rowValue === 'object' && rowValue !== null ? (
+                                  Object.entries(rowValue).map(([colKey, colValue]) => (
+                                    <td key={colKey} className="px-4 py-2 text-sm text-gray-700">
+                                      {String(colValue)}
+                                    </td>
+                                  ))
+                                ) : (
+                                  <td className="px-4 py-2 text-sm text-gray-700">
+                                    {String(rowValue)}
+                                  </td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     ) : (
                       <p className="text-gray-700">{String(fieldValue)}</p>
                     )}

@@ -89,6 +89,9 @@ export const INITIAL_FIELD_CONFIG = {
       { id: "col1", label: "Item", width: "50%" }, 
       { id: "col2", label: "Status", width: "50%" }
     ],
+    items: [
+      { id: "item-1", question: "Row 1" }
+    ],
     rows: 1,
     width: "100%",
     repeatable: false

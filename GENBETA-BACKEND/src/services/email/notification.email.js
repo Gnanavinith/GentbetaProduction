@@ -2,6 +2,8 @@ import {
   formatIST, 
   getBaseUrl, 
   formatFieldValue, 
+  formatGridDataForEmail,
+  generateFormDataSummary,
   transporter, 
   sendEmail,  // Added sendEmail function
   resolveEmailSender, 
@@ -18,19 +20,25 @@ export const sendSubmissionNotificationToPlant = async (
   submitterName,
   submittedAt,
   link,
+  formData = {},
+  formFields = [],
   company = {},
   plant = {},
   plantId = "",
   formId = "",
   submissionId = "",
   actor = "EMPLOYEE",
-  companyId = null
+  companyId = null,
+  submissionLink = "#"
 ) => {
   // Process formName to remove duplication
   const cleanFormName = removeDuplication(formName);
   // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
+  // Generate form data summary
+  const formDataSummary = generateFormDataSummary(formData, formFields, null, submissionLink);
+  
   const content = `
     <h2 style="color: #4f46e5;">New Form Submission</h2>
     <p style="color: #1f2937; font-size: 16px;">
@@ -40,7 +48,8 @@ export const sendSubmissionNotificationToPlant = async (
       <strong style="font-size: 18px;">${cleanFormName}</strong>
       <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">Submitted at: ${formatIST(submittedAt)}</p>
     </div>
-    <p>Click below to view the submission details.</p>
+    ${formDataSummary}
+    <p>Click below to view the complete submission details.</p>
     <div style="text-align: center; margin: 30px 0;">
       <a href="${safeLink}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Submission</a>
     </div>

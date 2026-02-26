@@ -16,7 +16,11 @@ export default function Topbar({ onMenuClick }) {
   };
 
   const handleProfileClick = () => {
-    navigate("/profile");
+    if (user?.role === "PLANT_ADMIN") {
+      navigate("/plant/profile"); // Navigate to plant profile for plant admins
+    } else {
+      navigate("/profile"); // Keep existing behavior for other roles
+    }
     setDropdownOpen(false);
   };
 

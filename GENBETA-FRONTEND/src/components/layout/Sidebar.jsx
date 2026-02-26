@@ -155,10 +155,10 @@ export default function Sidebar({ isOpen, onToggle }) {
       return {
         primary: [
           { title: "Dashboard", icon: LayoutDashboard, path: "/employee/dashboard" },
-          { title: "Summary", icon: BarChart3, path: "/employee/forms-view" },
           { title: "Facility", icon: Building2, path: "/employee/templates" },
+          { title: "Summary", icon: BarChart3, path: "/employee/forms-view" },
           { title: "Assigned Forms", icon: ClipboardList, path: "/employee/assignments" },
-          { title: "Pending Approvals", icon: Clock, path: "/employee/approval/pending" },
+          { title: "Pending Forms", icon: Clock, path: "/employee/approval/pending" },
         ],
         secondary: commonItems
       };

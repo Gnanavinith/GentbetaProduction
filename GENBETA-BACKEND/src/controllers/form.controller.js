@@ -417,7 +417,49 @@ export const updateForm = async (req, res) => {
       }
     }
 
-    // Trigger notification to assigned employees when form is published
+    // Send notification to all employees when form is significantly updated
+    try {
+      // Find all employees assigned to this plant
+      const employees = await User.find({
+        plantId: updated.plantId,
+        role: "EMPLOYEE",
+        isActive: true
+      });
+
+      // Check if this is a significant update (status change, name change, or field changes)
+      const isStatusChange = originalForm.status !== updated.status;
+      const isNameChange = originalForm.formName !== updated.formName;
+      const isFieldChange = JSON.stringify(originalForm.fields) !== JSON.stringify(updated.fields);
+      
+      if (isStatusChange || isNameChange || isFieldChange) {
+        let notificationTitle = "Form Updated";
+        let notificationMessage = `${updated.formName} has been updated`;
+        
+        if (isStatusChange) {
+          notificationTitle = "Form Status Changed";
+          notificationMessage = `${updated.formName} status changed to ${updated.status}`;
+        } else if (isNameChange) {
+          notificationTitle = "Form Renamed";
+          notificationMessage = `Form renamed to "${updated.formName}"`;
+        } else if (isFieldChange) {
+          notificationTitle = "Form Modified";
+          notificationMessage = `${updated.formName} fields have been updated`;
+        }
+          
+        for (const employee of employees) {
+          await createNotification({
+            userId: employee._id,
+            title: notificationTitle,
+            message: notificationMessage,
+            link: `/employee/forms-view`
+          });
+        }
+      }
+    } catch (notificationError) {
+      console.error("Error creating form updated notification:", notificationError);
+    }
+
+    // Trigger notification to assigned employees when form is published (additional notification for publishing)
     if ((originalForm.status !== 'PUBLISHED' && updated.status === 'PUBLISHED') ||
         (originalForm.status !== 'APPROVED' && updated.status === 'APPROVED')) {
       try {
