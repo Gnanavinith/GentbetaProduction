@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { ArrowLeft, Building2, MapPin, User, Mail, Lock, Loader2, Crown, PhoneCall } from "lucide-react";
 import axios from "axios";
+import UsageLimitCard from "../../components/common/UsageLimitCard";
 
 export default function CreatePlant() {
   const navigate = useNavigate();
@@ -73,6 +74,8 @@ export default function CreatePlant() {
         <h1 className="text-3xl font-bold text-gray-900">Add New Plant</h1>
         <p className="text-gray-500">Create a new manufacturing unit and assign a plant administrator.</p>
       </div>
+
+      <UsageLimitCard />
 
 {usageInfo && (
           <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">

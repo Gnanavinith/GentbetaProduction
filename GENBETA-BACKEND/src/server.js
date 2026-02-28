@@ -184,7 +184,7 @@ app.use("/api/notifications", notificationRoutes);
 await connectDB();
 await seedSuperAdmin();
 
-const PORT = process.env.PORT || 5001;
-app.listen(5001, "0.0.0.0", () => {
-  console.log("Server running on port 5001");
+const PORT = process.env.PORT || 8081;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });

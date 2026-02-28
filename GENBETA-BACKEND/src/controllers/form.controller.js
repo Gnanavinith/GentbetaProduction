@@ -207,8 +207,35 @@ export const getForms = async (req, res) => {
 
     // Handle pagination
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    
+    // For premium plans, remove pagination limit
+    let limit, skip;
+    if (req.user.role === "PLANT_ADMIN") {
+      // Get company subscription to check plan
+      const plant = await Plant.findById(req.user.plantId);
+      if (plant) {
+        const company = await Company.findById(plant.companyId);
+        const planId = company?.subscription?.plan || "SILVER";
+        
+        if (planId === "PREMIUM") {
+          // No limit for premium plans
+          limit = 0;
+          skip = 0;
+        } else {
+          // Default pagination for other plans
+          limit = parseInt(req.query.limit) || 10;
+          skip = (page - 1) * limit;
+        }
+      } else {
+        // Fallback to default pagination
+        limit = parseInt(req.query.limit) || 10;
+        skip = (page - 1) * limit;
+      }
+    } else {
+      // Default pagination for other roles
+      limit = parseInt(req.query.limit) || 10;
+      skip = (page - 1) * limit;
+    }
     
     // Generate cache key
     const cacheParams = { page, limit, role: req.user.role };
@@ -239,11 +266,15 @@ export const getForms = async (req, res) => {
     const total = await Form.countDocuments(filter);
     console.log(`Total forms matching filter: ${total}`);
 
-    // Get paginated forms
-    const forms = await Form.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // Get forms (with or without pagination)
+    let formsQuery = Form.find(filter).sort({ createdAt: -1 });
+    
+    if (limit > 0) {
+      // Apply pagination
+      formsQuery = formsQuery.skip(skip).limit(limit);
+    }
+    
+    const forms = await formsQuery;
 
     console.log(`Found ${forms.length} forms`);
     if (forms.length > 0) {

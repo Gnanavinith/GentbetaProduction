@@ -68,7 +68,7 @@ const renderFieldValue = (field, fieldValue) => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     End Date
                   </th>
-                </tr>
+                </tr>...
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {Object.entries(fieldValue).map(([key, value], index) => (

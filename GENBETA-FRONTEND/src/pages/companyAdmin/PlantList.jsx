@@ -3,6 +3,7 @@ import { Plus, Search, MapPin, Building2, User, Trash2, Edit, MoreVertical, Exte
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../api/api";
+import UsageLimitCard from "../../components/common/UsageLimitCard";
 
 export default function PlantList() {
   const [plants, setPlants] = useState([]);
@@ -64,6 +65,8 @@ export default function PlantList() {
           Add New Plant
         </Link>
       </div>
+
+      <UsageLimitCard />
 
       {/* Search and Filters */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3">

@@ -7,6 +7,7 @@ import {
   CheckCircle2, 
   ChevronLeft
 } from "lucide-react";
+import FormLimitIndicator from "../../../common/FormLimitIndicator";
 
 export function FormBuilderHeader({ 
   formName, 
@@ -90,6 +91,7 @@ export function FormBuilderHeader({
       </nav>
 
       <div className="flex items-center gap-3">
+        <FormLimitIndicator />
         <button 
           onClick={() => handleSave(true)}
           disabled={loading}

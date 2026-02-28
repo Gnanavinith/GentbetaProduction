@@ -12,6 +12,7 @@ import LineChart from "../../components/analytics/LineChart";
 import StatCard from "../../components/analytics/StatCard";
 import { exportToExcel, formatSubmissionsForExport } from "../../utils/excelExport";
 import { toast } from "react-hot-toast";
+import UsageLimitCard from "../../components/common/UsageLimitCard";
 
 function StatCardSkeleton() {
   return (
@@ -207,6 +208,11 @@ export default function PlantAdminDashboard() {
         {loading ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />) : statCards.map((card, i) => (
           <StatCard key={i} {...card} />
         ))}
+      </div>
+      
+      {/* Usage Limit Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-2.5">
+        <UsageLimitCard />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

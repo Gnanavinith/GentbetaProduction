@@ -8,6 +8,7 @@ import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { sendSubmissionNotificationToApprover, sendSubmissionNotificationToPlant } from "../services/email/index.js";
 import fs from "fs";
 import { createNotification } from "../utils/notify.js";
+import { samePlantId, sameCompanyId } from "../utils/idMatch.js";
 
 /* ======================================================
    CREATE SUBMISSION
@@ -243,14 +244,10 @@ export const getSubmissionById = async (req, res) => {
     const submission = await FormSubmission.findById(id)
       .populate({
         path: "formId",
-        select: "formName approvalFlow workflow fields sections",
+        select: "formName approvalFlow fields sections",
         populate: [
           {
             path: "approvalFlow.approverId",
-            select: "name email"
-          },
-          {
-            path: "workflow.approverId",
             select: "name email"
           }
         ]
@@ -334,6 +331,111 @@ export const getSubmissionById = async (req, res) => {
           message: "Access denied - you can only view your own submissions or submissions you need to approve" 
         });
       }
+    }
+    // For PLANT_ADMIN role, check if the submission belongs to their plant
+    else if (req.user.role === "PLANT_ADMIN") {
+      console.log("=== PLANT_ADMIN AUTHORIZATION CHECK ===");
+      console.log("Plant Admin access check for submission:", submission._id);
+      console.log("Plant Admin's Plant ID:", req.user.plantId);
+      console.log("Submission's Plant ID:", submission.plantId);
+      
+      // Use the helper function to safely compare plant IDs
+      if (samePlantId(submission.plantId, req.user.plantId)) {
+        console.log("✅ Plant Admin has access to this submission");
+      } else {
+        console.log("❌ Plant Admin does not have access to this submission");
+        console.log("Expected Plant ID:", req.user.plantId);
+        console.log("Actual Submission Plant ID:", submission.plantId);
+        return res.status(403).json({
+          success: false,
+          message: "Access denied - this submission does not belong to your plant"
+        });
+      }
+    }
+    // For EMPLOYEE role, check if the submission was submitted by them or they are an approver
+    else if (req.user.role === "EMPLOYEE") {
+      console.log("Employee access check for submission:", submission._id);
+      console.log("User ID:", req.user.userId);
+      console.log("Submitter ID:", submission.submittedBy?._id?.toString());
+      console.log("Submission status:", submission.status);
+      console.log("Current level:", submission.currentLevel);
+      
+      // Allow the submitter to view their own submission
+      if (submission.submittedBy && submission.submittedBy._id?.toString() === req.user.userId) {
+        console.log("User is submitter - allowing access");
+      } 
+      // Allow approvers to view submissions they need to approve
+      else if (submission.status === "PENDING_APPROVAL" && submission.currentLevel > 0) {
+        console.log("Checking approver access");
+        const form = submission.formId;
+        const flow = form?.approvalFlow || [];
+        const currentApprover = flow.find(f => f.level === submission.currentLevel);
+        
+        if (currentApprover) {
+          // Handle different possible structures for approverId
+          let approverId = null;
+          if (currentApprover.approverId) {
+            if (typeof currentApprover.approverId === 'string') {
+              approverId = currentApprover.approverId;
+            } else if (currentApprover.approverId._id) {
+              approverId = currentApprover.approverId._id.toString();
+            } else if (currentApprover.approverId.toString) {
+              approverId = currentApprover.approverId.toString();
+            }
+          }
+          
+          if (approverId && approverId === req.user.userId.toString()) {
+            console.log("User is current approver - allowing access");
+          } else {
+            console.log("User is not current approver");
+            return res.status(403).json({ 
+              success: false, 
+              message: "Access denied - you are not the current approver for this submission" 
+            });
+          }
+        } else {
+          console.log("No approver found for current level");
+          return res.status(403).json({ 
+            success: false, 
+            message: "Access denied - no approver found for current level" 
+          });
+        }
+      } else {
+        console.log("User cannot access this submission");
+        return res.status(403).json({ 
+          success: false, 
+          message: "Access denied - you can only view your own submissions or submissions you need to approve" 
+        });
+      }
+    }
+    // For COMPANY_ADMIN role, check if the submission belongs to their company
+    else if (req.user.role === "COMPANY_ADMIN") {
+      console.log("Company Admin access check for submission:", submission._id);
+      console.log("Company Admin's Company ID:", req.user.companyId);
+      console.log("Submission's Company ID:", submission.companyId);
+      
+      // Use the helper function to safely compare company IDs
+      if (sameCompanyId(submission.companyId, req.user.companyId)) {
+        console.log("Company Admin has access to this submission");
+      } else {
+        console.log("Company Admin does not have access to this submission");
+        return res.status(403).json({
+          success: false,
+          message: "Access denied - this submission does not belong to your company"
+        });
+      }
+    }
+    // For SUPER_ADMIN, allow access to all submissions
+    else if (req.user.role === "SUPER_ADMIN") {
+      console.log("Super Admin access - allowing access to submission:", submission._id);
+    }
+    // For other roles, deny access
+    else {
+      console.log("Unknown role or insufficient permissions for user with role:", req.user.role);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied - insufficient permissions"
+      });
     }
 
     res.json({
