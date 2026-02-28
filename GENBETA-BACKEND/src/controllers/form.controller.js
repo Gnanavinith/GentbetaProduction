@@ -297,11 +297,19 @@ GET SINGLE FORM
 export const getFormById = async (req, res) => {
   try {
     // First, try to find in Form model
-    let form = await Form.findById(req.params.id).populate("approvalFlow.approverId", "name email");
+    let form = await Form.findById(req.params.id)
+      .populate({
+        path: "approvalFlow.approverId",
+        select: "name email"
+      });
     
     if (!form) {
       // If not found in Form model, try FormTemplate model
-      form = await FormTemplate.findById(req.params.id).populate("workflow.approverId", "name email");
+      form = await FormTemplate.findById(req.params.id)
+        .populate({
+          path: "workflow.approverId",
+          select: "name email"
+        });
     }
     
     if (!form) {

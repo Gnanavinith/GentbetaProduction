@@ -47,6 +47,348 @@ const getFormFields = (form) => {
   return uniqueFields;
 };
 
+// Helper function to render field values based on field type
+const renderFieldValue = (field, fieldValue) => {
+  // Handle different field types
+  switch (field.type) {
+    case 'date-range':
+      // Date range is stored as an object with start/end dates
+      if (typeof fieldValue === 'object' && fieldValue !== null) {
+        return (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Row
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Start Date
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    End Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {Object.entries(fieldValue).map(([key, value], index) => (
+                  <tr key={key} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                      Row {index + 1}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-700">
+                      {value.startDate || value.start || value[0] || 'N/A'}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-700">
+                      {value.endDate || value.end || value[1] || 'N/A'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'grid-table':
+    case 'table':
+      if (typeof fieldValue === 'object' && fieldValue !== null) {
+        // Handle grid/table objects in table format
+        return (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Row
+                  </th>
+                  {Object.values(fieldValue)[0] && typeof Object.values(fieldValue)[0] === 'object' ? 
+                    Object.keys(Object.values(fieldValue)[0]).map((colKey) => (
+                      <th key={colKey} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {colKey}
+                      </th>
+                    )) : 
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Value
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {Object.entries(fieldValue).map(([rowKey, rowValue], rowIndex) => (
+                  <tr key={rowKey} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                      Row {rowIndex + 1}
+                    </td>
+                    {typeof rowValue === 'object' && rowValue !== null ? (
+                      Object.entries(rowValue).map(([colKey, colValue]) => (
+                        <td key={colKey} className="px-4 py-2 text-sm text-gray-700">
+                          {String(colValue)}
+                        </td>
+                      ))
+                    ) : (
+                      <td className="px-4 py-2 text-sm text-gray-700">
+                        {String(rowValue)}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'file':
+    case 'image':
+      if (typeof fieldValue === 'object' && fieldValue !== null) {
+        // Handle file objects with multiple properties
+        return (
+          <div className="space-y-2">
+            {fieldValue.url && (
+              <div className="flex flex-wrap gap-2">
+                <a 
+                  href={fieldValue.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 hover:text-indigo-800 underline break-all"
+                >
+                  {fieldValue.filename || fieldValue.name || 'View File'}
+                </a>
+                {fieldValue.size && (
+                  <span className="text-sm text-gray-500">Size: {(fieldValue.size / 1024).toFixed(2)} KB</span>
+                )}
+                {fieldValue.mimetype && (
+                  <span className="text-sm text-gray-500">Type: {fieldValue.mimetype}</span>
+                )}
+              </div>
+            )}
+            {/* If fieldValue is a string URL */}
+            {!fieldValue.url && typeof fieldValue === 'string' && fieldValue.startsWith('http') && (
+              <a 
+                href={fieldValue} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:text-indigo-800 underline break-all"
+              >
+                {fieldValue}
+              </a>
+            )}
+          </div>
+        );
+      }
+      // Fallback for string URLs
+      if (typeof fieldValue === 'string' && fieldValue.startsWith('http')) {
+        return (
+          <a 
+            href={fieldValue} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:text-indigo-800 underline break-all"
+          >
+            {fieldValue}
+          </a>
+        );
+      }
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'signature':
+      if (typeof fieldValue === 'string' && fieldValue.startsWith('http')) {
+        return (
+          <div>
+            <img 
+              src={fieldValue} 
+              alt="Signature" 
+              className="max-h-32 border border-gray-300 rounded-lg bg-white p-2"
+            />
+            <a 
+              href={fieldValue} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block text-indigo-600 hover:text-indigo-800 underline mt-2 text-sm"
+            >
+              View Signature
+            </a>
+          </div>
+        );
+      }
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'checkbox':
+      if (Array.isArray(fieldValue)) {
+        return (
+          <div className="flex flex-wrap gap-2">
+            {fieldValue.map((item, index) => (
+              <span key={index} className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                {item}
+              </span>
+            ))}
+          </div>
+        );
+      }
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'terms':
+      return (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${fieldValue ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {fieldValue ? 'Accepted' : 'Not Accepted'}
+        </span>
+      );
+    
+    case 'auto-user':
+      // Handle auto-user field which stores user information
+      if (typeof fieldValue === 'object' && fieldValue !== null) {
+        return (
+          <div className="space-y-1">
+            {fieldValue.name && (
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Name:</span>
+                <span className="text-gray-800">{fieldValue.name}</span>
+              </div>
+            )}
+            {fieldValue.email && (
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Email:</span>
+                <span className="text-gray-800">{fieldValue.email}</span>
+              </div>
+            )}
+            {fieldValue.role && (
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Role:</span>
+                <span className="text-gray-800">{fieldValue.role}</span>
+              </div>
+            )}
+            {fieldValue.department && (
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Department:</span>
+                <span className="text-gray-800">{fieldValue.department}</span>
+              </div>
+            )}
+            {fieldValue.phoneNumber && (
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Phone:</span>
+                <span className="text-gray-800">{fieldValue.phoneNumber}</span>
+              </div>
+            )}
+          </div>
+        );
+      }
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'multi-select':
+    case 'multiselect':
+      if (Array.isArray(fieldValue)) {
+        return (
+          <div className="flex flex-wrap gap-2">
+            {fieldValue.map((item, index) => (
+              <span key={index} className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                {item}
+              </span>
+            ))}
+          </div>
+        );
+      }
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'date':
+      // For date fields, format the date properly
+      try {
+        return <p className="text-gray-700">{new Date(fieldValue).toLocaleDateString()}</p>;
+      } catch {
+        return <p className="text-gray-700">{String(fieldValue)}</p>;
+      }
+    
+    case 'datetime-local':
+      // For datetime fields, format the date/time properly
+      try {
+        return <p className="text-gray-700">{new Date(fieldValue).toLocaleString()}</p>;
+      } catch {
+        return <p className="text-gray-700">{String(fieldValue)}</p>;
+      }
+    
+    case 'time':
+      // For time fields, format the time properly
+      try {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        const timeParts = fieldValue.split(':');
+        date.setHours(parseInt(timeParts[0]), parseInt(timeParts[1]));
+        return <p className="text-gray-700">{date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>;
+      } catch {
+        return <p className="text-gray-700">{String(fieldValue)}</p>;
+      }
+    
+    case 'radio':
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'dropdown':
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
+    
+    case 'email':
+      return (
+        <a href={`mailto:${fieldValue}`} className="text-indigo-600 hover:text-indigo-800 underline">
+          {fieldValue}
+        </a>
+      );
+    
+    case 'tel':
+      return (
+        <a href={`tel:${fieldValue}`} className="text-indigo-600 hover:text-indigo-800 underline">
+          {fieldValue}
+        </a>
+      );
+    
+    default:
+      // Original rendering logic for other field types
+      if (typeof fieldValue === 'string' && fieldValue.startsWith('http')) {
+        return (
+          <a 
+            href={fieldValue} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:text-indigo-800 underline break-all"
+          >
+            {fieldValue}
+          </a>
+        );
+      } else if (typeof fieldValue === 'object' && fieldValue !== null) {
+        // Handle generic objects
+        return (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Property
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Value
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {Object.entries(fieldValue).map(([key, value], index) => (
+                  <tr key={key} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {key}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-700">
+                      {String(value)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      } else {
+        return <p className="text-gray-700">{String(fieldValue)}</p>;
+      }
+  }
+};
+
 function StatusBadge({ status, currentLevel, totalLevels, form }) {
   const statusConfig = {
     DRAFT: { color: "bg-gray-100 text-gray-800", icon: FileText, label: "Draft" },
@@ -279,61 +621,7 @@ export default function SubmissionDetails() {
                     <h3 className="font-medium text-gray-900 mb-2">
                       {field.label || field.question || (field.fieldId || field.id).replace(/([A-Z])/g, ' $1').trim()}
                     </h3>
-                    {typeof fieldValue === 'string' && fieldValue.startsWith('http') ? (
-                      <a 
-                        href={fieldValue} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 underline"
-                      >
-                        {fieldValue}
-                      </a>
-                    ) : typeof fieldValue === 'object' && fieldValue !== null ? (
-                      // Handle grid/table objects in table format
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Row
-                              </th>
-                              {Object.values(fieldValue)[0] && typeof Object.values(fieldValue)[0] === 'object' ? 
-                                Object.keys(Object.values(fieldValue)[0]).map((colKey) => (
-                                  <th key={colKey} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {colKey}
-                                  </th>
-                                )) : 
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Value
-                              </th>
-                            }
-                          </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {Object.entries(fieldValue).map(([rowKey, rowValue], rowIndex) => (
-                              <tr key={rowKey} className="hover:bg-gray-50">
-                                <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  Row {rowIndex + 1}
-                                </td>
-                                {typeof rowValue === 'object' && rowValue !== null ? (
-                                  Object.entries(rowValue).map(([colKey, colValue]) => (
-                                    <td key={colKey} className="px-4 py-2 text-sm text-gray-700">
-                                      {String(colValue)}
-                                    </td>
-                                  ))
-                                ) : (
-                                  <td className="px-4 py-2 text-sm text-gray-700">
-                                    {String(rowValue)}
-                                  </td>
-                                )}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <p className="text-gray-700">{String(fieldValue)}</p>
-                    )}
+                    {renderFieldValue(field, fieldValue)}
                   </div>
                 );
               }).filter(Boolean)}

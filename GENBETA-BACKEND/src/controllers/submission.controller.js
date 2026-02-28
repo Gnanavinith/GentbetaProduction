@@ -205,7 +205,7 @@ export const getSubmissions = async (req, res) => {
       .populate("submittedBy", "name email")
       .populate("approvedBy", "name email")
       .populate("rejectedBy", "name email")
-      .populate("formId", "formName")
+      .populate("formId", "formName approvalFlow workflow")
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit));
@@ -243,11 +243,17 @@ export const getSubmissionById = async (req, res) => {
     const submission = await FormSubmission.findById(id)
       .populate({
         path: "formId",
-        select: "formName approvalFlow fields sections",
-        populate: {
-          path: "approvalFlow.approverId",
-          select: "name email"
-        }
+        select: "formName approvalFlow workflow fields sections",
+        populate: [
+          {
+            path: "approvalFlow.approverId",
+            select: "name email"
+          },
+          {
+            path: "workflow.approverId",
+            select: "name email"
+          }
+        ]
       })
       .populate("submittedBy", "name email")
       .populate("approvedBy", "name email")
@@ -455,7 +461,7 @@ export const submitDraft = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const submission = await FormSubmission.findById(id).populate("formId");
+    const submission = await FormSubmission.findById(id).populate("formId", "formName approvalFlow workflow fields sections");
     if (!submission) {
       return res.status(404).json({ 
         success: false, 
