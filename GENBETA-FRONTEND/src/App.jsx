@@ -46,6 +46,7 @@ const PlantSubmissions = lazy(() => import("./pages/plantAdmin/Submissions"));
 const SubmissionDetails = lazy(() => import("./pages/plantAdmin/SubmissionDetails"));
 const Employees = lazy(() => import("./pages/plantAdmin/Employees"));
 const AddEmployee = lazy(() => import("./pages/plantAdmin/AddEmployee"));
+
 const PlantProfile = lazy(() => import("./pages/plantAdmin/Profile"));
 
 // New separate forms pages

@@ -31,7 +31,6 @@ const getFormFields = (form) => {
     });
   }
   
-  // Filter out non-data fields and remove duplicates
   const uniqueFields = [];
   const seenIds = new Set();
   
@@ -47,41 +46,26 @@ const getFormFields = (form) => {
   return uniqueFields;
 };
 
-// Helper function to render field values based on field type
 const renderFieldValue = (field, fieldValue) => {
-  // Handle different field types
   switch (field.type) {
     case 'date-range':
-      // Date range is stored as an object with start/end dates
       if (typeof fieldValue === 'object' && fieldValue !== null) {
         return (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Row
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Start Date
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    End Date
-                  </th>
-                </tr>...
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Row</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {Object.entries(fieldValue).map(([key, value], index) => (
                   <tr key={key} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                      Row {index + 1}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {value.startDate || value.start || value[0] || 'N/A'}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {value.endDate || value.end || value[1] || 'N/A'}
-                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Row {index + 1}</td>
+                    <td className="px-4 py-2 text-sm text-gray-700">{value.startDate || value.start || value[0] || 'N/A'}</td>
+                    <td className="px-4 py-2 text-sm text-gray-700">{value.endDate || value.end || value[1] || 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -94,43 +78,30 @@ const renderFieldValue = (field, fieldValue) => {
     case 'grid-table':
     case 'table':
       if (typeof fieldValue === 'object' && fieldValue !== null) {
-        // Handle grid/table objects in table format
         return (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Row
-                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Row</th>
                   {Object.values(fieldValue)[0] && typeof Object.values(fieldValue)[0] === 'object' ? 
                     Object.keys(Object.values(fieldValue)[0]).map((colKey) => (
-                      <th key={colKey} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {colKey}
-                      </th>
+                      <th key={colKey} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{colKey}</th>
                     )) : 
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Value
-                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
                   }
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {Object.entries(fieldValue).map(([rowKey, rowValue], rowIndex) => (
                   <tr key={rowKey} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                      Row {rowIndex + 1}
-                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">Row {rowIndex + 1}</td>
                     {typeof rowValue === 'object' && rowValue !== null ? (
                       Object.entries(rowValue).map(([colKey, colValue]) => (
-                        <td key={colKey} className="px-4 py-2 text-sm text-gray-700">
-                          {String(colValue)}
-                        </td>
+                        <td key={colKey} className="px-4 py-2 text-sm text-gray-700">{String(colValue)}</td>
                       ))
                     ) : (
-                      <td className="px-4 py-2 text-sm text-gray-700">
-                        {String(rowValue)}
-                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-700">{String(rowValue)}</td>
                     )}
                   </tr>
                 ))}
@@ -144,53 +115,25 @@ const renderFieldValue = (field, fieldValue) => {
     case 'file':
     case 'image':
       if (typeof fieldValue === 'object' && fieldValue !== null) {
-        // Handle file objects with multiple properties
         return (
           <div className="space-y-2">
             {fieldValue.url && (
               <div className="flex flex-wrap gap-2">
-                <a 
-                  href={fieldValue.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 hover:text-indigo-800 underline break-all"
-                >
+                <a href={fieldValue.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline break-all">
                   {fieldValue.filename || fieldValue.name || 'View File'}
                 </a>
-                {fieldValue.size && (
-                  <span className="text-sm text-gray-500">Size: {(fieldValue.size / 1024).toFixed(2)} KB</span>
-                )}
-                {fieldValue.mimetype && (
-                  <span className="text-sm text-gray-500">Type: {fieldValue.mimetype}</span>
-                )}
+                {fieldValue.size && <span className="text-sm text-gray-500">Size: {(fieldValue.size / 1024).toFixed(2)} KB</span>}
+                {fieldValue.mimetype && <span className="text-sm text-gray-500">Type: {fieldValue.mimetype}</span>}
               </div>
             )}
-            {/* If fieldValue is a string URL */}
             {!fieldValue.url && typeof fieldValue === 'string' && fieldValue.startsWith('http') && (
-              <a 
-                href={fieldValue} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-indigo-600 hover:text-indigo-800 underline break-all"
-              >
-                {fieldValue}
-              </a>
+              <a href={fieldValue} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline break-all">{fieldValue}</a>
             )}
           </div>
         );
       }
-      // Fallback for string URLs
       if (typeof fieldValue === 'string' && fieldValue.startsWith('http')) {
-        return (
-          <a 
-            href={fieldValue} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:text-indigo-800 underline break-all"
-          >
-            {fieldValue}
-          </a>
-        );
+        return <a href={fieldValue} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline break-all">{fieldValue}</a>;
       }
       return <p className="text-gray-700">{String(fieldValue)}</p>;
     
@@ -198,32 +141,21 @@ const renderFieldValue = (field, fieldValue) => {
       if (typeof fieldValue === 'string' && fieldValue.startsWith('http')) {
         return (
           <div>
-            <img 
-              src={fieldValue} 
-              alt="Signature" 
-              className="max-h-32 border border-gray-300 rounded-lg bg-white p-2"
-            />
-            <a 
-              href={fieldValue} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block text-indigo-600 hover:text-indigo-800 underline mt-2 text-sm"
-            >
-              View Signature
-            </a>
+            <img src={fieldValue} alt="Signature" className="max-h-32 border border-gray-300 rounded-lg bg-white p-2" />
+            <a href={fieldValue} target="_blank" rel="noopener noreferrer" className="block text-indigo-600 hover:text-indigo-800 underline mt-2 text-sm">View Signature</a>
           </div>
         );
       }
       return <p className="text-gray-700">{String(fieldValue)}</p>;
     
     case 'checkbox':
+    case 'multi-select':
+    case 'multiselect':
       if (Array.isArray(fieldValue)) {
         return (
           <div className="flex flex-wrap gap-2">
             {fieldValue.map((item, index) => (
-              <span key={index} className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                {item}
-              </span>
+              <span key={index} className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">{item}</span>
             ))}
           </div>
         );
@@ -238,154 +170,67 @@ const renderFieldValue = (field, fieldValue) => {
       );
     
     case 'auto-user':
-      // Handle auto-user field which stores user information
       if (typeof fieldValue === 'object' && fieldValue !== null) {
         return (
           <div className="space-y-1">
-            {fieldValue.name && (
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Name:</span>
-                <span className="text-gray-800">{fieldValue.name}</span>
-              </div>
-            )}
-            {fieldValue.email && (
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Email:</span>
-                <span className="text-gray-800">{fieldValue.email}</span>
-              </div>
-            )}
-            {fieldValue.role && (
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Role:</span>
-                <span className="text-gray-800">{fieldValue.role}</span>
-              </div>
-            )}
-            {fieldValue.department && (
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Department:</span>
-                <span className="text-gray-800">{fieldValue.department}</span>
-              </div>
-            )}
-            {fieldValue.phoneNumber && (
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Phone:</span>
-                <span className="text-gray-800">{fieldValue.phoneNumber}</span>
-              </div>
-            )}
-          </div>
-        );
-      }
-      return <p className="text-gray-700">{String(fieldValue)}</p>;
-    
-    case 'multi-select':
-    case 'multiselect':
-      if (Array.isArray(fieldValue)) {
-        return (
-          <div className="flex flex-wrap gap-2">
-            {fieldValue.map((item, index) => (
-              <span key={index} className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                {item}
-              </span>
-            ))}
+            {fieldValue.name && <div className="flex justify-between"><span className="font-medium text-gray-600">Name:</span><span className="text-gray-800">{fieldValue.name}</span></div>}
+            {fieldValue.email && <div className="flex justify-between"><span className="font-medium text-gray-600">Email:</span><span className="text-gray-800">{fieldValue.email}</span></div>}
+            {fieldValue.role && <div className="flex justify-between"><span className="font-medium text-gray-600">Role:</span><span className="text-gray-800">{fieldValue.role}</span></div>}
+            {fieldValue.department && <div className="flex justify-between"><span className="font-medium text-gray-600">Department:</span><span className="text-gray-800">{fieldValue.department}</span></div>}
+            {fieldValue.phoneNumber && <div className="flex justify-between"><span className="font-medium text-gray-600">Phone:</span><span className="text-gray-800">{fieldValue.phoneNumber}</span></div>}
           </div>
         );
       }
       return <p className="text-gray-700">{String(fieldValue)}</p>;
     
     case 'date':
-      // For date fields, format the date properly
-      try {
-        return <p className="text-gray-700">{new Date(fieldValue).toLocaleDateString()}</p>;
-      } catch {
-        return <p className="text-gray-700">{String(fieldValue)}</p>;
-      }
+      try { return <p className="text-gray-700">{new Date(fieldValue).toLocaleDateString()}</p>; }
+      catch { return <p className="text-gray-700">{String(fieldValue)}</p>; }
     
     case 'datetime-local':
-      // For datetime fields, format the date/time properly
-      try {
-        return <p className="text-gray-700">{new Date(fieldValue).toLocaleString()}</p>;
-      } catch {
-        return <p className="text-gray-700">{String(fieldValue)}</p>;
-      }
+      try { return <p className="text-gray-700">{new Date(fieldValue).toLocaleString()}</p>; }
+      catch { return <p className="text-gray-700">{String(fieldValue)}</p>; }
     
     case 'time':
-      // For time fields, format the time properly
       try {
         const date = new Date();
-        date.setHours(0, 0, 0, 0);
         const timeParts = fieldValue.split(':');
         date.setHours(parseInt(timeParts[0]), parseInt(timeParts[1]));
         return <p className="text-gray-700">{date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>;
-      } catch {
-        return <p className="text-gray-700">{String(fieldValue)}</p>;
-      }
-    
-    case 'radio':
-      return <p className="text-gray-700">{String(fieldValue)}</p>;
-    
-    case 'dropdown':
-      return <p className="text-gray-700">{String(fieldValue)}</p>;
+      } catch { return <p className="text-gray-700">{String(fieldValue)}</p>; }
     
     case 'email':
-      return (
-        <a href={`mailto:${fieldValue}`} className="text-indigo-600 hover:text-indigo-800 underline">
-          {fieldValue}
-        </a>
-      );
+      return <a href={`mailto:${fieldValue}`} className="text-indigo-600 hover:text-indigo-800 underline">{fieldValue}</a>;
     
     case 'tel':
-      return (
-        <a href={`tel:${fieldValue}`} className="text-indigo-600 hover:text-indigo-800 underline">
-          {fieldValue}
-        </a>
-      );
+      return <a href={`tel:${fieldValue}`} className="text-indigo-600 hover:text-indigo-800 underline">{fieldValue}</a>;
     
     default:
-      // Original rendering logic for other field types
       if (typeof fieldValue === 'string' && fieldValue.startsWith('http')) {
-        return (
-          <a 
-            href={fieldValue} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:text-indigo-800 underline break-all"
-          >
-            {fieldValue}
-          </a>
-        );
+        return <a href={fieldValue} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline break-all">{fieldValue}</a>;
       } else if (typeof fieldValue === 'object' && fieldValue !== null) {
-        // Handle generic objects
         return (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Property
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Value
-                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {Object.entries(fieldValue).map(([key, value], index) => (
+                {Object.entries(fieldValue).map(([key, value]) => (
                   <tr key={key} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {key}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {String(value)}
-                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{key}</td>
+                    <td className="px-4 py-2 text-sm text-gray-700">{String(value)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         );
-      } else {
-        return <p className="text-gray-700">{String(fieldValue)}</p>;
       }
+      return <p className="text-gray-700">{String(fieldValue)}</p>;
   }
 };
 
@@ -400,15 +245,8 @@ function StatusBadge({ status, currentLevel, totalLevels, form }) {
 
   const config = statusConfig[status] || statusConfig.DRAFT;
   const Icon = config.icon;
-
+  const calculatedTotalLevels = totalLevels || form?.approvalFlow?.length;
   let displayLabel = config.label;
-  let calculatedTotalLevels = totalLevels;
-  
-  // Calculate total levels from form approval flow if not provided
-  if (!calculatedTotalLevels && form?.approvalFlow) {
-    calculatedTotalLevels = form.approvalFlow.length;
-  }
-  
   if (status === 'PENDING_APPROVAL' && currentLevel && calculatedTotalLevels) {
     displayLabel = `Level ${currentLevel}/${calculatedTotalLevels}`;
   }
@@ -449,15 +287,13 @@ export default function SubmissionDetails() {
     }
   };
 
-  const handleEdit = () => {
-    navigate(`/employee/submissions/${id}/edit`);
-  };
+  const handleEdit = () => navigate(`/employee/submissions/${id}/edit`);
 
   const handleSubmit = async () => {
     if (window.confirm("Are you sure you want to submit this draft?")) {
       try {
         await submissionApi.submitDraft(id);
-        fetchSubmission(); // Refresh the data
+        fetchSubmission();
       } catch (error) {
         console.error("Error submitting draft:", error);
       }
@@ -533,30 +369,23 @@ export default function SubmissionDetails() {
           <div className="flex items-center space-x-3">
             {submission.status === "DRAFT" && (
               <>
-                <button
-                  onClick={handleEdit}
-                  className="inline-flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
+                <button onClick={handleEdit} className="inline-flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                  <Edit className="w-4 h-4 mr-2" />Edit
                 </button>
-                <button
-                  onClick={handleSubmit}
-                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Submit
+                <button onClick={handleSubmit} className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                  <Send className="w-4 h-4 mr-2" />Submit
                 </button>
-                <button
-                  onClick={handleDelete}
-                  className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                <button onClick={handleDelete} className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                  <Trash2 className="w-4 h-4 mr-2" />Delete
                 </button>
               </>
             )}
-            <StatusBadge status={submission.status} currentLevel={submission.currentLevel} totalLevels={submission.totalLevels} form={submission.formId} />
+            <StatusBadge
+              status={submission.status}
+              currentLevel={submission.currentLevel}
+              totalLevels={submission.totalLevels}
+              form={submission.formId}
+            />
           </div>
         </div>
       </div>
@@ -591,16 +420,24 @@ export default function SubmissionDetails() {
             <FileText className="w-5 h-5 text-gray-400 mr-3" />
             <div>
               <p className="text-sm text-gray-600">Status</p>
-              <StatusBadge status={submission.status} currentLevel={submission.currentLevel} totalLevels={submission.totalLevels} form={submission.formId} />
+              <StatusBadge
+                status={submission.status}
+                currentLevel={submission.currentLevel}
+                totalLevels={submission.totalLevels}
+                form={submission.formId}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Approval Workflow Display */}
+
       {submission.formId && (
-        <div className="px-6 pt-6">
-          <ApprovalWorkflowDisplay form={submission.formId} className="mb-6" />
+        <div className="mb-6">
+          <ApprovalWorkflowDisplay
+            form={submission.formId}
+            submission={submission}
+          />
         </div>
       )}
 
@@ -615,7 +452,6 @@ export default function SubmissionDetails() {
               {getFormFields(submission.formId).map((field) => {
                 const fieldValue = submission.data[field.fieldId] || submission.data[field.id];
                 if (fieldValue === undefined || fieldValue === null) return null;
-                
                 return (
                   <div key={field.fieldId || field.id} className="border border-gray-200 rounded-lg p-4">
                     <h3 className="font-medium text-gray-900 mb-2">
@@ -632,7 +468,7 @@ export default function SubmissionDetails() {
         </div>
       </div>
 
-      {/* Files Section */}
+      {/* Attached Files */}
       {submission.files && submission.files.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-6">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -645,12 +481,10 @@ export default function SubmissionDetails() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900">{file.originalName}</p>
-                      <p className="text-sm text-gray-500">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
+                      <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                     <a
-                      href={file.url.includes('cloudinary.com') && file.mimetype && file.mimetype.startsWith('application/pdf') 
+                      href={file.url.includes('cloudinary.com') && file.mimetype?.startsWith('application/pdf')
                         ? file.url.replace('/upload/', '/upload/f_auto/')
                         : file.url}
                       target="_blank"
@@ -677,27 +511,18 @@ export default function SubmissionDetails() {
             <div className="space-y-4">
               {submission.approvalHistory.map((history, index) => (
                 <div key={index} className="flex items-start">
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    history.status === 'APPROVED' ? 'bg-green-100' : 'bg-red-100'
-                  }`}>
-                    {history.status === 'APPROVED' ? (
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-600" />
-                    )}
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${history.status === 'APPROVED' ? 'bg-green-100' : 'bg-red-100'}`}>
+                    {history.status === 'APPROVED'
+                      ? <CheckCircle className="w-4 h-4 text-green-600" />
+                      : <XCircle className="w-4 h-4 text-red-600" />
+                    }
                   </div>
                   <div className="ml-3 flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900">
-                        Level {history.level} - {history.status}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {format(new Date(history.actionedAt), "MMM d, yyyy h:mm a")}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900">Level {history.level} — {history.status}</p>
+                      <p className="text-sm text-gray-500">{format(new Date(history.actionedAt), "MMM d, yyyy h:mm a")}</p>
                     </div>
-                    {history.comments && (
-                      <p className="mt-1 text-sm text-gray-600">{history.comments}</p>
-                    )}
+                    {history.comments && <p className="mt-1 text-sm text-gray-600">{history.comments}</p>}
                   </div>
                 </div>
               ))}

@@ -1,8 +1,8 @@
 import api from "./api";
 
 export const formApi = {
-  getForms: async () => {
-    const response = await api.get("/api/forms");
+  getForms: async (params = {}) => {
+    const response = await api.get("/api/forms", { params });
     return response.data;
   },
   getFormById: async (id) => {

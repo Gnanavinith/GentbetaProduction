@@ -273,15 +273,12 @@ export const getSubmissionById = async (req, res) => {
       console.log("Submission status:", submission.status);
       console.log("Current level:", submission.currentLevel);
       
-      // Allow the submitter to view their own submission
-      if (submission.submittedBy._id.toString() === req.user.userId) {
-        console.log("User is submitter - allowing access");
-        // User is the submitter - allow access
-      } 
-      // Allow approvers to view submissions they need to approve
-      else if (submission.status === "PENDING_APPROVAL" && submission.currentLevel > 0) {
-        console.log("Checking approver access");
-        // Check if this user is the approver for the current level
+      // Check if user is the submitter
+      const isSubmitter = submission.submittedBy._id.toString() === req.user.userId;
+      
+      // Check if user is the current approver
+      let isCurrentApprover = false;
+      if (submission.status === "PENDING_APPROVAL" && submission.currentLevel > 0) {
         const form = submission.formId;
         console.log("Form approval flow:", JSON.stringify(form?.approvalFlow, null, 2));
         const flow = form?.approvalFlow || [];
@@ -306,26 +303,81 @@ export const getSubmissionById = async (req, res) => {
           console.log("User ID:", req.user.userId.toString());
           
           if (approverId && approverId === req.user.userId.toString()) {
+            isCurrentApprover = true;
             console.log("User is current approver - allowing access");
-            // User is the current approver - allow access
           } else {
             console.log("User is not current approver");
             console.log("Expected approver ID:", approverId);
             console.log("Actual user ID:", req.user.userId.toString());
-            return res.status(403).json({ 
-              success: false, 
-              message: "Access denied - you are not the current approver for this submission" 
-            });
+            console.log("Comparison result:", approverId === req.user.userId.toString());
           }
         } else {
           console.log("No approver found for current level");
-          return res.status(403).json({ 
-            success: false, 
-            message: "Access denied - no approver found for current level" 
-          });
         }
       } else {
+        console.log("Submission not in PENDING_APPROVAL status or currentLevel is 0");
+        console.log("Status:", submission.status, "Current Level:", submission.currentLevel);
+      }
+      
+      // Check if user is a past approver — field name varies by schema
+      // Log what's actually stored so we can confirm the field name
+      console.log("=== PAST APPROVER CHECK DEBUG ===");
+      console.log("User ID:", req.user.userId.toString());
+      console.log("Approval History Length:", submission.approvalHistory?.length || 0);
+      if (submission.approvalHistory?.length > 0) {
+        console.log("Full approvalHistory:", JSON.stringify(submission.approvalHistory, null, 2));
+      }
+      
+      const isPastApprover = submission.approvalHistory?.some(h => {
+        const userId = req.user.userId.toString();
+        const approverId = h.approverId?.toString();
+        const approvedBy = h.approvedBy?.toString();
+        const actionedBy = h.actionedBy?.toString();
+        const userIdField = h.userId?.toString();
+        const performedBy = h.performedBy?.toString();
+        
+        const match = (
+          approverId === userId ||
+          approvedBy === userId ||
+          actionedBy === userId ||
+          userIdField === userId ||
+          performedBy === userId
+        );
+        
+        console.log("Checking history entry:", {
+          level: h.level,
+          status: h.status,
+          approverId: approverId,
+          approvedBy: approvedBy,
+          actionedBy: actionedBy,
+          userIdField: userIdField,
+          performedBy: performedBy,
+          userId: userId,
+          match: match
+        });
+        
+        return match;
+      });
+      
+      console.log("isPastApprover final result:", isPastApprover);
+      
+      console.log("Access check results - isSubmitter:", isSubmitter, "isCurrentApprover:", isCurrentApprover, "isPastApprover:", isPastApprover);
+      
+      // Allow access if user is submitter, current approver, or past approver
+      if (isSubmitter || isCurrentApprover || isPastApprover) {
+        console.log("User has access - submitter:", isSubmitter, "current approver:", isCurrentApprover, "past approver:", isPastApprover);
+      } else {
         console.log("User cannot access this submission");
+        console.log("Failed access check details:", {
+          isSubmitter,
+          isCurrentApprover,
+          isPastApprover,
+          userId: req.user.userId.toString(),
+          submitterId: submission.submittedBy._id.toString(),
+          status: submission.status,
+          currentLevel: submission.currentLevel,
+          approvalHistoryLength: submission.approvalHistory?.length || 0
+        });
         return res.status(403).json({ 
           success: false, 
           message: "Access denied - you can only view your own submissions or submissions you need to approve" 
@@ -352,62 +404,7 @@ export const getSubmissionById = async (req, res) => {
         });
       }
     }
-    // For EMPLOYEE role, check if the submission was submitted by them or they are an approver
-    else if (req.user.role === "EMPLOYEE") {
-      console.log("Employee access check for submission:", submission._id);
-      console.log("User ID:", req.user.userId);
-      console.log("Submitter ID:", submission.submittedBy?._id?.toString());
-      console.log("Submission status:", submission.status);
-      console.log("Current level:", submission.currentLevel);
-      
-      // Allow the submitter to view their own submission
-      if (submission.submittedBy && submission.submittedBy._id?.toString() === req.user.userId) {
-        console.log("User is submitter - allowing access");
-      } 
-      // Allow approvers to view submissions they need to approve
-      else if (submission.status === "PENDING_APPROVAL" && submission.currentLevel > 0) {
-        console.log("Checking approver access");
-        const form = submission.formId;
-        const flow = form?.approvalFlow || [];
-        const currentApprover = flow.find(f => f.level === submission.currentLevel);
-        
-        if (currentApprover) {
-          // Handle different possible structures for approverId
-          let approverId = null;
-          if (currentApprover.approverId) {
-            if (typeof currentApprover.approverId === 'string') {
-              approverId = currentApprover.approverId;
-            } else if (currentApprover.approverId._id) {
-              approverId = currentApprover.approverId._id.toString();
-            } else if (currentApprover.approverId.toString) {
-              approverId = currentApprover.approverId.toString();
-            }
-          }
-          
-          if (approverId && approverId === req.user.userId.toString()) {
-            console.log("User is current approver - allowing access");
-          } else {
-            console.log("User is not current approver");
-            return res.status(403).json({ 
-              success: false, 
-              message: "Access denied - you are not the current approver for this submission" 
-            });
-          }
-        } else {
-          console.log("No approver found for current level");
-          return res.status(403).json({ 
-            success: false, 
-            message: "Access denied - no approver found for current level" 
-          });
-        }
-      } else {
-        console.log("User cannot access this submission");
-        return res.status(403).json({ 
-          success: false, 
-          message: "Access denied - you can only view your own submissions or submissions you need to approve" 
-        });
-      }
-    }
+
     // For COMPANY_ADMIN role, check if the submission belongs to their company
     else if (req.user.role === "COMPANY_ADMIN") {
       console.log("Company Admin access check for submission:", submission._id);

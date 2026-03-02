@@ -1,49 +1,146 @@
 import Form from "../models/Form.model.js";
 import FormTemplate from "../models/FormTemplate.model.js";
 import FormSubmission from "../models/FormSubmission.model.js";
-import Assignment from "../models/Assignment.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
-import { sendApprovalEmail, sendFormCreatedApproverNotification } from "../services/email/index.js";
-import { generateCacheKey, getFromCache, setInCache, deleteFromCache, warmCache, getCacheStats } from "../utils/cache.js";
+import { sendFormCreatedApproverNotification } from "../services/email/index.js";
+import { generateCacheKey, getFromCache, setInCache, deleteFromCache } from "../utils/cache.js";
 import { generateFormId } from "../utils/formIdGenerator.js";
 import { checkFormCreationLimit } from "../utils/subscriptionValidator.js";
 import { createNotification } from "../utils/notify.js";
+import { getPlanById } from "../config/plans.js";
 
-// Helper function to validate layout structure
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Validate that grid-table fields have correct structure.
+ */
 function validateLayoutStructure(fields) {
-  if (!fields || !Array.isArray(fields)) return;
-  
-  fields.forEach(field => {
-
-    
-    // For grid-table, ensure it has proper structure
+  if (!Array.isArray(fields)) return;
+  for (const field of fields) {
     if (field.type === "grid-table") {
       if (field.columns && !Array.isArray(field.columns)) {
-        throw new Error("Grid-table fields must have 'columns' property as an array");
+        throw new Error("Grid-table fields must have 'columns' as an array");
       }
       if (field.items && !Array.isArray(field.items)) {
-        throw new Error("Grid-table fields must have 'items' property as an array");
+        throw new Error("Grid-table fields must have 'items' as an array");
       }
     }
-  });
+  }
 }
+
+/**
+ * Invalidate all known cache permutations for a given role + plant.
+ * Covers pages 1–5 and common limit values.
+ */
+async function invalidateFormCache(role, plantId) {
+  const pages = [1, 2, 3, 4, 5];
+  const limits = [10, 20, 50, 100];
+  const invalidations = [];
+
+  for (const page of pages) {
+    for (const limit of limits) {
+      const key = generateCacheKey("forms", { page, limit, role, plantId });
+      invalidations.push(deleteFromCache(key));
+    }
+    // Also invalidate the "unlimited" variant (limit = 0)
+    invalidations.push(deleteFromCache(generateCacheKey("forms", { page, limit: 0, role, plantId })));
+  }
+
+  try {
+    await Promise.all(invalidations);
+  } catch (err) {
+    console.error("Cache invalidation error:", err);
+  }
+}
+
+/**
+ * Map incoming approvalLevels or approvalFlow array to the standard backend shape.
+ */
+function mapApprovalFlow(levels = []) {
+  return levels.map((level, index) => ({
+    level: index + 1,
+    approverId: level.approverId,
+    name: level.name || `Level ${index + 1}`,
+    description: level.description || "",
+  }));
+}
+
+/**
+ * Send in-app notifications to all active employees in a plant.
+ */
+async function notifyEmployees(plantId, title, message) {
+  try {
+    const employees = await User.find({ plantId, role: "EMPLOYEE", isActive: true }, "_id");
+    await Promise.all(
+      employees.map((emp) =>
+        createNotification({ userId: emp._id, title, message, link: "/employee/forms-view" })
+      )
+    );
+  } catch (err) {
+    console.error("Employee notification error:", err);
+  }
+}
+
+/**
+ * Send email notifications to all approvers in an approval flow (non-blocking).
+ */
+async function notifyApprovers({ approvalFlow, formId, formName, actorId, companyId, plantId }) {
+  (async () => {
+    try {
+      const [actor, company, plant] = await Promise.all([
+        User.findById(actorId, "name"),
+        Company.findById(companyId),
+        Plant.findById(plantId),
+      ]);
+
+      await Promise.all(
+        approvalFlow.map(async (level) => {
+          const approver = await User.findById(level.approverId, "name email");
+          if (!approver?.email) return;
+          const reviewLink = `${process.env.FRONTEND_URL}/plant/forms/${formId}`;
+          await sendFormCreatedApproverNotification(
+            approver.email,
+            formName,
+            formId,
+            actor?.name || "A plant admin",
+            reviewLink,
+            company,
+            plant
+          );
+        })
+      );
+    } catch (err) {
+      console.error("Approver notification error:", err);
+    }
+  })();
+}
+
+// ─── Controllers ─────────────────────────────────────────────────────────────
 
 /* ======================================================
    CREATE FORM
 ====================================================== */
 export const createForm = async (req, res) => {
   try {
-    const { formId: providedFormId, formName, fields, sections, approvalFlow, approvalLevels, description, status } = req.body;
+    const {
+      formId: providedFormId,
+      formName,
+      fields,
+      sections,
+      approvalFlow,
+      approvalLevels,
+      description,
+      status,
+    } = req.body;
 
-    // Validate layout structure - prefer sections fields, fall back to root fields for legacy forms
-    const allFieldsToValidate = (sections && sections.length > 0) 
-      ? sections.flatMap(s => s.fields || [])
-      : (fields || []);
-    validateLayoutStructure(allFieldsToValidate);
+    // Validate layout
+    const fieldsToValidate =
+      sections?.length > 0 ? sections.flatMap((s) => s.fields || []) : fields || [];
+    validateLayoutStructure(fieldsToValidate);
 
-    // Check form creation limit before creating the form
+    // Check subscription limit
     const limitCheck = await checkFormCreationLimit(req.user.plantId, req.user.companyId);
     if (!limitCheck.allowed) {
       return res.status(403).json({
@@ -52,45 +149,22 @@ export const createForm = async (req, res) => {
         overLimit: true,
         upgradeRequired: limitCheck.upgradeRequired,
         currentCount: limitCheck.currentCount,
-        limit: limitCheck.limit
+        limit: limitCheck.limit,
       });
     }
 
-    // Generate formId if not provided
+    // Resolve a unique formId
     let finalFormId = providedFormId || generateFormId(formName);
-    
-    // Ensure the formId is unique
-    if (!providedFormId) { // Only check uniqueness if we generated the ID
-      let isUnique = false;
-      let attempts = 0;
-      const maxAttempts = 5;
-      
-      while (!isUnique && attempts < maxAttempts) {
-        try {
-          const existingForm = await Form.findOne({ formId: finalFormId });
-          if (!existingForm) {
-            isUnique = true;
-          } else {
-            // Generate a new ID with additional randomness
-            finalFormId = generateFormId(formName + Date.now().toString());
-            attempts++;
-          }
-        } catch (error) {
-          console.error('Error checking formId uniqueness:', error);
-          isUnique = true; // Proceed anyway to avoid blocking the creation
-        }
+    if (!providedFormId) {
+      const MAX_ATTEMPTS = 5;
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        const existing = await Form.findOne({ formId: finalFormId }, "_id").lean();
+        if (!existing) break;
+        finalFormId = generateFormId(formName + Date.now().toString());
       }
-    } else {
-      finalFormId = providedFormId; // Use the provided ID
     }
 
-    // Map approvalLevels from frontend to approvalFlow for backend
-    const finalApprovalFlow = (approvalLevels || approvalFlow || []).map((level, index) => ({
-      level: index + 1,
-      approverId: level.approverId,
-      name: level.name || `Level ${index + 1}`,
-      description: level.description || ""
-    }));
+    const finalApprovalFlow = mapApprovalFlow(approvalLevels || approvalFlow);
 
     const form = await Form.create({
       formId: finalFormId,
@@ -103,82 +177,31 @@ export const createForm = async (req, res) => {
       plantId: req.user.plantId,
       createdBy: req.user.userId,
       status: status || "DRAFT",
-      isTemplate: req.body.isTemplate || false
+      isTemplate: req.body.isTemplate || false,
     });
 
-    console.log('Created form with status:', form.status, 'and ID:', form._id);
+    console.log(`Form created — status: ${form.status}, id: ${form._id}`);
 
-    // Invalidate cache for forms list
-    try {
-      const cacheKey = generateCacheKey('forms', { 
-        page: 1, 
-        limit: 10, 
-        role: req.user.role,
-        plantId: req.user.plantId 
-      });
-      console.log('Invalidating cache key in createForm:', cacheKey);
-      await deleteFromCache(cacheKey);
-      console.log('Cache invalidated successfully in createForm');
-    } catch (cacheError) {
-      console.error('Cache invalidation error:', cacheError);
+    // Invalidate cache (non-blocking)
+    invalidateFormCache(req.user.role, req.user.plantId);
+
+    res.status(201).json({ success: true, message: "Form created successfully", form });
+
+    // Post-response side effects (non-blocking)
+    const isPublished = form.status === "PUBLISHED" || form.status === "APPROVED";
+    if (isPublished) {
+      notifyEmployees(form.plantId, "New Form Available", `${form.formName} is now available`);
     }
 
-    res.status(201).json({
-      success: true,
-      message: "Form created successfully",
-      form
-    });
-
-    // Trigger notification to assigned employees when form is published during creation
-    if (form.status === 'PUBLISHED' || form.status === 'APPROVED') {
-      try {
-        // Find all employees assigned to this plant
-        const employees = await User.find({
-          plantId: form.plantId,
-          role: "EMPLOYEE",
-          isActive: true
-        });
-
-        for (const employee of employees) {
-          await createNotification({
-            userId: employee._id,
-            title: "New Form Available",
-            message: `${form.formName} is now available`,
-            link: `/employee/forms-view`
-          });
-        }
-      } catch (notificationError) {
-        console.error("Error creating form published notification:", notificationError);
-      }
-    }
-
-    // Send email notifications to all approvers (non-blocking)
     if (finalApprovalFlow.length > 0) {
-      (async () => {
-        try {
-          const creator = await User.findById(req.user.userId);
-          const company = await Company.findById(req.user.companyId);
-          const plant = await Plant.findById(req.user.plantId);
-          
-          for (const level of finalApprovalFlow) {
-            const approver = await User.findById(level.approverId);
-            if (approver && approver.email) {
-              const reviewLink = `${process.env.FRONTEND_URL}/plant/forms/${form._id}`;
-              await sendFormCreatedApproverNotification(
-                approver.email,
-                form.formName,
-                form.formId, // Pass the formId
-                creator?.name || "A plant admin",
-                reviewLink,
-                company,
-                plant
-              );
-            }
-          }
-        } catch (emailErr) {
-          console.error("Failed to send form created notifications:", emailErr);
-        }
-      })();
+      notifyApprovers({
+        approvalFlow: finalApprovalFlow,
+        formId: form._id,
+        formName: form.formName,
+        actorId: req.user.userId,
+        companyId: req.user.companyId,
+        plantId: req.user.plantId,
+      });
     }
   } catch (error) {
     console.error("Create form error:", error);
@@ -191,175 +214,112 @@ export const createForm = async (req, res) => {
 ====================================================== */
 export const getForms = async (req, res) => {
   try {
+    const { role, plantId } = req.user;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+
+    // Build filter
     const filter = { isActive: true };
+    if (role === "PLANT_ADMIN" || role === "EMPLOYEE") {
+      filter.plantId = plantId;
+    }
+    if (role === "EMPLOYEE") {
+      filter.status = { $in: ["APPROVED", "PUBLISHED"] };
+    }
 
-      if (req.user.role === "PLANT_ADMIN") {
-        filter.plantId = req.user.plantId;
-        } else if (req.user.role === "EMPLOYEE") {
-          filter.plantId = req.user.plantId;
-          // Employee can see all published forms (whether templates or regular forms)
-          filter.status = { $in: ["APPROVED", "PUBLISHED"] };
-        }
+    // Resolve pagination limit based on subscription plan
+    let limit = parseInt(req.query.limit) || 10;
+    let unlimited = false;
 
-    console.log(`User role: ${req.user.role}`);
-    console.log(`User plantId: ${req.user.plantId}`);
-    console.log(`Applied filter:`, JSON.stringify(filter, null, 2));
-
-    // Handle pagination
-    const page = parseInt(req.query.page) || 1;
-    
-    // For premium plans, remove pagination limit
-    let limit, skip;
-    if (req.user.role === "PLANT_ADMIN") {
-      // Get company subscription to check plan
-      const plant = await Plant.findById(req.user.plantId);
+    if (role === "PLANT_ADMIN") {
+      const plant = await Plant.findById(plantId, "companyId").lean();
       if (plant) {
-        const company = await Company.findById(plant.companyId);
+        const company = await Company.findById(plant.companyId, "subscription").lean();
         const planId = company?.subscription?.plan || "SILVER";
-        
-        if (planId === "PREMIUM") {
-          // No limit for premium plans
-          limit = 0;
-          skip = 0;
-        } else {
-          // Default pagination for other plans
-          limit = parseInt(req.query.limit) || 10;
-          skip = (page - 1) * limit;
+        const plan = getPlanById(planId);
+        const maxForms = plan?.limits?.maxFormsPerPlant;
+
+        if (maxForms === -1 || maxForms === 0) {
+          unlimited = true;
+        } else if (maxForms > 0) {
+          // Use plan limit unless query limit is provided AND within plan limit
+          const queryLimit = parseInt(req.query.limit);
+          if (queryLimit && queryLimit <= maxForms) {
+            limit = queryLimit;
+          } else {
+            limit = maxForms;
+          }
         }
-      } else {
-        // Fallback to default pagination
-        limit = parseInt(req.query.limit) || 10;
-        skip = (page - 1) * limit;
       }
-    } else {
-      // Default pagination for other roles
-      limit = parseInt(req.query.limit) || 10;
-      skip = (page - 1) * limit;
     }
-    
-    // Generate cache key
-    const cacheParams = { page, limit, role: req.user.role };
+
+    const skip = unlimited ? 0 : (page - 1) * limit;
+
+    // Cache lookup
+    const cacheParams = { page, limit: unlimited ? 0 : limit, role };
     if (filter.plantId) cacheParams.plantId = filter.plantId;
-    if (filter.$and) {
-      const statusCondition = filter.$and.find(cond => cond.status);
-      const isTemplateCondition = filter.$and.find(cond => cond.$or);
-      if (statusCondition) cacheParams.status = JSON.stringify(statusCondition.status);
-      if (isTemplateCondition) cacheParams.isTemplateConditions = 'employee_specific';
-    } else if (filter.status) {
-      cacheParams.status = JSON.stringify(filter.status);
-    }
-    const cacheKey = generateCacheKey('forms', cacheParams);
-    
-    console.log('Generated cache key:', cacheKey);
-    console.log('Cache params:', cacheParams);
-    console.log('Filter:', filter);
-    
-    // Try to get from cache first
-    let cachedResult = await getFromCache(cacheKey);
-    if (cachedResult) {
-      console.log('Returning cached result for key:', cacheKey);
-      return res.json(cachedResult);
-    }
-    console.log('No cache hit, fetching from database');
+    if (filter.status) cacheParams.status = JSON.stringify(filter.status);
+    const cacheKey = generateCacheKey("forms", cacheParams);
 
-    // Count total forms for pagination metadata
-    const total = await Form.countDocuments(filter);
-    console.log(`Total forms matching filter: ${total}`);
+    const cached = await getFromCache(cacheKey);
+    if (cached) return res.json(cached);
 
-    // Get forms (with or without pagination)
-    let formsQuery = Form.find(filter).sort({ createdAt: -1 });
-    
-    if (limit > 0) {
-      // Apply pagination
-      formsQuery = formsQuery.skip(skip).limit(limit);
-    }
-    
-    const forms = await formsQuery;
+    // DB query
+    const [total, forms] = await Promise.all([
+      Form.countDocuments(filter),
+      (() => {
+        let q = Form.find(filter).sort({ createdAt: -1 });
+        if (!unlimited) q = q.skip(skip).limit(limit);
+        return q.lean();
+      })(),
+    ]);
 
-    console.log(`Found ${forms.length} forms`);
-    if (forms.length > 0) {
-      console.log('Sample forms:');
-      forms.slice(0, 3).forEach(form => {
-        console.log(`  - ${form.formName} (status: ${form.status}, isTemplate: ${form.isTemplate})`);
-      });
-    }
-
+    // Attach submission counts in parallel
     const data = await Promise.all(
       forms.map(async (form) => {
-        let submissionCount = 0;
-        try {
-          submissionCount = await FormSubmission.countDocuments({ formId: form._id });
-        } catch (err) {
-          console.error(`Error counting submissions for form ${form._id}:`, err);
-        }
-        return {
-          ...form.toObject(),
-          id: form._id,
-          submissionCount
-        };
+        const submissionCount = await FormSubmission.countDocuments({ formId: form._id });
+        return { ...form, id: form._id, submissionCount };
       })
     );
-    
-    const result = { 
-      success: true, 
+
+    const totalPages = unlimited ? 1 : Math.ceil(total / limit);
+    const result = {
+      success: true,
       data,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(total / limit),
+        totalPages,
         total,
-        hasNext: page < Math.ceil(total / limit),
-        hasPrev: page > 1
-      }
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
     };
-    
-    // Cache the result for 5 minutes
-    await setInCache(cacheKey, result, 300);
 
-    res.json(result);
-} catch (error) {
+    await setInCache(cacheKey, result, 300);
+    return res.json(result);
+  } catch (error) {
     console.error("Get forms error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch forms" });
-}
+  }
 };
 
 /* ======================================================
-GET SINGLE FORM
+   GET SINGLE FORM
 ====================================================== */
 export const getFormById = async (req, res) => {
   try {
-    // First, try to find in Form model
-    let form = await Form.findById(req.params.id)
-      .populate({
-        path: "approvalFlow.approverId",
-        select: "name email"
-      });
-    
-    if (!form) {
-      // If not found in Form model, try FormTemplate model
-      form = await FormTemplate.findById(req.params.id)
-        .populate({
-          path: "workflow.approverId",
-          select: "name email"
-        });
-    }
-    
+    // Try Form first, then FormTemplate
+    let form =
+      (await Form.findById(req.params.id).populate("approvalFlow.approverId", "name email")) ||
+      (await FormTemplate.findById(req.params.id).populate("workflow.approverId", "name email"));
+
     if (!form) {
       return res.status(404).json({ success: false, message: "Form not found" });
     }
-    
-    // Log the number of fields to help debug
-    console.log(`Form ${req.params.id} has ${form.fields?.length || 0} top-level fields and ${form.sections?.length || 0} sections`);
-    if (form.sections && form.sections.length > 0) {
-      form.sections.forEach((section, index) => {
-        console.log(`Section ${index} has ${section.fields?.length || 0} fields`);
-      });
-    }
-    
-    // Calculate total fields across all sections and top level
-    const totalFields = (form.fields?.length || 0) + 
-      (form.sections?.reduce((sum, section) => sum + (section.fields?.length || 0), 0) || 0);
-    console.log(`Total fields in form ${req.params.id}: ${totalFields}`);
-    
+
+    const sectionFieldCount = form.sections?.reduce((sum, s) => sum + (s.fields?.length || 0), 0) || 0;
+    const totalFields = (form.fields?.length || 0) + sectionFieldCount;
+    console.log(`Form ${req.params.id}: ${form.sections?.length || 0} sections, ${totalFields} total fields`);
+
     res.json({ success: true, data: form });
   } catch (error) {
     console.error("Get form by id error:", error);
@@ -372,161 +332,81 @@ export const getFormById = async (req, res) => {
 ====================================================== */
 export const updateForm = async (req, res) => {
   try {
-    const { formId, formName, fields, sections, approvalFlow, approvalLevels, description } = req.body;
+    const { fields, sections, approvalFlow, approvalLevels } = req.body;
 
-    // Validate layout structure - prefer sections fields, fall back to root fields for legacy forms
-    const allFieldsToValidate = (sections && sections.length > 0) 
-      ? sections.flatMap(s => s.fields || [])
-      : (fields || []);
-    validateLayoutStructure(allFieldsToValidate);
+    // Validate layout
+    const fieldsToValidate =
+      sections?.length > 0 ? sections.flatMap((s) => s.fields || []) : fields || [];
+    validateLayoutStructure(fieldsToValidate);
 
-    // Map approvalLevels from frontend to approvalFlow for backend if provided
-    let finalPayload = { ...req.body };
-    
+    // Build final payload
+    const finalPayload = { ...req.body };
     if (approvalLevels || approvalFlow) {
-      finalPayload.approvalFlow = (approvalLevels || approvalFlow || []).map((level, index) => ({
-        level: index + 1,
-        approverId: level.approverId,
-        name: level.name || `Level ${index + 1}`,
-        description: level.description || ""
-      }));
+      finalPayload.approvalFlow = mapApprovalFlow(approvalLevels || approvalFlow);
       delete finalPayload.approvalLevels;
     }
 
-    // Get the original form to check if approval workflow is being added/changed
-    const originalForm = await Form.findById(req.params.id);
-    
-    const updated = await Form.findByIdAndUpdate(
-      req.params.id,
-      finalPayload,
-      { new: true }
-    );
+    // Fetch original + apply update in parallel
+    const [originalForm, updated] = await Promise.all([
+      Form.findById(req.params.id).lean(),
+      Form.findByIdAndUpdate(req.params.id, finalPayload, { new: true }),
+    ]);
 
     if (!updated) {
       return res.status(404).json({ success: false, message: "Form not found" });
     }
 
-    // Invalidate cache for forms list
-    try {
-      const cacheKey = generateCacheKey('forms', { 
-        page: 1, 
-        limit: 10, 
-        role: req.user.role,
-        plantId: req.user.plantId 
+    // Invalidate cache
+    invalidateFormCache(req.user.role, req.user.plantId);
+
+    // Notify approvers if workflow changed
+    if (
+      finalPayload.approvalFlow?.length > 0 &&
+      JSON.stringify(originalForm?.approvalFlow) !== JSON.stringify(finalPayload.approvalFlow)
+    ) {
+      notifyApprovers({
+        approvalFlow: finalPayload.approvalFlow,
+        formId: updated._id,
+        formName: updated.formName,
+        actorId: req.user.userId,
+        companyId: req.user.companyId,
+        plantId: req.user.plantId,
       });
-      await deleteFromCache(cacheKey);
-    } catch (cacheError) {
-      console.error('Cache invalidation error:', cacheError);
     }
 
-    // Send email notifications to approvers when workflow is assigned/updated
-    if (finalPayload.approvalFlow && finalPayload.approvalFlow.length > 0) {
-      // Check if this is a new workflow assignment or an update
-      const isWorkflowUpdate = !originalForm.approvalFlow || originalForm.approvalFlow.length === 0 || 
-                              JSON.stringify(originalForm.approvalFlow) !== JSON.stringify(finalPayload.approvalFlow);
-      
-      if (isWorkflowUpdate) {
-        (async () => {
-          try {
-            const updater = await User.findById(req.user.userId);
-            const company = await Company.findById(req.user.companyId);
-            const plant = await Plant.findById(req.user.plantId);
-            
-            for (const level of finalPayload.approvalFlow) {
-              const approver = await User.findById(level.approverId);
-              if (approver && approver.email) {
-                const reviewLink = `${process.env.FRONTEND_URL}/plant/forms/${updated._id}`;
-                await sendFormCreatedApproverNotification(
-                  approver.email,
-                  updated.formName,
-                  updater?.name || "A plant admin",
-                  reviewLink,
-                  company,
-                  plant,
-                  "PLANT_ADMIN",
-                  req.user.companyId,
-                  req.user.plantId
-                );
-              }
-            }
-          } catch (emailErr) {
-            console.error("Failed to send workflow assignment notifications:", emailErr);
-          }
-        })();
+    // Determine what changed for employee notifications
+    const isStatusChange = originalForm?.status !== updated.status;
+    const isNameChange = originalForm?.formName !== updated.formName;
+    const isFieldChange =
+      JSON.stringify(originalForm?.fields) !== JSON.stringify(updated.fields);
+
+    if (isStatusChange || isNameChange || isFieldChange) {
+      let title = "Form Updated";
+      let message = `${updated.formName} has been updated`;
+
+      if (isStatusChange) {
+        title = "Form Status Changed";
+        message = `${updated.formName} status changed to ${updated.status}`;
+      } else if (isNameChange) {
+        title = "Form Renamed";
+        message = `Form renamed to "${updated.formName}"`;
+      } else if (isFieldChange) {
+        title = "Form Modified";
+        message = `${updated.formName} fields have been updated`;
       }
+
+      notifyEmployees(updated.plantId, title, message);
     }
 
-    // Send notification to all employees when form is significantly updated
-    try {
-      // Find all employees assigned to this plant
-      const employees = await User.find({
-        plantId: updated.plantId,
-        role: "EMPLOYEE",
-        isActive: true
-      });
-
-      // Check if this is a significant update (status change, name change, or field changes)
-      const isStatusChange = originalForm.status !== updated.status;
-      const isNameChange = originalForm.formName !== updated.formName;
-      const isFieldChange = JSON.stringify(originalForm.fields) !== JSON.stringify(updated.fields);
-      
-      if (isStatusChange || isNameChange || isFieldChange) {
-        let notificationTitle = "Form Updated";
-        let notificationMessage = `${updated.formName} has been updated`;
-        
-        if (isStatusChange) {
-          notificationTitle = "Form Status Changed";
-          notificationMessage = `${updated.formName} status changed to ${updated.status}`;
-        } else if (isNameChange) {
-          notificationTitle = "Form Renamed";
-          notificationMessage = `Form renamed to "${updated.formName}"`;
-        } else if (isFieldChange) {
-          notificationTitle = "Form Modified";
-          notificationMessage = `${updated.formName} fields have been updated`;
-        }
-          
-        for (const employee of employees) {
-          await createNotification({
-            userId: employee._id,
-            title: notificationTitle,
-            message: notificationMessage,
-            link: `/employee/forms-view`
-          });
-        }
-      }
-    } catch (notificationError) {
-      console.error("Error creating form updated notification:", notificationError);
+    // Extra "now available" notification when newly published/approved
+    const wasUnpublished =
+      originalForm?.status !== "PUBLISHED" && originalForm?.status !== "APPROVED";
+    const isNowPublished = updated.status === "PUBLISHED" || updated.status === "APPROVED";
+    if (wasUnpublished && isNowPublished) {
+      notifyEmployees(updated.plantId, "New Form Available", `${updated.formName} is now available`);
     }
 
-    // Trigger notification to assigned employees when form is published (additional notification for publishing)
-    if ((originalForm.status !== 'PUBLISHED' && updated.status === 'PUBLISHED') ||
-        (originalForm.status !== 'APPROVED' && updated.status === 'APPROVED')) {
-      try {
-        // Find all employees assigned to this plant
-        const employees = await User.find({
-          plantId: updated.plantId,
-          role: "EMPLOYEE",
-          isActive: true
-        });
-
-        for (const employee of employees) {
-          await createNotification({
-            userId: employee._id,
-            title: "New Form Available",
-            message: `${updated.formName} is now available`,
-            link: `/employee/forms-view`
-          });
-        }
-      } catch (notificationError) {
-        console.error("Error creating form published notification:", notificationError);
-      }
-    }
-
-    res.json({
-      success: true,
-      message: "Form updated successfully",
-      updated
-    });
+    res.json({ success: true, message: "Form updated successfully", updated });
   } catch (error) {
     console.error("Update form error:", error);
     res.status(500).json({ success: false, message: error.message || "Update failed" });
@@ -543,24 +423,9 @@ export const archiveForm = async (req, res) => {
       { status: "ARCHIVED", archivedAt: new Date() },
       { new: true }
     );
-    
-    if (!form) {
-      return res.status(404).json({ success: false, message: "Form not found" });
-    }
+    if (!form) return res.status(404).json({ success: false, message: "Form not found" });
 
-    // Invalidate cache for forms list
-    try {
-      const cacheKey = generateCacheKey('forms', { 
-        page: 1, 
-        limit: 10, 
-        role: req.user.role,
-        plantId: req.user.plantId 
-      });
-      await deleteFromCache(cacheKey);
-    } catch (cacheError) {
-      console.error('Cache invalidation error:', cacheError);
-    }
-    
+    invalidateFormCache(req.user.role, req.user.plantId);
     res.json({ success: true, message: "Form archived successfully", data: form });
   } catch (error) {
     console.error("Archive form error:", error);
@@ -578,24 +443,9 @@ export const restoreForm = async (req, res) => {
       { status: "PUBLISHED", archivedAt: null },
       { new: true }
     );
-    
-    if (!form) {
-      return res.status(404).json({ success: false, message: "Form not found" });
-    }
+    if (!form) return res.status(404).json({ success: false, message: "Form not found" });
 
-    // Invalidate cache for forms list
-    try {
-      const cacheKey = generateCacheKey('forms', { 
-        page: 1, 
-        limit: 10, 
-        role: req.user.role,
-        plantId: req.user.plantId 
-      });
-      await deleteFromCache(cacheKey);
-    } catch (cacheError) {
-      console.error('Cache invalidation error:', cacheError);
-    }
-    
+    invalidateFormCache(req.user.role, req.user.plantId);
     res.json({ success: true, message: "Form restored successfully", data: form });
   } catch (error) {
     console.error("Restore form error:", error);
@@ -609,27 +459,20 @@ export const restoreForm = async (req, res) => {
 export const toggleTemplateStatus = async (req, res) => {
   try {
     const { isTemplate } = req.body;
-    
-    const form = await Form.findById(req.params.id);
-    if (!form) {
-      return res.status(404).json({ success: false, message: "Form not found" });
-    }
-    
-    // Only allow toggling if the form belongs to the same plant
+
+    const form = await Form.findById(req.params.id, "plantId");
+    if (!form) return res.status(404).json({ success: false, message: "Form not found" });
+
     if (form.plantId.toString() !== req.user.plantId.toString()) {
       return res.status(403).json({ success: false, message: "Not authorized to update this form" });
     }
-    
-    const updated = await Form.findByIdAndUpdate(
-      req.params.id,
-      { isTemplate },
-      { new: true }
-    );
-    
+
+    const updated = await Form.findByIdAndUpdate(req.params.id, { isTemplate }, { new: true });
+
     res.json({
       success: true,
-      message: `Form ${isTemplate ? 'saved as' : 'removed from'} template successfully`,
-      updated
+      message: `Form ${isTemplate ? "saved as" : "removed from"} template successfully`,
+      updated,
     });
   } catch (error) {
     console.error("Toggle template status error:", error);
@@ -642,13 +485,11 @@ export const toggleTemplateStatus = async (req, res) => {
 ====================================================== */
 export const deleteForm = async (req, res) => {
   try {
-    await Form.findByIdAndUpdate(req.params.id, {
-      isActive: false
-    });
-
-    res.json({ message: "Form removed successfully" });
+    await Form.findByIdAndUpdate(req.params.id, { isActive: false });
+    invalidateFormCache(req.user.role, req.user.plantId);
+    res.json({ success: true, message: "Form removed successfully" });
   } catch (error) {
     console.error("Delete form error:", error);
-    res.status(500).json({ message: "Delete failed" });
+    res.status(500).json({ success: false, message: "Delete failed" });
   }
 };
