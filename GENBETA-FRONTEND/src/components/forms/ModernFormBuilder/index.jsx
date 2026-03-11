@@ -272,9 +272,20 @@ export default function ModernFormBuilder({ formId }) {
     if (isPublish) {
       // Validate workflow levels only on publish if workflow exists
       if (workflow && workflow.length > 0) {
-        const incompleteLevel = workflow.find(l => !l.approverId);
+        const incompleteLevel = workflow.find(l => {
+          // For USER type, check approverId
+          if (l.type === "USER") {
+            return !l.approverId;
+          }
+          // For GROUP type, check groupId
+          if (l.type === "GROUP") {
+            return !l.groupId;
+          }
+          // Default check - must have either approverId or groupId
+          return !l.approverId && !l.groupId;
+        });
         if (incompleteLevel) {
-          toast.error("Please assign an approver to all workflow levels");
+          toast.error("Please assign an approver or group to all workflow levels");
           setActiveView("workflow");
           return;
         }
@@ -318,7 +329,16 @@ export default function ModernFormBuilder({ formId }) {
           ...f,
           fieldId: f.fieldId || f.label.toLowerCase().replace(/\s+/g, '_')
         }))),
-        approvalLevels: workflow,
+        // Clean workflow data - convert empty strings to undefined
+        approvalLevels: workflow ? workflow.map(level => ({
+          ...level,
+          // Clear approverId if type is GROUP
+          approverId: level.type === "GROUP" ? undefined : (level.approverId || undefined),
+          // Clear groupId if type is USER
+          groupId: level.type === "USER" ? undefined : (level.groupId || undefined),
+          // Only include approvalMode for GROUP type
+          approvalMode: level.type === "GROUP" ? (level.approvalMode || "ANY_ONE") : undefined
+        })) : [],
         plantId: user?.plantId
       };
 

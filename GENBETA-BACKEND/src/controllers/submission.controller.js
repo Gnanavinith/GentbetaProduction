@@ -137,16 +137,78 @@ export const createSubmission = async (req, res) => {
         if (form.approvalFlow && form.approvalFlow.length > 0) {
           // Find the first level approver in the workflow
           const firstLevelApprover = form.approvalFlow.find(level => level.level === 1);
-          if (firstLevelApprover && firstLevelApprover.approverId) {
-            const approver = await User.findById(firstLevelApprover.approverId);
-            if (approver) {
-              await createNotification({
-                userId: approver._id,
-                title: "Approval Required",
-                message: `Form ${form.formName} waiting for your approval`,
-                link: `/employee/approvals/${submission._id}`
-              });
-              console.log(`Notification sent to approver ${approver._id} for form approval`);
+          
+          if (firstLevelApprover) {
+            // Check if it's a group approver or individual approver
+            if (firstLevelApprover.type === "GROUP" && firstLevelApprover.groupId) {
+              // Handle group approver - notify all group members
+              try {
+                const ApprovalGroup = mongoose.model("ApprovalGroup");
+                const group = await ApprovalGroup.findById(firstLevelApprover.groupId)
+                  .populate("members", "name email _id")
+                  .lean();
+                
+                if (group && group.members && group.members.length > 0) {
+                  // Fetch company and plant details once
+                  const company = await Company.findById(user.companyId);
+                  const plant = await Plant.findById(user.plantId);
+                  const plantId = plant?.plantNumber || plant?._id?.toString() || user.plantId?.toString() || "";
+                  const formId = form.formId || form._id?.toString() || "";
+                  const submissionId = submission._id?.toString() || "";
+                  const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
+                  
+                  for (const member of group.members) {
+                    // Create in-app notification
+                    await createNotification({
+                      userId: member._id,
+                      title: "Group Approval Required",
+                      message: `${user.name || "An employee"} submitted "${form.formName}" — your group (${group.groupName}) needs to approve it`,
+                      link: `/employee/approvals/${submission._id}`
+                    });
+                    
+                    // Send email notification to each group member
+                   if (member.email) {
+                      try {
+                       await sendSubmissionNotificationToApprover(
+                          member.email,
+                         form.formName,
+                          user.name || "An employee",
+                         submission.submittedAt,
+                          approvalLink,
+                          [], // No previous approvals yet
+                         company,
+                          plant,
+                          plantId,
+                         formId,
+                         submissionId,
+                         form.fields || [], // Pass form fields with includeInApprovalEmail settings
+                         parsedData, // Pass submission data
+                          "EMPLOYEE",
+                          user.companyId,
+                          user.email
+                        );
+                       console.log(`Email sent to group member ${member.email} (${member.name}) for group ${group.groupName}`);
+                      } catch (emailError) {
+                       console.error(`Failed to send email to ${member.email}:`, emailError);
+                      }
+                    }
+                  }
+                }
+              } catch (groupError) {
+                console.error("Error notifying group members:", groupError);
+              }
+            } else if (firstLevelApprover.approverId) {
+              // Handle individual approver
+              const approver = await User.findById(firstLevelApprover.approverId);
+              if (approver) {
+                await createNotification({
+                  userId: approver._id,
+                  title: "Approval Required",
+                  message: `Form ${form.formName} waiting for your approval`,
+                  link: `/employee/approvals/${submission._id}`
+                });
+                console.log(`Notification sent to approver ${approver._id} for form approval`);
+              }
             }
           }
         }
@@ -249,6 +311,10 @@ export const getSubmissionById = async (req, res) => {
           {
             path: "approvalFlow.approverId",
             select: "name email"
+          },
+          {
+            path: "approvalFlow.groupId",
+            select: "groupName name members"
           }
         ]
       })
@@ -287,29 +353,53 @@ export const getSubmissionById = async (req, res) => {
         console.log("Found approver:", JSON.stringify(currentApprover, null, 2));
         
         if (currentApprover) {
-          // Handle different possible structures for approverId
-          let approverId = null;
-          if (currentApprover.approverId) {
-            if (typeof currentApprover.approverId === 'string') {
-              approverId = currentApprover.approverId;
-            } else if (currentApprover.approverId._id) {
-              approverId = currentApprover.approverId._id.toString();
-            } else if (currentApprover.approverId.toString) {
-              approverId = currentApprover.approverId.toString();
+          // Check if it's a group approver or individual approver
+          if (currentApprover.type === "GROUP" && currentApprover.groupId) {
+            // Group approver - check if user is a member
+            try {
+              const ApprovalGroup = mongoose.model("ApprovalGroup");
+              const userGroup = await ApprovalGroup.findOne({
+                _id: currentApprover.groupId,
+                members: req.user.userId,
+                isActive: true
+              }).select("_id").lean();
+              
+              if (userGroup) {
+                isCurrentApprover = true;
+                console.log("User is member of group approver - allowing access");
+              } else {
+                console.log("User is not a member of the group approver");
+              }
+            } catch (groupError) {
+              console.error("Error checking group membership:", groupError);
             }
-          }
-          
-          console.log("Approver ID:", approverId);
-          console.log("User ID:", req.user.userId.toString());
-          
-          if (approverId && approverId === req.user.userId.toString()) {
-            isCurrentApprover = true;
-            console.log("User is current approver - allowing access");
+          } else if (currentApprover.approverId) {
+            // Individual approver - handle different possible structures for approverId
+            let approverId = null;
+            if (currentApprover.approverId) {
+              if (typeof currentApprover.approverId === 'string') {
+                approverId = currentApprover.approverId;
+              } else if (currentApprover.approverId._id) {
+                approverId = currentApprover.approverId._id.toString();
+              } else if (currentApprover.approverId.toString) {
+                approverId = currentApprover.approverId.toString();
+              }
+            }
+            
+            console.log("Approver ID:", approverId);
+            console.log("User ID:", req.user.userId.toString());
+            
+            if (approverId && approverId === req.user.userId.toString()) {
+              isCurrentApprover = true;
+              console.log("User is current approver - allowing access");
+            } else {
+              console.log("User is not current approver");
+              console.log("Expected approver ID:", approverId);
+              console.log("Actual user ID:", req.user.userId.toString());
+              console.log("Comparison result:", approverId === req.user.userId.toString());
+            }
           } else {
-            console.log("User is not current approver");
-            console.log("Expected approver ID:", approverId);
-            console.log("Actual user ID:", req.user.userId.toString());
-            console.log("Comparison result:", approverId === req.user.userId.toString());
+            console.log("No approver found for current level");
           }
         } else {
           console.log("No approver found for current level");
@@ -560,7 +650,15 @@ export const submitDraft = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const submission = await FormSubmission.findById(id).populate("formId", "formName approvalFlow workflow fields sections");
+    const submission = await FormSubmission.findById(id)
+      .populate({
+        path: "formId",
+        select: "formName approvalFlow workflow fields sections",
+        populate: {
+          path: "approvalFlow.groupId",
+          select: "groupName name members"
+        }
+      });
     if (!submission) {
       return res.status(404).json({ 
         success: false, 
@@ -650,16 +748,77 @@ export const submitDraft = async (req, res) => {
         if (form.approvalFlow && form.approvalFlow.length > 0) {
           // Find the first level approver in the workflow
           const firstLevelApprover = form.approvalFlow.find(level => level.level === 1);
-          if (firstLevelApprover && firstLevelApprover.approverId) {
-            const approver = await User.findById(firstLevelApprover.approverId);
-            if (approver) {
-              await createNotification({
-                userId: approver._id,
-                title: "Approval Required",
-                message: `Form ${form.formName} waiting for your approval`,
-                link: `/employee/approvals/${submission._id}`
-              });
-              console.log(`Notification sent to approver ${approver._id} for form approval from submitDraft`);
+          
+          if (firstLevelApprover) {
+            // Check if it's a group approver or individual approver
+            if (firstLevelApprover.type === "GROUP" && firstLevelApprover.groupId) {
+              // Notify all group members
+              try {
+                const ApprovalGroup = mongoose.model("ApprovalGroup");
+                const group = await ApprovalGroup.findById(firstLevelApprover.groupId)
+                  .populate("members", "name email _id")
+                  .lean();
+            
+                if (group && group.members && group.members.length > 0) {
+                  const company = await Company.findById(submission.companyId);
+                  const plant = await Plant.findById(submission.plantId);
+                  const plantIdStr = plant?.plantNumber || plant?._id?.toString() || submission.plantId?.toString() || "";
+                  const formIdStr = form.formId || form._id?.toString() || "";
+                  const submissionIdStr = submission._id?.toString() || "";
+                  const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
+            
+                  for (const member of group.members) {
+                    // Correct title and message
+                    await createNotification({
+                      userId: member._id,
+                      title: "Group Approval Required",
+                      message: `${submission.submittedByName || "An employee"} submitted "${form.formName}" — your group (${group.groupName}) needs to approve it`,
+                      link: `/employee/approvals/${submission._id}`
+                    });
+            
+                    // Email also sent
+                    if (member.email) {
+                      try {
+                        await sendSubmissionNotificationToApprover(
+                          member.email,
+                          form.formName,
+                          submission.submittedByName || "An employee",
+                          submission.submittedAt,
+                          approvalLink,
+                          [],
+                          company,
+                          plant,
+                          plantIdStr,
+                          formIdStr,
+                          submissionIdStr,
+                          form.fields || [],           // ✅ ADD THIS
+                          submission.data || {},       // ✅ ADD THIS
+                          "EMPLOYEE",                 // ✅ ADD THIS
+                          submission.companyId,        // ✅ ADD THIS
+                          submission.submittedByEmail || null  // ✅ ADD THIS
+                        );
+                        console.log(`Email sent to group member ${member.email} (${member.name}) for group ${group.groupName}`);
+                      } catch (emailErr) {
+                        console.error(`Failed to send email to ${member.email}:`, emailErr);
+                      }
+                    }
+                  }
+                }
+              } catch (groupErr) {
+                console.error("Error notifying group members in submitDraft:", groupErr);
+              }
+            } else if (firstLevelApprover.approverId) {
+              // Handle individual approver
+              const approver = await User.findById(firstLevelApprover.approverId);
+              if (approver) {
+                await createNotification({
+                  userId: approver._id,
+                  title: "Approval Required",
+                  message: `Form ${form.formName} waiting for your approval`,
+                  link: `/employee/approvals/${submission._id}`
+                });
+                console.log(`Notification sent to approver ${approver._id} for form approval from submitDraft`);
+              }
             }
           }
         }

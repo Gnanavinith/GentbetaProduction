@@ -3,21 +3,25 @@ import {
   Plus,
   Trash2,
   User,
-  ShieldCheck
+  ShieldCheck,
+  Users
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { userApi } from "../../../api/user.api";
+import { approvalGroupApi } from "../../../api/approvalGroup.api";
 import { useAuth } from "../../../context/AuthContext";
 import toast from "react-hot-toast";
 
 export default function WorkflowBuilder({ workflow = [], setWorkflow }) {
   const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
+  const [approvalGroups, setApprovalGroups] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user?.plantId) {
       fetchEmployees();
+      fetchApprovalGroups();
     }
   }, [user]);
 
@@ -37,13 +41,27 @@ export default function WorkflowBuilder({ workflow = [], setWorkflow }) {
     setLoading(false);
   };
 
+  const fetchApprovalGroups = async () => {
+    try {
+      const res = await approvalGroupApi.getGroups();
+      if (res.success && Array.isArray(res.data)) {
+        setApprovalGroups(res.data);
+      }
+    } catch (err) {
+      console.error("Error fetching approval groups:", err);
+    }
+  };
+
   const addLevel = () => {
     setWorkflow(prev => {
       const currentWorkflow = Array.isArray(prev) ? prev : [];
       const newLevel = {
         id: `level-${Date.now()}`,
         name: `Approval Level ${currentWorkflow.length + 1}`,
+        type: "USER", // NEW: Default to individual
         approverId: "",
+        groupId: "",
+        approvalMode: "ANY_ONE",
         description: "Standard approval required"
       };
       return [...currentWorkflow, newLevel];
@@ -132,29 +150,72 @@ export default function WorkflowBuilder({ workflow = [], setWorkflow }) {
                   {/* LEVEL CONTENT */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                    {/* APPROVER */}
-                    <div className="lg:col-span-2">
+                    {/* TYPE SELECTOR */}
+                    <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">
-                        Approver
+                        Approver Type
                       </label>
                       <select
-                        value={level.approverId}
-                        onChange={(e) =>
-                          updateLevel(level.id, { approverId: e.target.value })
-                        }
+                        value={level.type || "USER"}
+                        onChange={(e) => {
+                          const newType = e.target.value;
+                          updateLevel(level.id, { 
+                            type: newType,
+                            approverId: newType === "GROUP" ? "" : level.approverId,
+                            groupId: newType === "USER" ? "" : level.groupId
+                          });
+                        }}
                         className="w-full h-11 rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
                       >
-                        <option value="">Select approver</option>
-                        {employees.map(emp => (
-                          <option key={emp._id} value={emp._id}>
-                            {emp.name || emp.email}
-                          </option>
-                        ))}
+                        <option value="USER">Individual</option>
+                        <option value="GROUP">Group</option>
                       </select>
                     </div>
 
+                    {/* APPROVER/GROUP SELECTOR */}
+                    <div className="lg:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">
+                        {level.type === "GROUP" ? "Select Group" : "Select Approver"}
+                      </label>
+                      {level.type === "USER" ? (
+                        <select
+                          value={level.approverId}
+                          onChange={(e) =>
+                            updateLevel(level.id, { approverId: e.target.value })
+                          }
+                          className="w-full h-11 rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">Select approver</option>
+                          {employees.map(emp => (
+                            <option key={emp._id} value={emp._id}>
+                              {emp.name || emp.email}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select
+                          value={level.groupId || ""}
+                          onChange={(e) => {
+                            const selectedGroup = approvalGroups.find(g => g._id === e.target.value);
+                            updateLevel(level.id, { 
+                              groupId: e.target.value,
+                              name: selectedGroup ? selectedGroup.groupName : level.name
+                            });
+                          }}
+                          className="w-full h-11 rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">Select group</option>
+                          {approvalGroups.map(group => (
+                            <option key={group._id} value={group._id}>
+                              {group.groupName} ({group.members?.length || 0} members)
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
                     {/* DESCRIPTION */}
-                    <div>
+                    <div className="lg:col-span-3">
                       <label className="block text-xs font-semibold text-slate-500 mb-1">
                         Description / Rule
                       </label>
@@ -167,6 +228,32 @@ export default function WorkflowBuilder({ workflow = [], setWorkflow }) {
                         placeholder="Approval condition"
                       />
                     </div>
+
+                    {/* APPROVAL MODE (for groups only) */}
+                    {level.type === "GROUP" && (
+                      <div className="lg:col-span-3 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                        <div className="flex items-center gap-3">
+                          <Users size={18} className="text-indigo-600" />
+                          <div className="flex-1">
+                            <label className="block text-xs font-semibold text-indigo-900 mb-1">
+                              Approval Mode
+                            </label>
+                            <select
+                              value={level.approvalMode || "ANY_ONE"}
+                              onChange={(e) =>
+                                updateLevel(level.id, { approvalMode: e.target.value })
+                              }
+                              className="w-full md:w-64 h-10 rounded-lg border border-indigo-300 px-3 text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                            >
+                              <option value="ANY_ONE">Any One Member Can Approve</option>
+                            </select>
+                            <p className="text-xs text-indigo-700 mt-2">
+                              When any member of this group approves, the form moves to the next level
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -185,7 +272,7 @@ export default function WorkflowBuilder({ workflow = [], setWorkflow }) {
               <div className="text-center py-16 text-slate-400">
                 <ShieldCheck size={40} className="mx-auto mb-4 opacity-30" />
                 <p className="font-semibold">No approval workflow added</p>
-                <p className="text-sm">Click “Add Approval Level” to begin</p>
+                <p className="text-sm">Click "Add Approval Level" to begin</p>
               </div>
             )}
           </div>
@@ -194,7 +281,7 @@ export default function WorkflowBuilder({ workflow = [], setWorkflow }) {
         {/* FOOTER */}
         <div className="px-8 py-4 border-t bg-white flex justify-between text-xs text-slate-400">
           <span>Sequential approval flow</span>
-          <span className="font-bold">v2.0</span>
+          <span className="font-bold">v2.0 with Group Support</span>
         </div>
 
       </div>

@@ -2,14 +2,14 @@
 export * from './approval.email.js';
 export * from './notification.email.js';
 export * from './general.email.js';
+export * from './task.email.js';
 
-// Export the global helpers as well for use in the individual modules
+// Export shared helpers for use in individual modules
 export {
   formatIST,
   getBaseUrl,
   formatFieldValue,
-  transporter,
-  sendEmail,  // Added sendEmail function
+  sendEmail,
   resolveEmailSender,
   getBaseLayout
 } from '../email.service.js';

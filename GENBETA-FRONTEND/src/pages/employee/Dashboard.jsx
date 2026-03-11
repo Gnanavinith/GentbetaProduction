@@ -31,6 +31,7 @@ import BarChart from "../../components/analytics/BarChart";
 import PieChart from "../../components/analytics/PieChart";
 import LineChart from "../../components/analytics/LineChart";
 import { exportToExcel, formatSubmissionsForExport } from "../../utils/excelExport";
+import RecentlyApprovedSidebar from "../../components/forms/RecentlyApprovedSidebar";
 
 function StatCardSkeleton() {
   return (
@@ -83,6 +84,7 @@ export default function EmployeeDashboard() {
   const [bulkTasks, setBulkTasks] = useState([]);
   const [allSubmissions, setAllSubmissions] = useState([]);
   const [recentSubmissions, setRecentSubmissions] = useState([]);
+  const [recentlyApproved, setRecentlyApproved] = useState([]);
   const [chartData, setChartData] = useState({ 
     statusDistribution: {}, 
     submissionsPerForm: [], 
@@ -158,12 +160,19 @@ export default function EmployeeDashboard() {
 
       setChartData({ 
         statusDistribution: statusCounts, 
-        submissionsPerForm: barData, 
-        submissionsTrend: trendData,
-        submissionsByUser: userBarData
+       submissionsPerForm: barData, 
+       submissionsTrend: trendData,
+       submissionsByUser: userBarData
       });
       
-      setRecentSubmissions(submissions.slice(0, 10));
+      // Filter recently approved/rejected submissions (last 10)
+     const approved = submissions
+        .filter(s => s.status === 'APPROVED' || s.status === 'REJECTED')
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+        .slice(0, 10);
+     setRecentlyApproved(approved);
+      
+     setRecentSubmissions(submissions.slice(0, 10));
 
       if (!statsRes.success || !tasksRes.success || !bulkRes.success || !submissionRes.success) {
         toast.error("Failed to load some dashboard data");
@@ -422,16 +431,16 @@ export default function EmployeeDashboard() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Assigned Tasks Section */}
+          {/* Assigned Tasks Section - Full Width on Mobile, 2/3 on Desktop */}
           <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
             <div className="p-3 border-b border-slate-50 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-900 tracking-tight">Assigned Tasks</h2>
                 <p className="text-[9px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wider">Direct assignments awaiting your action</p>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/employee/assignments')}
-                className="text-xs font-black text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+               className="text-xs font-black text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
               >
                 View All
               </button>
@@ -458,7 +467,7 @@ export default function EmployeeDashboard() {
                       </p>
                       <button
                         onClick={() => navigate(`/employee/fill-assignment/${task._id}`)}
-                        className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-bold transition-all"
+                       className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-bold transition-all"
                       >
                         Execute
                       </button>
@@ -469,43 +478,9 @@ export default function EmployeeDashboard() {
             )}
           </div>
 
-          {/* Recent Submissions Section */}
-          <div className="lg:col-span-1 bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-            <div className="p-3 border-b border-slate-50 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">Recent Submissions</h2>
-                <p className="text-[9px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wider">Latest activity</p>
-              </div>
-              <button 
-                onClick={() => navigate('/employee/submissions')}
-                className="text-xs font-black text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                View All
-              </button>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {recentSubmissions.length > 0 ? recentSubmissions.map((s) => (
-                <div key={s._id} className="p-2.5 hover:bg-slate-50 transition-colors flex items-center justify-between group">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 bg-slate-50 group-hover:bg-white rounded-md flex items-center justify-center transition-colors shadow-sm"><FileText className="w-3.5 h-3.5 text-slate-400" /></div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 leading-none mb-0.5">{s.templateName || s.formId?.formName || "Unknown Form"}</p>
-                      <p className="text-[10px] font-bold text-slate-500">{typeof s.submittedBy === 'object' ? s.submittedBy?.name : s.submittedBy}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest">{formatDate(s.createdAt)}</p>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${
-                      s.status?.toLowerCase() === 'approved' ? 'bg-green-50 text-green-600' : 
-                      s.status?.toLowerCase() === 'rejected' ? 'bg-red-50 text-red-600' : 
-                      'bg-indigo-50 text-indigo-600'
-                    }`}>
-                      {s.status?.toUpperCase() === 'PENDING_APPROVAL' ? `LVL ${s.currentLevel || 1} PENDING` : s.status?.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                </div>
-              )) : <div className="p-8 text-center text-slate-400 italic font-medium text-sm">No recent submissions found.</div>}
-            </div>
+          {/* Recently Approved Sidebar - 1/3 Width on Desktop */}
+          <div className="lg:col-span-1">
+            <RecentlyApprovedSidebar submissions={recentlyApproved} loading={loading} />
           </div>
         </div>
 

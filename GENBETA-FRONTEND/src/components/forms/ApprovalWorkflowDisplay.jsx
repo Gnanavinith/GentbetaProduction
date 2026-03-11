@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { 
   ShieldCheck, 
   User, 
+  Users,
   CheckCircle2, 
   Clock, 
   XCircle,
   AlertCircle
 } from "lucide-react";
 import { userApi } from "../../api/user.api";
+import { approvalGroupApi } from "../../api/approvalGroup.api";
 
 export default function ApprovalWorkflowDisplay({ form, submission, className = "" }) {
   const [approvers, setApprovers] = useState([]);
@@ -29,10 +31,44 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
         approvalFlow.map(async (level, index) => {
           const levelNum = level.level || index + 1;
 
+          // ── GROUP type ──────────────────────────────────────────────
+          if (level.type === "GROUP" && level.groupId) {
+            try {
+              const groupId = typeof level.groupId === "object"
+                ? level.groupId._id || level.groupId
+                : level.groupId;
+
+              const res = await approvalGroupApi.getGroupById(groupId);
+              if (res?.success && res?.data) {
+                const group = res.data;
+                return {
+                  ...level,
+                  _isGroup: true,
+                  _groupName: group.groupName || level.name || "Approval Group",
+                  _groupMembers: group.members || [],
+                  _approvalMode: level.approvalMode || "ANY_ONE",
+                };
+              }
+            } catch {
+              // fall through to name fallback
+            }
+
+            // Fallback if API fails
+            return {
+              ...level,
+              _isGroup: true,
+              _groupName: level.name || `Group Level ${levelNum}`,
+              _groupMembers: [],
+              _approvalMode: level.approvalMode || "ANY_ONE",
+            };
+          }
+
+          // ── USER / individual type ──────────────────────────────────
           // 1. Already-populated object with name
           if (level.approverId && typeof level.approverId === "object" && level.approverId.name) {
             return {
               ...level,
+              _isGroup: false,
               _resolvedName: level.approverId.name,
               _resolvedEmail: level.approverId.email || null,
             };
@@ -49,6 +85,7 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
               if (res?.success && res?.data?.name) {
                 return {
                   ...level,
+                  _isGroup: false,
                   _resolvedName: res.data.name,
                   _resolvedEmail: res.data.email || null,
                 };
@@ -61,11 +98,11 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
           // 3. Name field on level
           const nameFromLevel = level.approverName || level.name;
           if (nameFromLevel && !nameFromLevel.toLowerCase().startsWith("approval level")) {
-            return { ...level, _resolvedName: nameFromLevel, _resolvedEmail: null };
+            return { ...level, _isGroup: false, _resolvedName: nameFromLevel, _resolvedEmail: null };
           }
 
           // 4. Fallback
-          return { ...level, _resolvedName: `Level ${levelNum} Approver`, _resolvedEmail: null };
+          return { ...level, _isGroup: false, _resolvedName: `Level ${levelNum} Approver`, _resolvedEmail: null };
         })
       );
       setApprovers(resolved);
@@ -74,6 +111,7 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
       setApprovers(
         (form?.approvalFlow || form?.workflow || []).map((level, i) => ({
           ...level,
+          _isGroup: false,
           _resolvedName: `Level ${level.level || i + 1} Approver`,
           _resolvedEmail: null,
         }))
@@ -83,43 +121,25 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
     }
   };
 
-  // ─── Derive per-level status from submission ─────────────────────────────
   const getLevelStatus = (levelNum) => {
     if (!submission) return "pending";
-
     const history = submission.approvalHistory || [];
     const currentLevel = submission.currentLevel;
     const submissionStatus = submission.status;
 
-    // Check if this level has a history entry
     const historyEntry = history.find(h => h.level === levelNum);
     if (historyEntry) {
       return historyEntry.status === "APPROVED" ? "approved" : "rejected";
     }
-
-    // If submission is fully approved, all levels without history are implicitly approved
     if (submissionStatus === "APPROVED") return "approved";
-
-    // If submission is rejected, levels beyond the rejected one are skipped
     if (submissionStatus === "REJECTED") return "skipped";
-
-    // Current level awaiting action
     if (levelNum === currentLevel) return "current";
-
-    // Future levels
     return "pending";
   };
 
-  const getLevelHistoryComment = (levelNum) => {
-    const history = (submission?.approvalHistory || []).find(h => h.level === levelNum);
-    return history?.comments || null;
+  const getLevelHistoryEntry = (levelNum) => {
+    return (submission?.approvalHistory || []).find(h => h.level === levelNum) || null;
   };
-
-  const getLevelActionedAt = (levelNum) => {
-    const history = (submission?.approvalHistory || []).find(h => h.level === levelNum);
-    return history?.actionedAt || null;
-  };
-  // ─────────────────────────────────────────────────────────────────────────
 
   const approvalFlow = form?.approvalFlow || form?.workflow || [];
 
@@ -139,12 +159,54 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
     );
   }
 
-  // Overall progress summary
   const totalLevels = approvalFlow.length;
   const approvedCount = approvers.filter((_, i) => {
     const levelNum = approvers[i]?.level || i + 1;
     return getLevelStatus(levelNum) === "approved";
   }).length;
+
+  const statusConfig = {
+    approved: {
+      badge: "bg-green-100 border-green-300",
+      badgeText: "text-green-700",
+      icon: <CheckCircle2 className="w-4 h-4 text-green-600" />,
+      label: "Approved",
+      labelClass: "text-green-700 bg-green-50 border border-green-200",
+      connector: "bg-green-200",
+    },
+    rejected: {
+      badge: "bg-red-100 border-red-300",
+      badgeText: "text-red-700",
+      icon: <XCircle className="w-4 h-4 text-red-600" />,
+      label: "Rejected",
+      labelClass: "text-red-700 bg-red-50 border border-red-200",
+      connector: "bg-gray-200",
+    },
+    current: {
+      badge: "bg-yellow-100 border-yellow-400",
+      badgeText: "text-yellow-800",
+      icon: <Clock className="w-4 h-4 text-yellow-600 animate-pulse" />,
+      label: "Awaiting",
+      labelClass: "text-yellow-700 bg-yellow-50 border border-yellow-200",
+      connector: "bg-gray-200",
+    },
+    pending: {
+      badge: "bg-gray-100 border-gray-300",
+      badgeText: "text-gray-500",
+      icon: <Clock className="w-4 h-4 text-gray-400" />,
+      label: "Pending",
+      labelClass: "text-gray-500 bg-gray-50 border border-gray-200",
+      connector: "bg-gray-200",
+    },
+    skipped: {
+      badge: "bg-gray-100 border-gray-200",
+      badgeText: "text-gray-400",
+      icon: <Clock className="w-4 h-4 text-gray-300" />,
+      label: "—",
+      labelClass: "text-gray-400 bg-gray-50 border border-gray-100",
+      connector: "bg-gray-100",
+    },
+  };
 
   return (
     <div className={`bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden ${className}`}>
@@ -187,56 +249,7 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
               const isLast = index === approvers.length - 1;
               const levelNum = level.level || index + 1;
               const status = getLevelStatus(levelNum);
-              const comment = getLevelHistoryComment(levelNum);
-              const actionedAt = getLevelActionedAt(levelNum);
-              const description = level.description && !level.description.toLowerCase().includes("standard")
-                ? level.description
-                : null;
-
-              // Visual config per status
-              const statusConfig = {
-                approved: {
-                  badge: "bg-green-100 border-green-300",
-                  badgeText: "text-green-700",
-                  icon: <CheckCircle2 className="w-4 h-4 text-green-600" />,
-                  label: "Approved",
-                  labelClass: "text-green-700 bg-green-50 border border-green-200",
-                  connector: "bg-green-200",
-                },
-                rejected: {
-                  badge: "bg-red-100 border-red-300",
-                  badgeText: "text-red-700",
-                  icon: <XCircle className="w-4 h-4 text-red-600" />,
-                  label: "Rejected",
-                  labelClass: "text-red-700 bg-red-50 border border-red-200",
-                  connector: "bg-gray-200",
-                },
-                current: {
-                  badge: "bg-yellow-100 border-yellow-400",
-                  badgeText: "text-yellow-800",
-                  icon: <Clock className="w-4 h-4 text-yellow-600 animate-pulse" />,
-                  label: "Awaiting",
-                  labelClass: "text-yellow-700 bg-yellow-50 border border-yellow-200",
-                  connector: "bg-gray-200",
-                },
-                pending: {
-                  badge: "bg-gray-100 border-gray-300",
-                  badgeText: "text-gray-500",
-                  icon: <Clock className="w-4 h-4 text-gray-400" />,
-                  label: "Pending",
-                  labelClass: "text-gray-500 bg-gray-50 border border-gray-200",
-                  connector: "bg-gray-200",
-                },
-                skipped: {
-                  badge: "bg-gray-100 border-gray-200",
-                  badgeText: "text-gray-400",
-                  icon: <Clock className="w-4 h-4 text-gray-300" />,
-                  label: "—",
-                  labelClass: "text-gray-400 bg-gray-50 border border-gray-100",
-                  connector: "bg-gray-100",
-                },
-              };
-
+              const historyEntry = getLevelHistoryEntry(levelNum);
               const cfg = statusConfig[status] || statusConfig.pending;
 
               return (
@@ -254,38 +267,109 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
 
                     {/* Approver info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className={`font-medium ${status === "skipped" ? "text-gray-400" : "text-gray-900"}`}>
-                          {level._resolvedName}
-                        </span>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.labelClass}`}>
-                          {cfg.label}
-                        </span>
-                      </div>
+                      {level._isGroup ? (
+                        // ── GROUP display ──────────────────────────────
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Users className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                            <span className={`font-semibold ${status === "skipped" ? "text-gray-400" : "text-gray-900"}`}>
+                              {level._groupName}
+                            </span>
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-600">
+                              Group
+                            </span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.labelClass}`}>
+                              {cfg.label}
+                            </span>
+                          </div>
 
-                      {level._resolvedEmail && (
-                        <p className="text-xs text-blue-500 mt-0.5">{level._resolvedEmail}</p>
-                      )}
-                      {description && (
-                        <p className="text-xs text-gray-400 mt-0.5">{description}</p>
-                      )}
-                      {actionedAt && (
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {new Date(actionedAt).toLocaleString()}
-                        </p>
-                      )}
-                      {comment && (
-                        <p className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1 mt-1 italic">
-                          "{comment}"
-                        </p>
+                          {/* Approval mode */}
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {level._approvalMode === "ANY_ONE"
+                              ? "Any one member can approve"
+                              : "All members must approve"}
+                          </p>
+
+                          {/* Members list */}
+                          {level._groupMembers?.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {level._groupMembers.map((member, mIdx) => {
+                                const memberName = typeof member === "object"
+                                  ? member.name
+                                  : member;
+                                // Check if this member approved in history
+                                const memberApproved = historyEntry?.approverId?.toString() === member?._id?.toString();
+                                return (
+                                  <span
+                                    key={mIdx}
+                                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${
+                                      memberApproved
+                                        ? "bg-green-50 border-green-300 text-green-700"
+                                        : "bg-gray-50 border-gray-200 text-gray-600"
+                                    }`}
+                                  >
+                                    {memberApproved && <CheckCircle2 className="w-3 h-3 text-green-500" />}
+                                    <User className="w-3 h-3" />
+                                    {memberName}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Who approved (from history) */}
+                          {historyEntry && historyEntry.status === "APPROVED" && (
+                            <p className="text-xs text-green-600 mt-1">
+                              ✓ Approved by{" "}
+                              <span className="font-medium">
+                                {historyEntry.approverName || "a group member"}
+                              </span>
+                              {historyEntry.actionedAt && (
+                                <span className="text-gray-400 ml-1">
+                                  · {new Date(historyEntry.actionedAt).toLocaleString()}
+                                </span>
+                              )}
+                            </p>
+                          )}
+
+                          {historyEntry?.comments && (
+                            <p className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1 mt-1 italic">
+                              "{historyEntry.comments}"
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        // ── INDIVIDUAL display ─────────────────────────
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className={`font-medium ${status === "skipped" ? "text-gray-400" : "text-gray-900"}`}>
+                              {level._resolvedName}
+                            </span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.labelClass}`}>
+                              {cfg.label}
+                            </span>
+                          </div>
+
+                          {level._resolvedEmail && (
+                            <p className="text-xs text-blue-500 mt-0.5">{level._resolvedEmail}</p>
+                          )}
+                          {historyEntry?.actionedAt && (
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              {new Date(historyEntry.actionedAt).toLocaleString()}
+                            </p>
+                          )}
+                          {historyEntry?.comments && (
+                            <p className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1 mt-1 italic">
+                              "{historyEntry.comments}"
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
 
                     {/* Status icon */}
-                    <div className="flex-shrink-0 mt-1">
-                      {cfg.icon}
-                    </div>
+                    <div className="flex-shrink-0 mt-1">{cfg.icon}</div>
                   </div>
                 </div>
               );
@@ -293,7 +377,6 @@ export default function ApprovalWorkflowDisplay({ form, submission, className = 
           </div>
         )}
 
-        {/* Footer */}
         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
           <span>Each approver must act before the next level proceeds</span>

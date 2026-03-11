@@ -46,6 +46,9 @@ const PlantSubmissions = lazy(() => import("./pages/plantAdmin/Submissions"));
 const SubmissionDetails = lazy(() => import("./pages/plantAdmin/SubmissionDetails"));
 const Employees = lazy(() => import("./pages/plantAdmin/Employees"));
 const AddEmployee = lazy(() => import("./pages/plantAdmin/AddEmployee"));
+const ApprovalGroupsPage = lazy(() => import("./pages/plantAdmin/ApprovalGroupsPage"));
+const CreateApprovalGroupPage = lazy(() => import("./pages/plantAdmin/CreateApprovalGroupPage"));
+const EditApprovalGroupPage = lazy(() => import("./pages/plantAdmin/EditApprovalGroupPage"));
 
 const PlantProfile = lazy(() => import("./pages/plantAdmin/Profile"));
 
@@ -62,6 +65,7 @@ const FillFormPage = lazy(() => import("./pages/employee/FillFormPage"));
 const BulkApprovalPage = lazy(() => import("./pages/approval/BulkApprovalPage"));
 const PendingApprovals = lazy(() => import("./pages/approval/PendingApprovals"));
 const ApprovalDetail = lazy(() => import("./pages/approval/ApprovalDetail"));
+const ApprovalHistory = lazy(() => import("./pages/approval/ApprovalHistory"));
 const Profile = lazy(() => import("./pages/Profile"));
 const FormsCardView = lazy(() => import("./pages/FormsCardView"));
 const EmployeeSubmissions = lazy(() => import("./pages/employee/Submissions"));
@@ -143,6 +147,9 @@ function App() {
           <Route path="submissions/:id" element={<SubmissionDetails />} />
           <Route path="approval/pending" element={<PendingApprovals />} />
           <Route path="approval/detail/:id" element={<ApprovalDetail />} />
+          <Route path="approval-groups" element={<ApprovalGroupsPage />} />
+          <Route path="approval-groups/create" element={<CreateApprovalGroupPage />} />
+          <Route path="approval-groups/edit/:id" element={<EditApprovalGroupPage />} />
         </Route>
 
         {/* Employee Routes */}
@@ -161,6 +168,7 @@ function App() {
           <Route path="submissions/:id/edit" element={<EditSubmission />} />
           <Route path="approval/pending" element={<PendingApprovals />} />
           <Route path="approval/detail/:id" element={<ApprovalDetail />} />
+          <Route path="approval/history" element={<ApprovalHistory />} />
         </Route>
 
         {/* Profile Route (Shared) */}

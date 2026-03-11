@@ -1,6 +1,11 @@
 import Assignment from "../models/Assignment.model.js";
 import FormTemplate from "../models/FormTemplate.model.js";
 import Form from "../models/Form.model.js";
+import User from "../models/User.model.js";
+import { createNotification } from "../utils/notify.js";
+import { sendNewTaskAssignedEmail } from "../services/email/task.email.js";
+import Company from "../models/Company.model.js";
+import Plant from "../models/Plant.model.js";
 import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
 
 export const assignTemplateToEmployees = async (req, res) => {
@@ -60,7 +65,75 @@ export const assignTemplateToEmployees = async (req, res) => {
     }
 
     await Assignment.insertMany(assignments);
-
+    
+     // Send notifications to all assigned employees
+    try {
+      const employeeIdsSet = new Set(employeeIds);
+      const employees = await User.find({ _id: { $in: Array.from(employeeIdsSet) } })
+         .select('name email')
+         .lean();
+          
+      const assigner= await User.findById(req.user.userId).select('name').lean();
+      const company = await Company.findById(req.user.companyId).select('name').lean();
+      const plant = await Plant.findById(req.user.plantId).select('name plantNumber').lean();
+          
+      for (const assignment of assignments) {
+        const employee = employees.find(e => e._id.toString() === assignment.employeeId.toString());
+        if (!employee) continue;
+            
+         // Get template name
+         let templateName = '';
+        try {
+           let template;
+          if (assignment.templateModel === 'FormTemplate') {
+             template = await FormTemplate.findById(assignment.templateId).select('templateName').lean();
+           } else {
+             template = await Form.findById(assignment.templateId).select('formName').lean();
+           }
+           templateName= template?.templateName || template?.formName || 'Form';
+         } catch (e) {
+          console.error('Failed to fetch template name for notification:', e);
+           templateName = 'Form';
+         }
+            
+         // Create in-app notification
+        try {
+          await createNotification({
+             userId: employee._id,
+             title: 'New Form Assigned',
+             message: `${assigner?.name || 'Your supervisor'} has assigned you a new form: ${templateName}`,
+             link: '/employee/my-assignments'
+           });
+          console.log(`In-app notification sent to employee ${employee._id} for form: ${templateName}`);
+         } catch (notifErr) {
+          console.error('Failed to create assignment notification:', notifErr);
+         }
+            
+         // Send email notification
+        if (employee.email) {
+          try {
+            const taskLink = `${process.env.FRONTEND_URL}/employee/my-assignments`;
+            await sendNewTaskAssignedEmail(
+               employee.email,
+               employee.name,
+               templateName,
+               assigner?.name || 'Your Supervisor',
+               new Date(),
+               assignment.dueDate ? new Date(assignment.dueDate) : null,
+               taskLink,
+              company || {},
+               plant || {}
+             );
+            console.log(`Email notification sent to ${employee.email} for form assignment: ${templateName}`);
+           } catch (emailErr) {
+            console.error('Failed to send assignment email to', employee.email, ':', emailErr);
+           }
+         }
+       }
+     } catch (notificationError) {
+      console.error('Error sending assignment notifications:', notificationError);
+     }
+    
     const successMessage = `Successfully assigned ${ids.length} templates to ${employeeIds.length} employees`;
     console.log("Assignment success message:", successMessage);
     

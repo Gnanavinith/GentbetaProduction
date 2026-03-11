@@ -21,6 +21,7 @@ import templateRoutes from "./routes/template.routes.js";
 import assignmentRoutes from "./routes/assignment.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import approvalGroupRoutes from "./routes/approvalGroup.routes.js";
 import { seedSuperAdmin } from "./utils/seedSuperAdmin.js";
 
 dotenv.config();
@@ -181,6 +182,7 @@ app.use("/api/templates", templateRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/approval-groups", approvalGroupRoutes);
 await connectDB();
 await seedSuperAdmin();
 

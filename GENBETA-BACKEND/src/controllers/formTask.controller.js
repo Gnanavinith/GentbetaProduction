@@ -9,6 +9,8 @@ import { sendApprovalEmail, sendSubmissionNotificationToApprover } from "../serv
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import fs from "fs";
 import { isCompanyOverLimit } from "../utils/planLimits.js";
+import mongoose from "mongoose";
+import { createNotification } from "../utils/notify.js";
 
 export const getAssignedTasks = async (req, res) => {
   try {
@@ -64,7 +66,6 @@ export const submitTask = async (req, res) => {
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         try {
-          // Check if file path exists
           if (!file.path) {
             console.error("File path missing for:", file.fieldname);
             continue;
@@ -79,7 +80,6 @@ export const submitTask = async (req, res) => {
             mimetype: file.mimetype,
             size: file.size
           });
-          // Update data with file URL
           if (typeof data === 'string') {
             const parsedData = JSON.parse(data);
             parsedData[file.fieldname] = result.secure_url;
@@ -88,13 +88,11 @@ export const submitTask = async (req, res) => {
             data[file.fieldname] = result.secure_url;
           }
           
-          // Only try to delete if path exists
           if (fs.existsSync(file.path)) {
             fs.unlinkSync(file.path);
           }
         } catch (uploadError) {
           console.error("File upload error:", file.originalname, uploadError);
-          // Try to clean up file if it exists
           if (file.path && fs.existsSync(file.path)) {
             fs.unlinkSync(file.path);
           }
@@ -123,7 +121,6 @@ export const submitTask = async (req, res) => {
       return res.status(404).json({ success: false, message: "Form definition not found for this task" });
     }
 
-    // Debug: Log form fields to verify they're loaded
     console.log('Task form fields loaded:', form.fields?.length || 0);
     console.log('Task sample field with includeInApprovalEmail:', form.fields?.[0]?.includeInApprovalEmail);
 
@@ -144,35 +141,91 @@ export const submitTask = async (req, res) => {
 
     const submission = await FormSubmission.create(submissionData);
 
-    // Notify first approver if sequential approval is required with filtered fields (non-blocking)
+    // Notify first approver if sequential approval is required (non-blocking)
     if (finalStatus === "PENDING_APPROVAL") {
       setImmediate(async () => {
         try {
           const firstLevel = form.approvalFlow.find(f => f.level === 1);
-          if (firstLevel) {
+          if (!firstLevel) return;
+
+          const company = await Company.findById(submissionData.companyId);
+          const plant = await Plant.findById(submissionData.plantId);
+          const plantIdStr = plant?._id?.toString() || submissionData.plantId?.toString() || "";
+          const formIdStr = form.formId || form._id?.toString() || "";
+          const submissionIdStr = submission._id?.toString() || "";
+          const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
+
+          if (firstLevel.type === "GROUP" && firstLevel.groupId) {
+            // Notify all group members
+            const ApprovalGroup = mongoose.model("ApprovalGroup");
+            const group = await ApprovalGroup.findById(firstLevel.groupId)
+              .populate("members", "name email _id")
+              .lean();
+
+            if (group?.members?.length > 0) {
+              for (const member of group.members) {
+                await createNotification({
+                  userId: member._id,
+                  title: "Group Approval Required",
+                  message: `${req.user.name || "An employee"} submitted "${form.formName}" — your group (${group.groupName}) needs to approve it`,
+                  link: `/employee/approvals/${submission._id}`
+                });
+
+                if (member.email) {
+                  try {
+                    const previousApprovals = (submission.approvalHistory || []).map(h => ({
+                      name: h.name || "Unknown Approver",
+                      date: h.actionedAt || h.date,
+                      status: h.status || "APPROVED",
+                      comments: h.comments || ""
+                    }));
+                    
+                    await sendSubmissionNotificationToApprover(
+                      member.email,
+                      form.formName,                    // ✅ use form.formName directly
+                      req.user.name || "Employee",      // ✅ use req.user.name directly
+                      submissionData.submittedAt,
+                      approvalLink,
+                      previousApprovals,
+                      company,
+                      plant,
+                      plantIdStr,
+                      formIdStr,
+                      submissionIdStr,
+                      form.fields || [],                // ✅ pass form fields
+                      submissionData.data || {},        // ✅ pass submission data
+                      "PLANT_ADMIN",                    // ✅ actor
+                      submissionData.companyId,         // ✅ companyId
+                      req.user.email || null            // ✅ submitter email
+                    );
+                    console.log(`Email sent to group member ${member.email} (${member.name})`);
+                  } catch (emailErr) {
+                    console.error(`Failed to send email to ${member.email}:`, emailErr);
+                  }
+                }
+              }
+            }
+          } else if (firstLevel.approverId) {
+            // Individual approver
             const approver = await User.findById(firstLevel.approverId);
-            const company = await Company.findById(submissionData.companyId);
-            const plant = await Plant.findById(submissionData.plantId);
-            
-            if (approver && approver.email) {
-              const approvalLink = `${process.env.FRONTEND_URL}/approval/${submission._id}`;
+            if (approver?.email) {
               await sendSubmissionNotificationToApprover(
                 approver.email,
                 form.formName,
                 req.user.name || "Employee",
                 submissionData.submittedAt,
                 approvalLink,
-                [], // previous approvals
+                [],
                 company,
                 plant,
-                plant?._id?.toString() || req.user.plantId?.toString() || "",
-                form.formId || form._id?.toString() || "",
-                submission.readableId || submission._id?.toString() || "",
-                form.fields || [], // form fields for filtering
-                submissionData.data || {}, // submission data
+                plantIdStr,
+                formIdStr,
+                submissionIdStr,
+                form.fields || [],
+                submissionData.data || {},
                 "PLANT_ADMIN",
                 submissionData.companyId,
-                req.user.email || null // submitter email
+                req.user.email || null
               );
             }
           }
@@ -198,7 +251,7 @@ export const submitTask = async (req, res) => {
       success: false, 
       message: "Failed to submit form",
       error: error.message,
-      details: error.errors // Include mongoose validation errors if any
+      details: error.errors
     });
   }
 };
@@ -254,7 +307,6 @@ export const createTasks = async (req, res) => {
       })
     );
 
-    // Optional: Send notification to employee
     try {
       const employee = await User.findById(assignedTo);
       const forms = await Form.find({ _id: { $in: formIds } });
@@ -286,17 +338,14 @@ export const submitFormDirectly = async (req, res) => {
     const { formId } = req.params;
     const userId = req.user.userId;
 
-    // Fetch full user details
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // First, try to find in Form model
     let form = await Form.findById(formId).select("formName formId fields sections approvalFlow status companyId plantId workflow");
     
     if (!form) {
-      // If not found in Form model, try FormTemplate model
       form = await FormTemplate.findById(formId).select("templateName formId fields sections workflow status companyId plantId");
     }
 
@@ -304,32 +353,25 @@ export const submitFormDirectly = async (req, res) => {
       return res.status(404).json({ success: false, message: "Form not found" });
     }
 
-    // Debug: Log form fields to verify they're loaded
     console.log('Form fields loaded:', form.fields?.length || 0);
     console.log('Sample field with includeInApprovalEmail:', form.fields?.[0]?.includeInApprovalEmail);
 
-    // Check if form has proper status (using either status field)
     const formStatus = form.status || form.formStatus;
     if (formStatus !== "APPROVED" && formStatus !== "PUBLISHED") {
       return res.status(400).json({ success: false, message: "This form is not yet published and available for submission" });
     }
 
-    // Parse form data from request
     let data;
     if (req.body.data) {
-      // If data is sent as JSON string in form field
       data = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
     } else {
-      // If data is sent directly in request body
       data = req.body;
     }
 
-    // Process files if any
     const files = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         try {
-          // Check if file path exists
           if (!file.path) {
             console.error("File path missing for:", file.fieldname);
             continue;
@@ -346,13 +388,11 @@ export const submitFormDirectly = async (req, res) => {
           });
           data[file.fieldname] = result.secure_url;
           
-          // Only try to delete if path exists
           if (fs.existsSync(file.path)) {
             fs.unlinkSync(file.path);
           }
         } catch (uploadError) {
           console.error("File upload error:", file.originalname, uploadError);
-          // Try to clean up file if it exists
           if (file.path && fs.existsSync(file.path)) {
             fs.unlinkSync(file.path);
           }
@@ -360,14 +400,13 @@ export const submitFormDirectly = async (req, res) => {
       }
     }
 
-    // Determine workflow/approval flow depending on form type
     const workflow = form.workflow || form.approvalFlow || [];
     const hasFlow = workflow && workflow.length > 0;
     const finalStatus = hasFlow ? "PENDING_APPROVAL" : "APPROVED";
 
     const submissionData = {
       formId: form._id,
-      formName: form.formName || form.templateName || "Untitled Form", // Use appropriate name field
+      formName: form.formName || form.templateName || "Untitled Form",
       plantId: form.plantId || user.plantId,
       companyId: form.companyId || user.companyId,
       submittedBy: userId,
@@ -382,61 +421,107 @@ export const submitFormDirectly = async (req, res) => {
 
     const submission = await FormSubmission.create(submissionData);
 
-    // Create FormTask entries for approvers if there's an approval workflow
     if (hasFlow && finalStatus === "PENDING_APPROVAL") {
       try {
-        const formTasks = [];
-        
-        // Create a task for each approver in the workflow
         for (const approvalLevel of workflow) {
-          const formTask = await FormTask.create({
-            formId: form._id,
-            assignedTo: approvalLevel.approverId,
-            assignedBy: userId, // The person who submitted the form
-            plantId: submissionData.plantId,
-            companyId: submissionData.companyId,
-            status: "pending"
-          });
-          formTasks.push(formTask);
+          if (approvalLevel.type !== "GROUP" && approvalLevel.approverId) {
+            await FormTask.create({
+              formId: form._id,
+              assignedTo: approvalLevel.approverId,
+              assignedBy: userId,
+              plantId: submissionData.plantId,
+              companyId: submissionData.companyId,
+              status: "pending"
+            });
+          }
         }
 
-        // Notify all approvers with filtered field data (non-blocking)
+        // Notify first level approver (non-blocking)
         setImmediate(async () => {
-          for (const approvalLevel of workflow) {
-            try {
-              const approver = await User.findById(approvalLevel.approverId);
-              const company = await Company.findById(submissionData.companyId);
-              const plant = await Plant.findById(submissionData.plantId);
-              
-              if (approver && approver.email) {
-                const approvalLink = `${process.env.FRONTEND_URL}/employee/approval/pending`;
+          try {
+            const firstLevel = workflow.find(f => f.level === 1) || workflow[0];
+            if (!firstLevel) return;
+
+            const company = await Company.findById(submissionData.companyId);
+            const plant = await Plant.findById(submissionData.plantId);
+            const plantIdStr = plant?._id?.toString() || submissionData.plantId?.toString() || "";
+            const formIdStr = form.formId || form._id?.toString() || "";
+            const submissionIdStr = submission._id?.toString() || "";
+            const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
+
+            if (firstLevel.type === "GROUP" && firstLevel.groupId) {
+              // Group approver — notify all members
+              const ApprovalGroup = mongoose.model("ApprovalGroup");
+              const group = await ApprovalGroup.findById(firstLevel.groupId)
+                .populate("members", "name email _id")
+                .lean();
+
+              if (group?.members?.length > 0) {
+                for (const member of group.members) {
+                  await createNotification({
+                    userId: member._id,
+                    title: "Group Approval Required",
+                    message: `${submissionData.submittedByName || "An employee"} submitted "${submissionData.formName}" — your group (${group.groupName}) needs to approve it`,
+                    link: `/employee/approvals/${submission._id}`
+                  });
+
+                  if (member.email) {
+                    try {
+                      await sendSubmissionNotificationToApprover(
+                        member.email,
+                        submissionData.formName,
+                        submissionData.submittedByName,
+                        submissionData.submittedAt,
+                        approvalLink,
+                        [],
+                        company,
+                        plant,
+                        plantIdStr,
+                        formIdStr,
+                        submissionIdStr,
+                        form.fields || [],                       // ✅ FIXED: was missing
+                        submissionData.data || {},               // ✅ FIXED: was missing
+                        "PLANT_ADMIN",                           // ✅ FIXED: was missing
+                        submissionData.companyId,                // ✅ FIXED: was missing
+                        submissionData.submittedByEmail || null  // ✅ FIXED: was missing
+                      );
+                      console.log(`Email sent to group member ${member.email} (${member.name})`);
+                    } catch (emailErr) {
+                      console.error(`Failed to send email to ${member.email}:`, emailErr);
+                    }
+                  }
+                }
+              }
+            } else if (firstLevel.approverId) {
+              // Individual approver
+              const approver = await User.findById(firstLevel.approverId);
+              if (approver?.email) {
                 await sendSubmissionNotificationToApprover(
                   approver.email,
                   submissionData.formName,
                   submissionData.submittedByName,
                   submissionData.submittedAt,
                   approvalLink,
-                  [], // previous approvals (empty for first submission)
+                  [],
                   company,
                   plant,
-                  plant?._id?.toString() || submissionData.plantId?.toString() || "",
-                  form.formId || form._id?.toString() || "",
-                  submission.readableId || submission._id?.toString() || "",
-                  form.fields || [], // form fields for filtering
-                  submissionData.data || {}, // submission data
+                  plantIdStr,
+                  formIdStr,
+                  submissionIdStr,
+                  form.fields || [],
+                  submissionData.data || {},
                   "PLANT_ADMIN",
                   submissionData.companyId,
-                  submissionData.submittedByEmail || null // submitter email
+                  submissionData.submittedByEmail || null
                 );
               }
-            } catch (emailError) {
-              console.error(`Failed to notify approver ${approvalLevel.approverId}:`, emailError);
             }
+          } catch (notifyErr) {
+            console.error("Failed to notify approver:", notifyErr);
           }
         });
       } catch (taskError) {
         console.error("Failed to create approval tasks:", taskError);
-        // Don't fail the submission if task creation fails, but log the error
       }
     }
 

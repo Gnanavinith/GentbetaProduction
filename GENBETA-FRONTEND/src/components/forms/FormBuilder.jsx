@@ -12,6 +12,7 @@ import { generateFieldId, FIELD_TYPES } from "../../utils/fieldId";
 import { formApi } from "../../api/form.api";
 import { templateApi } from "../../api/template.api";
 import { userApi } from "../../api/user.api";
+import { approvalGroupApi } from "../../api/approvalGroup.api";
 import { useAuth } from "../../context/AuthContext";
 import { Users, Plus, Trash2, ShieldCheck, Layout, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -32,6 +33,7 @@ export default function FormBuilder() {
   // Approval Flow State
   const [approvalFlow, setApprovalFlow] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [approvalGroups, setApprovalGroups] = useState([]);
 
   useEffect(() => {
     const templateId = searchParams.get("template");
@@ -40,6 +42,7 @@ export default function FormBuilder() {
     }
     if (user?.plantId) {
       fetchEmployees();
+      fetchApprovalGroups();
     }
   }, [searchParams, user]);
 
@@ -50,9 +53,26 @@ export default function FormBuilder() {
     }
   };
 
+  const fetchApprovalGroups = async () => {
+    try {
+      const response = await approvalGroupApi.getGroups();
+      if (response.success) {
+        setApprovalGroups(response.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching approval groups:", error);
+    }
+  };
+
   const addApprover = () => {
     const nextLevel = approvalFlow.length + 1;
-    setApprovalFlow([...approvalFlow, { level: nextLevel, approverId: "" }]);
+    setApprovalFlow([...approvalFlow, { 
+      level: nextLevel, 
+      type: "USER", // Default to individual approver
+      approverId: "",
+      groupId: "",
+      approvalMode: "ANY_ONE"
+    }]);
   };
 
   const removeApprover = (index) => {
@@ -237,15 +257,13 @@ export default function FormBuilder() {
       }));
 
       // For backward compatibility and simple usage, we can also flatten fields
-      const allFields = cleanedSections.flatMap(s => s.fields);
+     const allFields = cleanedSections.flatMap(s => s.fields);
 
-      const payload = {
-        formName: formName.trim(),
-        formId: generateFieldId(formName),
-        sections: cleanedSections,
-        // Only include root fields for legacy forms that don't use sections
-        // Modern forms should use sections[].fields instead
-        fields: [],
+     const payload = {
+       formName: formName.trim(),
+       formId: generateFieldId(formName),
+       sections: cleanedSections,
+       fields: allFields,  // ✅ Include all fields with includeInApprovalEmail settings
         approvalFlow: approvalFlow,
         isTemplate: true,
         status: "PUBLISHED"
@@ -346,18 +364,80 @@ export default function FormBuilder() {
                   <div className="flex-shrink-0 w-10 h-10 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-bold shadow-md">
                     {flow.level}
                   </div>
-                  <div className="flex-1">
+                  
+                  {/* Type Selector */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Type:</label>
                     <select
-                      value={flow.approverId}
-                      onChange={(e) => updateApprover(index, e.target.value)}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      value={flow.type}
+                      onChange={(e) => {
+                        const updated = [...approvalFlow];
+                        updated[index].type = e.target.value;
+                        if (e.target.value === "GROUP") {
+                          updated[index].approverId = "";
+                        }
+                        setApprovalFlow(updated);
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium"
                     >
-                      <option value="">Select Approver</option>
-                      {employees.map(emp => (
-                        <option key={emp._id} value={emp._id}>{emp.name} ({emp.position})</option>
-                      ))}
+                      <option value="USER">Individual</option>
+                      <option value="GROUP">Group</option>
                     </select>
                   </div>
+                  
+                  {/* Approver/Group Selector */}
+                  <div className="flex-1">
+                    {flow.type === "USER" ? (
+                      <select
+                        value={flow.approverId}
+                        onChange={(e) => updateApprover(index, e.target.value)}
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      >
+                        <option value="">Select Approver</option>
+                        {employees.map(emp => (
+                          <option key={emp._id} value={emp._id}>{emp.name} ({emp.position})</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        value={flow.groupId}
+                        onChange={(e) => {
+                          const updated = [...approvalFlow];
+                          updated[index].groupId = e.target.value;
+                          updated[index].name = approvalGroups.find(g => g._id === e.target.value)?.groupName || "";
+                          setApprovalFlow(updated);
+                        }}
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      >
+                        <option value="">Select Group</option>
+                        {approvalGroups.map(group => (
+                          <option key={group._id} value={group._id}>
+                            {group.groupName} ({group.members?.length || 0} members)
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  
+                  {/* Approval Mode (for groups only) */}
+                  {flow.type === "GROUP" && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700">Mode:</label>
+                      <select
+                        value={flow.approvalMode}
+                        onChange={(e) => {
+                          const updated = [...approvalFlow];
+                          updated[index].approvalMode = e.target.value;
+                          setApprovalFlow(updated);
+                        }}
+                        className="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                        title="ANY_ONE: Any member can approve"
+                      >
+                        <option value="ANY_ONE">Any One</option>
+                      </select>
+                    </div>
+                  )}
+                  
                   <button
                     onClick={() => removeApprover(index)}
                     className="p-2 text-gray-400 hover:text-red-500 transition-colors"

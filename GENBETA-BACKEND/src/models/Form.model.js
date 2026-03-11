@@ -74,7 +74,54 @@ const formSchema = new mongoose.Schema({
       approvalTaskId: { type: mongoose.Schema.Types.ObjectId, ref: "ApprovalTask" },
     approvalFlow: [{
       level: { type: Number, required: true },
-      approverId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+      // Support for both individual and group approvers
+      type: { 
+        type: String, 
+        enum: ["USER", "GROUP"], 
+        default: "USER" 
+      },
+      approverId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "User",
+        validate: {
+          validator: function(v) {
+            // If type is USER, approverId must be provided (not null, undefined, or empty string)
+            if (this.type === "USER") {
+              return v != null && v !== "";
+            }
+            // For GROUP type, approverId should be null/undefined/empty
+            return true;
+          },
+          message: 'approverId is required when type is USER'
+        },
+        required: function() {
+          return this.type === "USER";
+        }
+      },
+      groupId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ApprovalGroup",
+        validate: {
+          validator: function(v) {
+            // If type is GROUP, groupId must be provided (not null, undefined, or empty string)
+            if (this.type === "GROUP") {
+              return v != null && v !== "";
+            }
+            // For USER type, groupId should be null/undefined/empty
+            return true;
+          },
+          message: 'groupId is required when type is GROUP'
+        },
+        required: function() {
+          return this.type === "GROUP";
+        }
+      },
+      // Approval mode for groups
+      approvalMode: {
+        type: String,
+        enum: ["ANY_ONE", "ALL_REQUIRED"],
+        default: "ANY_ONE"
+      },
       name: String,
       description: String
     }]

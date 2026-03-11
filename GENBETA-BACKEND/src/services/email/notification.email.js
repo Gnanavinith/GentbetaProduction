@@ -5,7 +5,7 @@ import {
   formatGridDataForEmail,
   generateFormDataSummary,
   transporter, 
-  sendEmail,  // Added sendEmail function
+  sendEmail,
   resolveEmailSender, 
   getBaseLayout,
   removeDuplication 
@@ -31,14 +31,11 @@ export const sendSubmissionNotificationToPlant = async (
   companyId = null,
   submissionLink = "#"
 ) => {
-  // Process formName to remove duplication
   const cleanFormName = removeDuplication(formName);
-  // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
-  // Generate form data summary
   const formDataSummary = generateFormDataSummary(formData, formFields, null, submissionLink);
-  
+
   const content = `
     <h2 style="color: #4f46e5;">New Form Submission</h2>
     <p style="color: #1f2937; font-size: 16px;">
@@ -71,10 +68,9 @@ export const sendSubmissionNotificationToPlant = async (
 
   try {
     const info = await sendEmail(mailOptions);
-    console.log("Submission notification to plant sent: %s", info.messageId);
     return info;
   } catch (error) {
-    console.error("Submission notification to plant failed:", error);
+    console.error(`sendSubmissionNotificationToPlant failed → TO: ${to} | FORM: ${cleanFormName}`, error.message);
     return { messageId: "mock-id", skipped: true };
   }
 };
@@ -96,9 +92,7 @@ export const sendRejectionNotificationToSubmitter = async (
   actor = "PLANT_ADMIN",
   companyId = null
 ) => {
-  // Process formName to remove duplication
   const cleanFormName = removeDuplication(formName);
-  // Override the link to always go to the pending approvals page
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
 
   const content = `
@@ -132,10 +126,9 @@ export const sendRejectionNotificationToSubmitter = async (
 
   try {
     const info = await sendEmail(mailOptions);
-    console.log("Rejection notification to submitter sent: %s", info.messageId);
     return info;
   } catch (error) {
-    console.error("Rejection notification to submitter failed:", error);
+    console.error(`sendRejectionNotificationToSubmitter failed → TO: ${to} | FORM: ${cleanFormName}`, error.message);
     return { messageId: "mock-id", skipped: true };
   }
 };
@@ -157,8 +150,8 @@ export const sendFinalApprovalNotificationToSubmitter = async (
   companyId = null,
   plantIdParam = null
 ) => {
-  // Process formName to remove duplication
   const cleanFormName = removeDuplication(formName);
+
   const historyHtml = approvalHistory.map(h => `
     <li style="margin-bottom: 10px;">
       <strong>${h.name}</strong> - Approved at ${formatIST(h.date)}
@@ -200,7 +193,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (
     const info = await sendEmail(mailOptions);
     return info;
   } catch (error) {
-    console.error("Final approval notification failed:", error);
+    console.error(`sendFinalApprovalNotificationToSubmitter failed → TO: ${to} | FORM: ${cleanFormName}`, error.message);
     return { messageId: "mock-id", skipped: true };
   }
 };
@@ -224,8 +217,8 @@ export const sendFinalApprovalNotificationToPlant = async (
   approverEmail = null,
   approverName = null
 ) => {
-  // Process formName to remove duplication
   const cleanFormName = removeDuplication(formName);
+
   const historyHtml = approvalHistory.map(h => `
     <li style="margin-bottom: 10px;">
       <strong>${h.name}</strong> - Approved at ${formatIST(h.date)}
@@ -267,7 +260,7 @@ export const sendFinalApprovalNotificationToPlant = async (
     const info = await sendEmail(mailOptions);
     return info;
   } catch (error) {
-    console.error("Final approval notification to plant failed:", error);
+    console.error(`sendFinalApprovalNotificationToPlant failed → TO: ${to} | FORM: ${cleanFormName}`, error.message);
     return { messageId: "mock-id", skipped: true };
   }
 };

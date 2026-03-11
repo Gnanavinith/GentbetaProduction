@@ -3,7 +3,7 @@ import {
   getBaseUrl, 
   formatFieldValue, 
   transporter, 
-  sendEmail,  // Added sendEmail function
+  sendEmail,
   resolveEmailSender, 
   getBaseLayout 
 } from '../email.service.js';
@@ -34,17 +34,10 @@ export const sendWelcomeEmail = async (
 
   let roleLabel = "";
   switch (role) {
-    case "COMPANY_ADMIN":
-      roleLabel = "Company Administrator";
-      break;
-    case "PLANT_ADMIN":
-      roleLabel = "Plant Administrator";
-      break;
-    case "EMPLOYEE":
-      roleLabel = "Employee";
-      break;
-    default:
-      roleLabel = "User";
+    case "COMPANY_ADMIN": roleLabel = "Company Administrator"; break;
+    case "PLANT_ADMIN":   roleLabel = "Plant Administrator";   break;
+    case "EMPLOYEE":      roleLabel = "Employee";              break;
+    default:              roleLabel = "User";
   }
 
   const content = `
@@ -103,24 +96,14 @@ export const sendWelcomeEmail = async (
     from: fromAddress,
     to,
     subject: `Welcome to ${companyName} - Your Account Has Been Created`,
-    // Show login button only in welcome email
     html: getBaseLayout(content, company, plant, true)
   };
 
   try {
     const info = await sendEmail(mailOptions);
-    console.log("Welcome email sent to %s: %s", to, info.messageId);
     return info;
   } catch (error) {
-    console.error("Welcome email sending failed, logging to console instead:");
-    console.log("-----------------------------------------");
-    console.log(`TO: ${to}`);
-    console.log(`NAME: ${name}`);
-    console.log(`ROLE: ${roleLabel}`);
-    console.log(`COMPANY: ${companyName}`);
-    console.log(`PASSWORD: ${password}`);
-    console.log(`LOGIN URL: ${loginUrl}`);
-    console.log("-----------------------------------------");
+    console.error(`sendWelcomeEmail failed → TO: ${to} | NAME: ${name}`, error.message);
     return { messageId: "mock-id", skipped: true };
   }
 };
@@ -175,15 +158,9 @@ export const sendPlantCreatedEmail = async (
 
   try {
     const info = await sendEmail(mailOptions);
-    console.log("Plant created email sent: %s", info.messageId);
     return info;
   } catch (error) {
-    console.error("Plant created email failed, logging to console instead:");
-    console.log("-----------------------------------------");
-    console.log(`TO: ${to}`);
-    console.log(`PLANT: ${plantName} (${plantCode})`);
-    console.log(`COMPANY: ${companyName}`);
-    console.log("-----------------------------------------");
+    console.error(`sendPlantCreatedEmail failed → TO: ${to} | PLANT: ${plantName}`, error.message);
     return { messageId: "mock-id", skipped: true };
   }
 };
@@ -239,10 +216,9 @@ export const sendProfileUpdateNotification = async (
 
   try {
     const info = await sendEmail(mailOptions);
-    console.log("Profile update notification sent: %s", info.messageId);
     return info;
   } catch (error) {
-    console.error("Profile update notification failed:", error);
+    console.error(`sendProfileUpdateNotification failed → TO: ${to}`, error.message);
     return { messageId: "mock-id", skipped: true };
   }
 };

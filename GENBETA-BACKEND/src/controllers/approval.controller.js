@@ -1,23 +1,62 @@
 import ApprovalLink from "../models/ApprovalLink.model.js";
 import ApprovalTask from "../models/ApprovalTask.model.js";
+import ApprovalGroup from "../models/ApprovalGroup.model.js";
 import Form from "../models/Form.model.js";
 import FormSubmission from "../models/FormSubmission.model.js";
 import FormTask from "../models/FormTask.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
-import { 
-  sendApprovalEmail, 
-  sendSubmissionNotificationToApprover, 
+import {
+  sendApprovalEmail,
+  sendSubmissionNotificationToApprover,
   sendFinalApprovalNotificationToSubmitter,
   sendApprovalStatusNotificationToPlant,
   sendRejectionNotificationToSubmitter,
   sendFinalApprovalNotificationToPlant
 } from "../services/email/index.js";
 import crypto from "crypto";
-import { generateCacheKey, getFromCache, setInCache } from "../utils/cache.js";
+import { generateCacheKey, getFromCache, setInCache, deleteFromCache } from "../utils/cache.js";
 import mongoose from "mongoose";
 import { createNotification } from "../utils/notify.js";
+
+/* ======================================================
+   SHARED HELPERS
+====================================================== */
+
+/**
+ * Batch-fetch approver names for an approvalHistory array.
+ * Replaces N sequential User.findById calls with a single $in query.
+ * @param {Array} approvalHistory
+ * @returns {Array} [{ name, date, comments }]
+ */
+async function buildHistoryWithNames(approvalHistory) {
+  if (!approvalHistory?.length) return [];
+  const ids = [...new Set(approvalHistory.map(h => h.approverId?.toString()).filter(Boolean))];
+  const users = await User.find({ _id: { $in: ids } }).select("name").lean();
+  const nameMap = new Map(users.map(u => [u._id.toString(), u.name]));
+  return approvalHistory.map(h => ({
+    name: nameMap.get(h.approverId?.toString()) || "Approver",
+    date: h.actionedAt,
+    comments: h.comments
+  }));
+}
+
+/**
+ * Invalidate all cache keys related to a submission's users.
+ */
+async function invalidateApprovalCache(submission) {
+  try {
+    const keys = [
+      generateCacheKey("employee-assigned-submissions", {
+        userId: submission.submittedBy?.toString(),
+        plantId: submission.plantId?.toString()
+      }),
+      generateCacheKey("employee-stats", { userId: submission.submittedBy?.toString() })
+    ];
+    await Promise.allSettled(keys.map(k => deleteFromCache(k)));
+  } catch (_) { /* non-critical */ }
+}
 
 /* ======================================================
    APPROVAL TASK (INTERNAL WORKFLOW)
@@ -33,41 +72,32 @@ export const createApprovalTask = async (req, res) => {
     }
 
     const task = await ApprovalTask.create({
-      approverId,
-      formIds,
-      plantId,
-      companyId,
-      submittedBy: userId,
-      dueDate,
-      status: "PENDING"
+      approverId, formIds, plantId, companyId,
+      submittedBy: userId, dueDate, status: "PENDING"
     });
-
-    // Notify approver
-    try {
-      const approver = await User.findById(approverId);
-      const forms = await Form.find({ _id: { $in: formIds } });
-      const company = await Company.findById(companyId);
-      const plant = await Plant.findById(plantId);
-      
-      if (approver && approver.email) {
-        const formNames = forms.map(f => f.formName).join(", ");
-        const taskLink = `${process.env.FRONTEND_URL}/employee/tasks`; // Link to their task list
-        await sendApprovalEmail(approver.email, formNames, null, taskLink, company, plant);
-      }
-    } catch (emailError) {
-      console.error("Failed to notify approver of new task:", emailError);
-    }
 
     // Update form statuses to IN_APPROVAL
     await Form.updateMany(
       { _id: { $in: formIds } },
-      { 
-        $set: { 
-          status: "IN_APPROVAL",
-          approvalTaskId: task._id 
-        } 
-      }
+      { $set: { status: "IN_APPROVAL", approvalTaskId: task._id } }
     );
+
+    // Non-blocking notification
+    setImmediate(async () => {
+      try {
+        const [approver, forms, company, plant] = await Promise.all([
+          User.findById(approverId).select("name email").lean(),
+          Form.find({ _id: { $in: formIds } }).select("formName").lean(),
+          Company.findById(companyId).lean(),
+          Plant.findById(plantId).lean()
+        ]);
+        if (approver?.email) {
+          const formNames = forms.map(f => f.formName).join(", ");
+          await sendApprovalEmail(approver.email, formNames, null,
+            `${process.env.FRONTEND_URL}/employee/tasks`, company, plant);
+        }
+      } catch (e) { console.error("Failed to notify approver of new task:", e); }
+    });
 
     res.status(201).json({ success: true, message: "Approval task created successfully", task });
   } catch (error) {
@@ -80,14 +110,14 @@ export const getApprovalTasks = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { status } = req.query;
-
     const query = { approverId: userId };
     if (status) query.status = status;
 
     const tasks = await ApprovalTask.find(query)
       .populate("formIds", "formName description")
       .populate("submittedBy", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json(tasks);
   } catch (error) {
@@ -102,10 +132,10 @@ export const getApprovalTaskDetails = async (req, res) => {
     const task = await ApprovalTask.findById(id)
       .populate("formIds")
       .populate("submittedBy", "name")
-      .populate("completedForms");
+      .populate("completedForms")
+      .lean();
 
     if (!task) return res.status(404).json({ message: "Approval task not found" });
-
     res.json(task);
   } catch (error) {
     console.error("Get approval task details error:", error);
@@ -118,27 +148,21 @@ export const sendLink = async (req, res) => {
     const { id } = req.params;
     const { approverEmail } = req.body;
 
-    const form = await Form.findById(id);
+    const form = await Form.findById(id).lean();
     if (!form) return res.status(404).json({ message: "Form not found" });
 
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 48);
 
-    await ApprovalLink.create({
-      formIds: [form._id],
-      plantId: form.plantId,
-      token,
-      approverEmail,
-      expiresAt
-    });
+    await ApprovalLink.create({ formIds: [form._id], plantId: form.plantId, token, approverEmail, expiresAt });
+
+    const [company, plant] = await Promise.all([
+      Company.findById(form.companyId).lean(),
+      Plant.findById(form.plantId).lean()
+    ]);
 
     const approvalLink = `${process.env.FRONTEND_URL}/approve/${token}`;
-    
-    // Fetch company and plant details
-    const company = await Company.findById(form.companyId);
-    const plant = await Plant.findById(form.plantId);
-    
     await sendApprovalEmail(approverEmail, form.formName, form.formId, approvalLink, company, plant);
 
     res.json({ message: "Approval link sent successfully" });
@@ -151,12 +175,11 @@ export const sendLink = async (req, res) => {
 export const sendMultiFormLink = async (req, res) => {
   try {
     const { formIds, approverEmail } = req.body;
-
     if (!formIds || formIds.length === 0) {
       return res.status(400).json({ message: "At least one form is required" });
     }
 
-    const forms = await Form.find({ _id: { $in: formIds } });
+    const forms = await Form.find({ _id: { $in: formIds } }).lean();
     if (forms.length !== formIds.length) {
       return res.status(404).json({ message: "One or more forms not found" });
     }
@@ -165,22 +188,16 @@ export const sendMultiFormLink = async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 48);
 
-    await ApprovalLink.create({
-      formIds: formIds,
-      plantId: forms[0].plantId,
-      token,
-      approverEmail,
-      expiresAt
-    });
+    await ApprovalLink.create({ formIds, plantId: forms[0].plantId, token, approverEmail, expiresAt });
+
+    const [company, plant] = await Promise.all([
+      Company.findById(forms[0].companyId).lean(),
+      Plant.findById(forms[0].plantId).lean()
+    ]);
 
     const approvalLink = `${process.env.FRONTEND_URL}/approve/${token}`;
-    const formNames = forms.map(f => f.formName).join(", ");
-    
-    // Fetch company and plant details (using the first form's details)
-    const company = await Company.findById(forms[0].companyId);
-    const plant = await Plant.findById(forms[0].plantId);
-    
-    await sendApprovalEmail(approverEmail, `${forms.length} Forms: ${formNames}`, null, approvalLink, company, plant);
+    await sendApprovalEmail(approverEmail, `${forms.length} Forms: ${forms.map(f => f.formName).join(", ")}`,
+      null, approvalLink, company, plant);
 
     res.json({ message: "Approval link sent successfully for multiple forms" });
   } catch (error) {
@@ -192,23 +209,14 @@ export const sendMultiFormLink = async (req, res) => {
 export const getFormByToken = async (req, res) => {
   try {
     const { token } = req.params;
-
-    const link = await ApprovalLink.findOne({ token, isUsed: false });
+    const link = await ApprovalLink.findOne({ token, isUsed: false }).lean();
     if (!link) return res.status(404).json({ message: "Invalid or used link" });
+    if (new Date() > link.expiresAt) return res.status(410).json({ message: "Link has expired" });
 
-    if (new Date() > link.expiresAt) {
-      return res.status(410).json({ message: "Link has expired" });
-    }
-
-    const forms = await Form.find({ _id: { $in: link.formIds } }).select("-companyId -createdBy");
+    const forms = await Form.find({ _id: { $in: link.formIds } }).select("-companyId -createdBy").lean();
     if (forms.length === 0) return res.status(404).json({ message: "Forms no longer exist" });
 
-    res.json({
-      forms,
-      completedForms: link.completedForms || [],
-      approverEmail: link.approverEmail,
-      isMultiForm: forms.length > 1
-    });
+    res.json({ forms, completedForms: link.completedForms || [], approverEmail: link.approverEmail, isMultiForm: forms.length > 1 });
   } catch (error) {
     console.error("Get form by token error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -222,43 +230,28 @@ export const submitFormByToken = async (req, res) => {
 
     const link = await ApprovalLink.findOne({ token, isUsed: false });
     if (!link) return res.status(404).json({ message: "Invalid or used link" });
-
-    if (new Date() > link.expiresAt) {
-      return res.status(410).json({ message: "Link has expired" });
-    }
-
+    if (new Date() > link.expiresAt) return res.status(410).json({ message: "Link has expired" });
     if (!link.formIds.map(id => id.toString()).includes(formId)) {
       return res.status(400).json({ message: "Form not part of this approval link" });
     }
-
-    if (link.completedForms && link.completedForms.map(id => id.toString()).includes(formId)) {
+    if (link.completedForms?.map(id => id.toString()).includes(formId)) {
       return res.status(400).json({ message: "This form has already been submitted" });
     }
 
-    const form = await Form.findById(formId);
+    const form = await Form.findById(formId).lean();
     if (!form) return res.status(404).json({ message: "Form not found" });
 
     await FormSubmission.create({
-      templateId: form._id,
-      templateModel: 'Form',
-      templateName: form.formName,
-      plantId: form.plantId,
-      companyId: form.companyId,
-      submittedBy: link.approverEmail,
-      data,
-      status: "SUBMITTED"
+      templateId: form._id, templateModel: "Form", templateName: form.formName,
+      plantId: form.plantId, companyId: form.companyId, submittedBy: link.approverEmail, data, status: "SUBMITTED"
     });
 
     link.completedForms = link.completedForms || [];
     link.completedForms.push(formId);
-
-    if (link.completedForms.length === link.formIds.length) {
-      link.isUsed = true;
-    }
-
+    if (link.completedForms.length === link.formIds.length) link.isUsed = true;
     await link.save();
 
-    res.json({ 
+    res.json({
       message: "Form submitted successfully",
       allFormsCompleted: link.completedForms.length === link.formIds.length,
       completedCount: link.completedForms.length,
@@ -274,130 +267,85 @@ export const submitFormByToken = async (req, res) => {
    EMPLOYEE APPROVAL WORKFLOW
 ====================================================== */
 
-// Get submissions where current user is part of the approval flow
 export const getAssignedSubmissions = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { plantId, companyId } = req.user;
-    
-    // Generate cache key
-    const cacheKey = generateCacheKey('employee-assigned-submissions', { userId, plantId });
-    
-    // Try to get from cache first
-    let cachedResult = null;
+    const { plantId } = req.user;
+
+    const cacheKey = generateCacheKey("employee-assigned-submissions", { userId, plantId });
+
     try {
-      cachedResult = await getFromCache(cacheKey);
-    } catch (cacheError) {
-      console.error("Cache get error:", cacheError);
-      // Continue without cache
-    }
-    
-    if (cachedResult) {
-      return res.json(cachedResult);
+      const cached = await getFromCache(cacheKey);
+      if (cached) return res.json(cached);
+    } catch (_) { /* continue without cache */ }
+
+    // ── Batch: user groups + forms in parallel ──────────────────────────────
+    const userGroups = await ApprovalGroup.find({ members: userId, isActive: true })
+      .select("_id").lean();
+    const userGroupIds = userGroups.map(g => g._id.toString());
+
+    const [directApproverForms, groupApproverForms, formsWithoutFlow] = await Promise.all([
+      Form.find({ plantId, "approvalFlow": { $elemMatch: { type: "USER", approverId: userId } } })
+        .select("_id approvalFlow").lean(),
+      Form.find({ plantId, "approvalFlow": { $elemMatch: { type: "GROUP", groupId: { $in: userGroupIds.map(id => new mongoose.Types.ObjectId(id)) } } } })
+        .select("_id approvalFlow").lean(),
+      Form.find({ plantId, $or: [{ approvalFlow: { $exists: false } }, { approvalFlow: { $size: 0 } }] })
+        .select("_id").lean()
+    ]);
+
+    const allRelevantFormIds = [
+      ...directApproverForms.map(f => f._id.toString()),
+      ...groupApproverForms.map(f => f._id.toString()),
+      ...formsWithoutFlow.map(f => f._id.toString())
+    ];
+
+    if (allRelevantFormIds.length === 0) {
+      await setInCache(cacheKey, [], 120).catch(() => {});
+      return res.json([]);
     }
 
-    // Get submissions where user is assigned as an approver through FormTask
-    const assignedTasks = await FormTask.find({
-      assignedTo: userId,
-      status: "pending"
-    }).populate("formId").lean();
-    
-    // Safely extract form IDs, filtering out tasks with missing formId
-    const formIds = assignedTasks
-      .filter(task => task.formId && task.formId._id)
-      .map(task => task.formId._id);
-    
-    // Also get forms from user's plant that have no approval flow (direct submissions)
-    const formsWithoutFlow = await Form.find({
-      plantId,
-      $or: [
-        { approvalFlow: { $exists: false } },
-        { approvalFlow: { $size: 0 } }
-      ]
-    }).select("_id").lean();
-    
-    const allFormIds = [...formIds, ...formsWithoutFlow.map(f => f._id)];
-    
-    if (allFormIds.length === 0) {
-      const result = [];
-      await setInCache(cacheKey, result, 120);
-      return res.json(result);
-    }
-
-    // Find submissions for these forms that are currently pending approval
     const submissions = await FormSubmission.find({
-      formId: { $in: allFormIds },
+      formId: { $in: allRelevantFormIds },
       status: { $in: ["PENDING_APPROVAL", "SUBMITTED"] }
     })
-    .populate("formId", "formName approvalFlow")
-    .populate("submittedBy", "name email")
-    .sort({ submittedAt: -1 })
-    .lean();
+      .populate("formId", "formName approvalFlow")
+      .populate("submittedBy", "name email")
+      .sort({ submittedAt: -1 })
+      .lean();
 
-    // Filter out submissions that don't have a valid formId after population
-    const validSubmissions = submissions.filter(sub => sub.formId && sub.formId._id);
+    const validSubmissions = submissions.filter(sub => sub.formId?._id);
 
-    // Enhance submissions with task information and "isMyTurn" logic
     const enhancedSubmissions = validSubmissions.map(sub => {
-      const form = sub.formId;
-      const flow = form?.approvalFlow || [];
-      
-      // If no approval flow, it's always the user's turn
+      const flow = sub.formId?.approvalFlow || [];
+
       if (flow.length === 0) {
-        return {
-          ...sub,
-          isMyTurn: true,
-          userLevel: 1,
-          pendingApproverName: null,
-          assignedTask: assignedTasks.find(task => 
-            task.formId && 
-            task.formId._id && 
-            sub.formId && 
-            sub.formId._id && 
-            task.formId._id.toString() === sub.formId._id.toString()
-          )
-        };
+        return { ...sub, isMyTurn: true, userLevel: 1, pendingApproverName: null };
       }
-      
-      // Find the level assigned to the current user
-      const userLevelEntry = flow.find(f => 
-        f.approverId?._id?.toString() === userId.toString() || 
-        f.approverId?.toString() === userId.toString()
-      );
+
+      const userLevelEntry = flow.find(f => {
+        if (f.type === "USER" || !f.type) {
+          return f.approverId?._id?.toString() === userId.toString() ||
+            f.approverId?.toString() === userId.toString();
+        }
+        if (f.type === "GROUP") return userGroupIds.includes(f.groupId?.toString());
+        return false;
+      });
+
       const userLevel = userLevelEntry?.level;
-      
-      // For sequential approval, check if it's the user's turn based on currentLevel
       const isMyTurn = sub.currentLevel === userLevel;
-      
-      // Get the name of the person who needs to approve before this user
+
       let pendingApproverName = null;
       if (!isMyTurn && userLevel && sub.currentLevel < userLevel) {
-        const currentLevelApprover = flow.find(f => f.level === sub.currentLevel);
-        pendingApproverName = currentLevelApprover?.approverId?.name || "Previous Approver";
+        const currentLevelEntry = flow.find(f => f.level === sub.currentLevel);
+        pendingApproverName = currentLevelEntry?.type === "GROUP"
+          ? currentLevelEntry.name || "Previous Group Approver"
+          : currentLevelEntry?.approverId?.name || "Previous Approver";
       }
 
-      return {
-        ...sub,
-        isMyTurn,
-        userLevel,
-        pendingApproverName,
-        assignedTask: assignedTasks.find(task => 
-          task.formId && 
-          task.formId._id && 
-          sub.formId && 
-          sub.formId._id && 
-          task.formId._id.toString() === sub.formId._id.toString()
-        )
-      };
+      return { ...sub, isMyTurn, userLevel, pendingApproverName };
     });
-    
-    // Cache the result for 2 minutes
-    try {
-      await setInCache(cacheKey, enhancedSubmissions, 120);
-    } catch (cacheError) {
-      console.error("Cache set error:", cacheError);
-      // Continue without caching
-    }
+
+    try { await setInCache(cacheKey, enhancedSubmissions, 120); } catch (_) {}
 
     res.json(enhancedSubmissions);
   } catch (error) {
@@ -412,353 +360,343 @@ export const processApproval = async (req, res) => {
     const { submissionId, status, comments, data } = req.body;
     const userId = req.user.userId;
 
+    if (!submissionId) {
+      return res.status(400).json({ message: "Submission ID is required" });
+    }
+
     const submission = await FormSubmission.findById(submissionId).populate({
       path: "formId",
-      populate: {
-        path: "approvalFlow.approverId",
-        select: "name email"
-      }
+      populate: [
+        { path: "approvalFlow.approverId", select: "name email" },
+        { path: "approvalFlow.groupId", select: "groupName name members" }
+      ]
     });
+
     if (!submission) return res.status(404).json({ message: "Submission not found" });
 
     const form = submission.formId;
     const flow = form?.approvalFlow || [];
-    
-    // For forms with no approval flow, allow any authorized user to approve
-    if (flow.length === 0) {
-      // No approval flow defined - allow the action
-    } else {
-      // Verify user is the correct approver for current level
+
+    // ── Authorization ────────────────────────────────────────────────────────
+    if (flow.length > 0) {
       const currentApprover = flow.find(f => f.level === submission.currentLevel);
-      if (!currentApprover) {
-        return res.status(403).json({ message: "No approver found for this level" });
-      }
-      
-      // Handle both populated and unpopulated approverId
-      const approverId = currentApprover.approverId?._id?.toString() || currentApprover.approverId?.toString();
-      if (approverId !== userId.toString()) {
-        return res.status(403).json({ message: "You are not the authorized approver for this level" });
+      if (!currentApprover) return res.status(403).json({ message: "No approver found for this level" });
+
+      const approverType = currentApprover.type || "USER";
+
+      if (approverType === "GROUP") {
+        const group = await ApprovalGroup.findOne({ _id: currentApprover.groupId, isActive: true })
+          .select("members").lean();
+        if (!group) return res.status(404).json({ message: "Approval group not found" });
+
+        const isMember = group.members.some(m => m.toString() === userId.toString());
+        if (!isMember) return res.status(403).json({ message: "You are not a member of this approval group" });
+
+        const existingApproval = submission.approvalHistory.find(
+          h => h.level === submission.currentLevel && h.status === "APPROVED" && h.isGroupApproval
+        );
+        if (existingApproval) {
+          return res.status(400).json({ message: `Already approved by another group member at level ${submission.currentLevel}` });
+        }
+      } else {
+        const approverId = currentApprover.approverId?._id?.toString() || currentApprover.approverId?.toString();
+        if (approverId !== userId.toString()) {
+          return res.status(403).json({ message: "You are not the authorized approver for this level" });
+        }
       }
     }
 
-    // If data is provided (approver edited the form), update it
+    // ── Apply data edits ──────────────────────────────────────────────────────
     if (data) {
-      // Merge new data with existing data to preserve fields not modified by approver
       submission.data = { ...submission.data, ...data };
-      submission.markModified('data');
+      submission.markModified("data");
     }
 
-    // Update history
+    const currentApproverConfig = flow.find(f => f.level === submission.currentLevel);
+    if (flow.length > 0 && !currentApproverConfig) {
+      return res.status(400).json({ message: `No approver configured for level ${submission.currentLevel}` });
+    }
+
+    const isGroupApproval = currentApproverConfig?.type === "GROUP";
+
+    // Push history entry
     submission.approvalHistory.push({
       level: submission.currentLevel,
       approverId: userId,
       status: status.toUpperCase(),
       comments,
-      actionedAt: new Date()
+      actionedAt: new Date(),
+      type: isGroupApproval ? "GROUP" : "USER",
+      groupId: isGroupApproval ? currentApproverConfig?.groupId : null,
+      groupName: isGroupApproval ? (currentApproverConfig?.name || "Approval Group") : null,
+      isGroupApproval
     });
 
+    // ── REJECTED ──────────────────────────────────────────────────────────────
     if (status.toLowerCase() === "rejected") {
-        submission.status = "REJECTED";
-        submission.rejectedAt = new Date();
-        submission.rejectedBy = userId;
+      submission.status = "REJECTED";
+      submission.rejectedAt = new Date();
+      submission.rejectedBy = userId;
 
-        // Notify submitter of rejection with comments
-        (async () => {
-          try {
-            const submitter = await User.findById(submission.submittedBy);
-            const rejector = await User.findById(userId);
-            const company = await Company.findById(submission.companyId);
-            const plant = await Plant.findById(submission.plantId);
-
-            if (submitter && submitter.email && comments) {
-              const viewLink = `${process.env.FRONTEND_URL}/employee/submissions/${submission._id}`;
-              const plantId = plant?.plantNumber || plant?._id?.toString() || submission.plantId?.toString() || "";
-              const formId = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
-              const submissionId = submission.numericalId?.toString() || submission._id?.toString() || "";
-              
-              await sendRejectionNotificationToSubmitter(
-                submitter.email,
-                form.formName || form.templateName,
-                rejector?.name || "An approver",
-                comments,
-                viewLink,
-                company,
-                plant,
-                plantId,
-                formId,
-                submissionId
-              );
-            }
-          } catch (emailErr) {
-            console.error("Failed to send rejection notification:", emailErr);
+      setImmediate(async () => {
+        try {
+          const [submitter, rejector, company, plant] = await Promise.all([
+            User.findById(submission.submittedBy).select("name email").lean(),
+            User.findById(userId).select("name").lean(),
+            Company.findById(submission.companyId).lean(),
+            Plant.findById(submission.plantId).lean()
+          ]);
+          if (submitter?.email && comments) {
+            const viewLink = `${process.env.FRONTEND_URL}/employee/submissions/${submission._id}`;
+            const plantIdStr = plant?.plantNumber || plant?._id?.toString() || "";
+            const formIdStr = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
+            const submissionIdStr = submission.numericalId?.toString() || submission._id?.toString() || "";
+            await sendRejectionNotificationToSubmitter(
+              submitter.email, form.formName || form.templateName,
+              rejector?.name || "An approver", comments, viewLink,
+              company, plant, plantIdStr, formIdStr, submissionIdStr
+            );
           }
-        })();
-      } else {
-      // If approved, check if there are more levels
+          if (submitter) {
+            await createNotification({
+              userId: submitter._id,
+              title: "Form Rejected",
+              message: `Your form "${form.formName || form.templateName}" has been rejected`,
+              link: `/employee/submissions/${submission._id}`
+            }).catch(() => {});
+          }
+        } catch (e) { console.error("Failed to send rejection notification:", e); }
+      });
+
+    // ── APPROVED ──────────────────────────────────────────────────────────────
+    } else {
       const nextLevel = submission.currentLevel + 1;
       const nextLevelEntry = flow.find(f => f.level === nextLevel);
 
       if (nextLevelEntry) {
-          submission.currentLevel = nextLevel;
-          submission.status = "PENDING_APPROVAL"; // Keep it pending for the next person
-          
-          // Notify next approver
+        // More levels remain
+        submission.currentLevel = nextLevel;
+        submission.status = "PENDING_APPROVAL";
+
+        setImmediate(async () => {
           try {
-            const nextApproverId = nextLevelEntry.approverId?._id || nextLevelEntry.approverId;
-            const nextApprover = await User.findById(nextApproverId);
-            const submitter = await User.findById(submission.submittedBy);
-            const currentApprover = await User.findById(userId);
-            
-            // Fetch company and plant details
-            const company = await Company.findById(submission.companyId);
-            const plant = await Plant.findById(submission.plantId);
-            
-            if (nextApprover && nextApprover.email) {
-              const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
-              const previousApprovals = [{ name: currentApprover?.name || "Previous Approver" }];
-              
-              const plantId = plant?.plantNumber || plant?._id?.toString() || submission.plantId?.toString() || "";
-              const formId = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
-              const submissionId = submission.numericalId?.toString() || submission._id?.toString() || "";
-              
-              await sendSubmissionNotificationToApprover(
-                nextApprover.email,
-                form.formName || form.templateName,
-                submitter?.name || "An employee",
-                submission.createdAt,
-                approvalLink,
-                previousApprovals,
-                company,
-                plant,
-                plantId,
-                formId,
-                submissionId
-              );
-              
-              // Create notification for the next approver
-              try {
-                await createNotification({
+            const [submitter, currentApproverUser, company, plant] = await Promise.all([
+              User.findById(submission.submittedBy).select("name email").lean(),
+              User.findById(userId).select("name email").lean(),
+              Company.findById(submission.companyId).lean(),
+              Plant.findById(submission.plantId).lean()
+            ]);
+
+            const plantIdStr = plant?.plantNumber || plant?._id?.toString() || "";
+            const formIdStr = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
+            const submissionIdStr = submission.numericalId?.toString() || submission._id?.toString() || "";
+            const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
+
+            // ── FIX: batch-fetch previous approver names ──────────────────────
+            const approverIds = [...new Set(
+              submission.approvalHistory.map(h => h.approverId?.toString()).filter(Boolean)
+            )];
+            const approverUsers = await User.find({ _id: { $in: approverIds } }).select("name").lean();
+            const approverNameMap = new Map(approverUsers.map(u => [u._id.toString(), u.name]));
+            const previousApprovals = submission.approvalHistory.map(h => ({
+              name: approverNameMap.get(h.approverId?.toString()) || "Unknown Approver",
+              date: h.actionedAt,
+              status: h.status || "APPROVED",
+              comments: h.comments || ""
+            }));
+            if (previousApprovals.length === 0) {
+              previousApprovals.push({ name: currentApproverUser?.name || "Previous Approver", date: new Date(), status: "APPROVED", comments: "" });
+            }
+
+            if (nextLevelEntry.type === "GROUP") {
+              const group = await ApprovalGroup.findById(nextLevelEntry.groupId)
+                .populate("members", "name email").lean();
+
+              if (group?.members?.length > 0) {
+                // Parallel: notifications + emails for all group members
+                await Promise.allSettled([
+                  // In-app notifications (batch)
+                  ...group.members.map(member =>
+                    createNotification({
+                      userId: member._id,
+                      title: "Approval Required",
+                      message: `Form ${form.formName} waiting for your approval (Group: ${group.groupName})`,
+                      link: `/employee/approvals/${submission._id}`
+                    }).catch(() => {})
+                  ),
+                  // Emails
+                  ...group.members.filter(m => m.email).map(member =>
+                    sendSubmissionNotificationToApprover(
+                      member.email, form.formName || form.templateName,
+                      submitter?.name || "An employee", submission.createdAt,
+                      approvalLink, previousApprovals, company, plant,
+                      plantIdStr, formIdStr, submissionIdStr,
+                      form?.fields || [], submission.data || {},
+                      "PLANT_ADMIN", submission.companyId?.toString() || null,
+                      submitter?.email || null
+                    ).catch(e => console.error(`Email failed for ${member.email}:`, e))
+                  )
+                ]);
+
+                // Notify submitter
+                if (submitter) {
+                  createNotification({
+                    userId: submitter._id,
+                    title: "Form In Progress",
+                    message: `Your form "${form.formName}" has been approved and moved to ${group.groupName} for approval`,
+                    link: `/employee/submissions/${submission._id}`
+                  }).catch(() => {});
+                }
+              }
+            } else {
+              // Individual approver
+              const nextApproverId = nextLevelEntry.approverId?._id || nextLevelEntry.approverId;
+              const nextApprover = await User.findById(nextApproverId).select("name email").lean();
+
+              if (nextApprover?.email) {
+                await sendSubmissionNotificationToApprover(
+                  nextApprover.email, form.formName || form.templateName,
+                  submitter?.name || "An employee", submission.createdAt,
+                  approvalLink, previousApprovals, company, plant,
+                  plantIdStr, formIdStr, submissionIdStr,
+                  form?.fields || [], submission.data || {},
+                  "PLANT_ADMIN", submission.companyId?.toString() || null,
+                  submitter?.email || null
+                ).catch(e => console.error("Email failed for next approver:", e));
+
+                createNotification({
                   userId: nextApprover._id,
                   title: "Approval Required",
-                  message: `Form ${form.formName || form.templateName} waiting for your approval`,
+                  message: `Form ${form.formName} waiting for your approval`,
                   link: `/employee/approvals/${submission._id}`
-                });
-              } catch (notificationError) {
-                console.error("Error creating approval notification:", notificationError);
+                }).catch(() => {});
               }
-            }
-            
-            // Create notification for the submitter to inform them their form moved to the next approval level
-            if (submitter) {
-              try {
-                await createNotification({
+
+              if (submitter) {
+                createNotification({
                   userId: submitter._id,
                   title: "Form In Progress",
-                  message: `Your form "${form.formName || form.templateName}" has been approved by ${currentApprover?.name || "an approver"} and moved to the next approval level`,
+                  message: `Your form "${form.formName}" has been approved by ${currentApproverUser?.name || "an approver"} and moved to the next approval level`,
                   link: `/employee/submissions/${submission._id}`
-                });
-                console.log(`Progress notification sent to submitter ${submitter._id} for submission ${submission._id}`);
-              } catch (notificationError) {
-                console.error("Error creating progress notification:", notificationError);
+                }).catch(() => {});
               }
             }
-            
-            // Also create notification for the plant admin to track form progress
-            const plantAdmin = await User.findOne({
-              plantId: submission.plantId,
-              role: "PLANT_ADMIN"
-            });
-            
-            if (plantAdmin) {
-              try {
-                await createNotification({
-                  userId: plantAdmin._id,
-                  title: "Form In Progress",
-                  message: `Form "${form.formName || form.templateName}" has been approved by ${currentApprover?.name || "an approver"} and moved to the next approval level`,
-                  link: `/plant/submissions/${submission._id}`
-                });
-                console.log(`Progress notification sent to plant admin ${plantAdmin._id} for submission ${submission._id}`);
-              } catch (notificationError) {
-                console.error("Error creating progress notification for plant admin:", notificationError);
-              }
-            }
-          } catch (emailError) {
-            console.error("Failed to notify next approver:", emailError);
-          }
-        } else {
-          submission.status = "APPROVED";
-          submission.approvedAt = new Date();
-          submission.approvedBy = userId;
-          submission.currentLevel = flow.length + 1;
 
-          // Notify submitter of final approval
+            // Notify plant admin of progress
+            const plantAdmin = await User.findOne({ plantId: submission.plantId, role: "PLANT_ADMIN" })
+              .select("_id email").lean();
+            if (plantAdmin) {
+              createNotification({
+                userId: plantAdmin._id,
+                title: "Form In Progress",
+                message: `Form "${form.formName}" approved by ${currentApproverUser?.name || "an approver"} and moved to next level`,
+                link: `/plant/submissions/${submission._id}`
+              }).catch(() => {});
+            }
+          } catch (e) { console.error("Failed to notify next approver:", e); }
+        });
+
+      } else {
+        // Final approval
+        submission.status = "APPROVED";
+        submission.approvedAt = new Date();
+        submission.approvedBy = userId;
+        submission.currentLevel = flow.length + 1;
+
+        setImmediate(async () => {
           try {
-            const submitter = await User.findById(submission.submittedBy);
-            
-            // Fetch company and plant details
-            const company = await Company.findById(submission.companyId);
-            const plant = await Plant.findById(submission.plantId);
+            const [submitter, company, plant, plantAdmin] = await Promise.all([
+              User.findById(submission.submittedBy).select("name email").lean(),
+              Company.findById(submission.companyId).lean(),
+              Plant.findById(submission.plantId).lean(),
+              User.findOne({ plantId: submission.plantId, role: "PLANT_ADMIN", isActive: true })
+                .select("_id email").lean()
+            ]);
 
-            if (submitter && submitter.email) {
-              // Populate history with approver names
-              const historyWithNames = await Promise.all(submission.approvalHistory.map(async (h) => {
-                const approver = await User.findById(h.approverId);
-                return {
-                  name: approver?.name || "Approver",
-                  date: h.actionedAt,
-                  comments: h.comments
-                };
-              }));
+            const plantIdStr = plant?.plantNumber || plant?._id?.toString() || "";
+            const formIdStr = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
+            const submissionIdStr = submission.numericalId?.toString() || submission._id?.toString() || "";
+            const approverUser = await User.findById(userId).select("name email").lean();
 
-              const plantId = plant?.plantNumber || plant?._id?.toString() || submission.plantId?.toString() || "";
-              const formId = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
-              const submissionId = submission.numericalId?.toString() || submission._id?.toString() || "";
-              
-              await sendFinalApprovalNotificationToSubmitter(
-                submitter.email,
-                form.formName || form.templateName,
-                submission.createdAt,
-                historyWithNames,
-                company,
-                plant,
-                plantId,
-                formId,
-                submissionId,
-                "PLANT_ADMIN",
-                submission.companyId,
-                submission.plantId
-              );
-            }
-            
-            // Create notification for the plant admin to inform them a form has been fully approved
-            const plantAdmin = await User.findOne({
-              plantId: submission.plantId,
-              role: "PLANT_ADMIN"
-            });
-            
-            if (plantAdmin) {
-              try {
-                await createNotification({
-                  userId: plantAdmin._id,
-                  title: "Form Approved",
-                  message: `Form "${form.formName || form.templateName}" has been fully approved`,
-                  link: `/plant/submissions/${submission._id}`
-                });
-                console.log(`Final approval notification sent to plant admin ${plantAdmin._id} for submission ${submission._id}`);
-              } catch (notificationError) {
-                console.error("Error creating final approval notification:", notificationError);
-              }
-            }
-            
-            // Also create notification for the submitter
-            if (submitter) {
-              try {
-                await createNotification({
-                  userId: submitter._id,
-                  title: "Form Approved",
-                  message: `Your form "${form.formName || form.templateName}" has been fully approved`,
-                  link: `/employee/submissions/${submission._id}`
-                });
-                console.log(`Final approval notification sent to submitter ${submitter._id} for submission ${submission._id}`);
-              } catch (notificationError) {
-                console.error("Error creating final approval notification for submitter:", notificationError);
-              }
-            }
-          } catch (emailError) {
-            console.error("Failed to notify submitter of final approval:", emailError);
-          }
-        }
+            // ── FIX: single batch query instead of N User.findById calls ───────
+            const historyWithNames = await buildHistoryWithNames(submission.approvalHistory);
 
+            await Promise.allSettled([
+              // Email submitter
+              submitter?.email ? sendFinalApprovalNotificationToSubmitter(
+                submitter.email, form.formName || form.templateName,
+                submission.createdAt, historyWithNames, company, plant,
+                plantIdStr, formIdStr, submissionIdStr,
+                "PLANT_ADMIN", submission.companyId, submission.plantId
+              ) : Promise.resolve(),
+
+              // Email plant admin
+              plantAdmin?.email ? sendFinalApprovalNotificationToPlant(
+                plantAdmin.email, form.formName || form.templateName,
+                submission.createdAt, historyWithNames, company, plant,
+                plantIdStr, formIdStr, submissionIdStr,
+                "PLANT_ADMIN", submission.companyId, submission.plantId,
+                approverUser?.email || null, approverUser?.name || "An approver"
+              ) : Promise.resolve(),
+
+              // In-app: plant admin
+              plantAdmin ? createNotification({
+                userId: plantAdmin._id,
+                title: "Form Approved",
+                message: `Form "${form.formName}" has been fully approved`,
+                link: `/plant/submissions/${submission._id}`
+              }) : Promise.resolve(),
+
+              // In-app: submitter
+              submitter ? createNotification({
+                userId: submitter._id,
+                title: "Form Approved",
+                message: `Your form "${form.formName}" has been fully approved`,
+                link: `/employee/submissions/${submission._id}`
+              }) : Promise.resolve()
+            ]);
+          } catch (e) { console.error("Failed to notify final approval:", e); }
+        });
+      }
     }
 
     await submission.save();
-    
-    // Create notifications after saving the submission to ensure data consistency
 
-    // Send notification to plant admin about approval status (non-blocking)
-    (async () => {
+    // Invalidate relevant caches
+    invalidateApprovalCache(submission);
+
+    // Non-blocking: plant admin status email for intermediate approvals
+    setImmediate(async () => {
       try {
-        const plant = await Plant.findById(submission.plantId);
-        const company = await Company.findById(submission.companyId);
-        const submitter = await User.findById(submission.submittedBy);
-        const approver = await User.findById(userId);
-        
-        // Find plant admin by querying User model
-        const plantAdmin = await User.findOne({
-          plantId: submission.plantId,
-          role: "PLANT_ADMIN",
-          isActive: true
-        });
-        
-        if (plantAdmin?.email) {
-          const viewLink = `${process.env.FRONTEND_URL}/plant/submissions/${submission._id}`;
-          const plantId = plant?.plantNumber || plant?._id?.toString() || submission.plantId?.toString() || "";
-          const formId = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
-          const submissionId = submission.numericalId?.toString() || submission._id?.toString() || "";
-          
-          // Check if this is the final approval
-          const isFinalApproval = submission.status === "APPROVED" && submission.currentLevel === (flow.length + 1);
-          
-          if (isFinalApproval) {
-            // Send final approval notification to plant admin only (submitter is already notified separately)
-            try {
-              // Populate history with approver names for plant admin notification
-              const historyWithNames = await Promise.all(submission.approvalHistory.map(async (h) => {
-                const approver = await User.findById(h.approverId);
-                return {
-                  name: approver?.name || "Approver",
-                  date: h.actionedAt,
-                  comments: h.comments
-                };
-              }));
-              
-              // Notify plant admin of final approval
-              await sendFinalApprovalNotificationToPlant(
-                plantAdmin.email,  // Send to plant admin
-                form.formName || form.templateName,
-                submission.createdAt,
-                historyWithNames, // Pass populated approval history
-                company,
-                plant,
-                plantId,
-                formId,
-                submissionId,
-                "PLANT_ADMIN",
-                submission.companyId,
-                submission.plantId,
-                approver?.email || null, // approverEmail
-                approver?.name || "An approver" // approverName
-              );
-            } catch (emailError) {
-              console.error("Failed to send final approval notification to plant admin:", emailError);
-            }
-          } else {
-            // Send regular approval status notification for intermediate approvals
-            await sendApprovalStatusNotificationToPlant(
-              plantAdmin.email,
-              form.formName || form.templateName,
-              submitter?.name || "An employee",
-              approver?.name || "An approver",
-              status,
-              comments || "",
-              viewLink,
-              company,
-              plant,
-              plantId,
-              formId,
-              submissionId,
-              submission.currentLevel || 1,
-              "PLANT_ADMIN",
-              submission.companyId,
-              null, // plantIdParam
-              approver?.email || null // approverEmail
-            );
-          }
-        }
-      } catch (emailErr) {
-        console.error("Failed to send plant admin approval notification:", emailErr);
-      }
-    })();
+        const isIntermediate = submission.status === "PENDING_APPROVAL";
+        if (!isIntermediate) return; // Final approval handled above
+
+        const [plant, company, submitter, approverUser, plantAdmin] = await Promise.all([
+          Plant.findById(submission.plantId).lean(),
+          Company.findById(submission.companyId).lean(),
+          User.findById(submission.submittedBy).select("name").lean(),
+          User.findById(userId).select("name email").lean(),
+          User.findOne({ plantId: submission.plantId, role: "PLANT_ADMIN", isActive: true })
+            .select("email").lean()
+        ]);
+
+        if (!plantAdmin?.email) return;
+
+        const plantIdStr = plant?.plantNumber || plant?._id?.toString() || "";
+        const formIdStr = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
+        const submissionIdStr = submission.numericalId?.toString() || submission._id?.toString() || "";
+        const viewLink = `${process.env.FRONTEND_URL}/plant/submissions/${submission._id}`;
+
+        await sendApprovalStatusNotificationToPlant(
+          plantAdmin.email, form.formName || form.templateName,
+          submitter?.name || "An employee", approverUser?.name || "An approver",
+          status, comments || "", viewLink, company, plant,
+          plantIdStr, formIdStr, submissionIdStr,
+          submission.currentLevel || 1, "PLANT_ADMIN", submission.companyId,
+          null, approverUser?.email || null
+        );
+      } catch (e) { console.error("Failed to send plant admin status email:", e); }
+    });
 
     res.json({ message: `Submission ${status} successfully`, submission });
   } catch (error) {
@@ -771,60 +709,49 @@ export const processApproval = async (req, res) => {
 export const getEmployeeStats = async (req, res) => {
   try {
     const userId = req.user.userId;
-    
-    // Generate cache key
-    const cacheKey = generateCacheKey('employee-stats', { userId });
-    
-    // Try to get from cache first
-    let cachedResult = await getFromCache(cacheKey);
-    if (cachedResult) {
-      return res.json(cachedResult);
-    }
+    const cacheKey = generateCacheKey("employee-stats", { userId });
 
-    // Optimized query using aggregation pipeline
-    const pendingCount = await FormSubmission.aggregate([
-      {
-        $lookup: {
-          from: "forms",
-          localField: "templateId",
-          foreignField: "_id",
-          as: "form"
-        }
-      },
-      { $unwind: "$form" },
-      {
-        $match: {
-          "form.approvalFlow.approverId": new mongoose.Types.ObjectId(userId),
-          status: { $in: ["PENDING_APPROVAL", "IN_PROGRESS", "in_progress", "SUBMITTED"] },
-          $expr: {
-            $and: [
-              { $eq: ["$currentLevel", {
-                $arrayElemAt: [
-                  "$form.approvalFlow.level",
-                  { $indexOfArray: ["$form.approvalFlow.approverId", new mongoose.Types.ObjectId(userId)] }
-                ]
-              }]},
-              { $ne: ["$currentLevel", null] }
-            ]
+    try {
+      const cached = await getFromCache(cacheKey);
+      if (cached) return res.json(cached);
+    } catch (_) {}
+
+    const [pendingAgg, actionedCount] = await Promise.all([
+      FormSubmission.aggregate([
+        {
+          $lookup: {
+            from: "forms", localField: "templateId", foreignField: "_id", as: "form"
           }
-        }
-      },
-      { $count: "pendingCount" }
-    ]).then(result => result[0]?.pendingCount || 0);
+        },
+        { $unwind: "$form" },
+        {
+          $match: {
+            "form.approvalFlow.approverId": new mongoose.Types.ObjectId(userId),
+            status: { $in: ["PENDING_APPROVAL", "IN_PROGRESS", "in_progress", "SUBMITTED"] },
+            $expr: {
+              $and: [
+                { $eq: ["$currentLevel", {
+                  $arrayElemAt: [
+                    "$form.approvalFlow.level",
+                    { $indexOfArray: ["$form.approvalFlow.approverId", new mongoose.Types.ObjectId(userId)] }
+                  ]
+                }] },
+                { $ne: ["$currentLevel", null] }
+              ]
+            }
+          }
+        },
+        { $count: "pendingCount" }
+      ]),
+      FormSubmission.countDocuments({ "approvalHistory.approverId": userId })
+    ]);
 
-    // Submissions already actioned by this user
-    const actionedCount = await FormSubmission.countDocuments({
-      "approvalHistory.approverId": userId
-    });
-    
     const result = {
-      pendingCount,
+      pendingCount: pendingAgg[0]?.pendingCount || 0,
       actionedCount
     };
-    
-    // Cache the result for 2 minutes
-    await setInCache(cacheKey, result, 120);
 
+    await setInCache(cacheKey, result, 120).catch(() => {});
     res.json(result);
   } catch (error) {
     console.error("Get employee stats error:", error);

@@ -24,7 +24,7 @@ import {
   Archive,
   Bookmark,
   CreditCard,
-
+  ShieldCheck,
   } from "lucide-react";
 
 export default function Sidebar({ isOpen, onToggle }) {
@@ -119,6 +119,7 @@ export default function Sidebar({ isOpen, onToggle }) {
         secondary: [
           { title: "Employees", icon: Users, path: "/plant/employees" },
           { title: "Assignments", icon: ClipboardList, path: "/plant/assignments" },
+          { title: "Approval Groups", icon: ShieldCheck, path: "/plant/approval-groups" },
           { title: "Plant Profile", icon: Factory, path: "/plant/profile" },
         ]
       };
@@ -158,7 +159,8 @@ export default function Sidebar({ isOpen, onToggle }) {
           { title: "Facility", icon: Building2, path: "/employee/templates" },
           { title: "Summary", icon: BarChart3, path: "/employee/forms-view" },
           { title: "Assigned Forms", icon: ClipboardList, path: "/employee/assignments" },
-          { title: "Pending Forms", icon: Clock, path: "/employee/approval/pending" },
+          { title: "Pending Approvals", icon: Clock, path: "/employee/approval/pending" },
+          { title: "Approval History", icon: FileCheck, path: "/employee/approval/history" },
         ],
         secondary: commonItems
       };

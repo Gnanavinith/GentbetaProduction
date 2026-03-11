@@ -4,7 +4,11 @@ import FormSubmission from "../models/FormSubmission.model.js";
 import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
 import Plant from "../models/Plant.model.js";
-import { sendFormCreatedApproverNotification } from "../services/email/index.js";
+import mongoose from "mongoose";
+import { 
+  sendFormCreatedApproverNotification,
+  sendGroupApproverFormNotification
+} from "../services/email/index.js";
 import { generateCacheKey, getFromCache, setInCache, deleteFromCache } from "../utils/cache.js";
 import { generateFormId } from "../utils/formIdGenerator.js";
 import { checkFormCreationLimit } from "../utils/subscriptionValidator.js";
@@ -61,7 +65,10 @@ async function invalidateFormCache(role, plantId) {
 function mapApprovalFlow(levels = []) {
   return levels.map((level, index) => ({
     level: index + 1,
+    type: level.type || "USER", // Default to USER for backward compatibility
     approverId: level.approverId,
+    groupId: level.groupId,
+    approvalMode: level.approvalMode || "ANY_ONE",
     name: level.name || `Level ${index + 1}`,
     description: level.description || "",
   }));
@@ -95,22 +102,60 @@ async function notifyApprovers({ approvalFlow, formId, formName, actorId, compan
         Plant.findById(plantId),
       ]);
 
-      await Promise.all(
-        approvalFlow.map(async (level) => {
+      const reviewLink = `${process.env.FRONTEND_URL}/employee/approval/pending`;
+
+      for (const level of approvalFlow) {
+        if (level.type === "GROUP" && level.groupId) {
+          // Notify all group members
+          try {
+            const ApprovalGroup = mongoose.model("ApprovalGroup");
+            const group = await ApprovalGroup.findById(level.groupId)
+              .populate("members", "name email")
+              .lean();
+
+            if (group && group.members?.length > 0) {
+              for (const member of group.members) {
+                if (!member.email) continue;
+                try {
+                  await sendGroupApproverFormNotification(
+                    member.email,
+                    member.name,
+                    formName,
+                    formId,
+                    group.groupName,
+                    actor?.name || "A plant admin",
+                    reviewLink,
+                    company,
+                    plant
+                  );
+                  console.log(`Group approver email sent to ${member.email} (${member.name}) for group ${group.groupName}`);
+                } catch (emailErr) {
+                  console.error(`Failed to send email to group member ${member.email}:`, emailErr);
+                }
+              }
+            }
+          } catch (groupErr) {
+            console.error("Error notifying group approvers:", groupErr);
+          }
+        } else if (level.approverId) {
+          // Individual approver notification (existing logic)
           const approver = await User.findById(level.approverId, "name email");
-          if (!approver?.email) return;
-          const reviewLink = `${process.env.FRONTEND_URL}/plant/forms/${formId}`;
-          await sendFormCreatedApproverNotification(
-            approver.email,
-            formName,
-            formId,
-            actor?.name || "A plant admin",
-            reviewLink,
-            company,
-            plant
-          );
-        })
-      );
+          if (!approver?.email) continue;
+          try {
+            await sendFormCreatedApproverNotification(
+              approver.email,
+              formName,
+              formId,
+              actor?.name || "A plant admin",
+              reviewLink,
+              company,
+              plant
+            );
+          } catch (emailErr) {
+            console.error(`Failed to send email to approver ${approver.email}:`, emailErr);
+          }
+        }
+      }
     } catch (err) {
       console.error("Approver notification error:", err);
     }
