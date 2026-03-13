@@ -154,7 +154,10 @@ function GroupApprovalPanel({ levelConfig, approvalHistory, currentLevel, submis
           })}
         </div>
       ) : (
-        <p className="text-xs text-gray-400 px-3">No members found for this group.</p>
+        <div className="px-3 py-2 bg-white rounded-lg border border-gray-100">
+          <p className="text-xs font-medium text-gray-600 mb-1">{groupName}</p>
+          <p className="text-xs text-gray-400">No members added to this group yet</p>
+        </div>
       )}
 
       {/* Comments from the action */}

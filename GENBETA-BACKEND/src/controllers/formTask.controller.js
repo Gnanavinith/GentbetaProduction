@@ -147,11 +147,11 @@ export const submitTask = async (req, res) => {
         try {
           const firstLevel = form.approvalFlow.find(f => f.level === 1);
           if (!firstLevel) return;
-
+          
           const company = await Company.findById(submissionData.companyId);
           const plant = await Plant.findById(submissionData.plantId);
           const plantIdStr = plant?._id?.toString() || submissionData.plantId?.toString() || "";
-          const formIdStr = form.formId || form._id?.toString() || "";
+          const formCode = form.formId || `create-${form.numericalId}` || 'FORM';
           const submissionIdStr = submission._id?.toString() || "";
           const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
 
@@ -164,12 +164,17 @@ export const submitTask = async (req, res) => {
 
             if (group?.members?.length > 0) {
               for (const member of group.members) {
-                await createNotification({
-                  userId: member._id,
-                  title: "Group Approval Required",
-                  message: `${req.user.name || "An employee"} submitted "${form.formName}" — your group (${group.groupName}) needs to approve it`,
-                  link: `/employee/approvals/${submission._id}`
-                });
+                try {
+                  await createNotification({
+                    userId: member._id,
+                    title: "Group Approval Required",
+                    message: `${req.user.name || "An employee"} submitted "${form.formName}" (${formCode}) — your group (${group.groupName}) needs to approve it`,
+                    link: `/employee/approvals/${submission._id}`
+                  });
+                  console.log(`✅ In-app notification created for group member ${member.name} (${member.email}) [formTask] - Form Code: ${formCode}`);
+                } catch (notifError) {
+                  console.error(`❌ Failed to create notification for ${member.name}:`, notifError.message);
+                }
 
                 if (member.email) {
                   try {
@@ -196,7 +201,8 @@ export const submitTask = async (req, res) => {
                       submissionData.data || {},        // ✅ pass submission data
                       "PLANT_ADMIN",                    // ✅ actor
                       submissionData.companyId,         // ✅ companyId
-                      req.user.email || null            // ✅ submitter email
+                      req.user.email || null,           // ✅ submitter email
+                      formCode                          // ✅ form code
                     );
                     console.log(`Email sent to group member ${member.email} (${member.name})`);
                   } catch (emailErr) {
@@ -225,7 +231,8 @@ export const submitTask = async (req, res) => {
                 submissionData.data || {},
                 "PLANT_ADMIN",
                 submissionData.companyId,
-                req.user.email || null
+                req.user.email || null,
+                formCode
               );
             }
           }
@@ -445,7 +452,7 @@ export const submitFormDirectly = async (req, res) => {
             const company = await Company.findById(submissionData.companyId);
             const plant = await Plant.findById(submissionData.plantId);
             const plantIdStr = plant?._id?.toString() || submissionData.plantId?.toString() || "";
-            const formIdStr = form.formId || form._id?.toString() || "";
+            const formCode = form.formId || `create-${form.numericalId}` || 'FORM';
             const submissionIdStr = submission._id?.toString() || "";
             const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
 
@@ -458,12 +465,17 @@ export const submitFormDirectly = async (req, res) => {
 
               if (group?.members?.length > 0) {
                 for (const member of group.members) {
-                  await createNotification({
-                    userId: member._id,
-                    title: "Group Approval Required",
-                    message: `${submissionData.submittedByName || "An employee"} submitted "${submissionData.formName}" — your group (${group.groupName}) needs to approve it`,
-                    link: `/employee/approvals/${submission._id}`
-                  });
+                  try {
+                    await createNotification({
+                      userId: member._id,
+                      title: "Group Approval Required",
+                      message: `${submissionData.submittedByName || "An employee"} submitted "${submissionData.formName}" (${formCode}) — your group (${group.groupName}) needs to approve it`,
+                      link: `/employee/approvals/${submission._id}`
+                    });
+                    console.log(`✅ In-app notification created for group member ${member.name} (${member.email}) [formTask-submitDraft] - Form Code: ${formCode}`);
+                  } catch (notifError) {
+                    console.error(`❌ Failed to create notification for ${member.name}:`, notifError.message);
+                  }
 
                   if (member.email) {
                     try {
@@ -483,7 +495,8 @@ export const submitFormDirectly = async (req, res) => {
                         submissionData.data || {},               // ✅ FIXED: was missing
                         "PLANT_ADMIN",                           // ✅ FIXED: was missing
                         submissionData.companyId,                // ✅ FIXED: was missing
-                        submissionData.submittedByEmail || null  // ✅ FIXED: was missing
+                        submissionData.submittedByEmail || null,  // ✅ FIXED: was missing
+                        formCode                                 // ✅ ADD FORM CODE
                       );
                       console.log(`Email sent to group member ${member.email} (${member.name})`);
                     } catch (emailErr) {
@@ -512,7 +525,8 @@ export const submitFormDirectly = async (req, res) => {
                   submissionData.data || {},
                   "PLANT_ADMIN",
                   submissionData.companyId,
-                  submissionData.submittedByEmail || null
+                  submissionData.submittedByEmail || null,
+                  formCode
                 );
               }
             }

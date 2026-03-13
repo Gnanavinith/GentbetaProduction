@@ -185,7 +185,7 @@ export const sendFinalApprovalNotificationToSubmitter = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Facility Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
+    subject: `[Facility Fully Approved] ${formId || submissionId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 
@@ -252,7 +252,7 @@ export const sendFinalApprovalNotificationToPlant = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Facility Fully Approved] ${submissionId || formId || 'FORM-ID'} | Final Approval Completed`,
+    subject: `[Facility Fully Approved] ${formId || submissionId || 'FORM-ID'} | Final Approval Completed`,
     html: getBaseLayout(content, company, plant)
   };
 

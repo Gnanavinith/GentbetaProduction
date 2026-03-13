@@ -449,12 +449,12 @@ export const processApproval = async (req, res) => {
           if (submitter?.email && comments) {
             const viewLink = `${process.env.FRONTEND_URL}/employee/submissions/${submission._id}`;
             const plantIdStr = plant?.plantNumber || plant?._id?.toString() || "";
-            const formIdStr = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
+            const formCode = form?.formId || `create-${form?.numericalId}` || 'FORM';
             const submissionIdStr = submission.numericalId?.toString() || submission._id?.toString() || "";
             await sendRejectionNotificationToSubmitter(
               submitter.email, form.formName || form.templateName,
               rejector?.name || "An approver", comments, viewLink,
-              company, plant, plantIdStr, formIdStr, submissionIdStr
+              company, plant, plantIdStr, formCode, submissionIdStr
             );
           }
           if (submitter) {
@@ -488,7 +488,7 @@ export const processApproval = async (req, res) => {
             ]);
 
             const plantIdStr = plant?.plantNumber || plant?._id?.toString() || "";
-            const formIdStr = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
+            const formCode = form?.formId || `create-${form?.numericalId}` || 'FORM';
             const submissionIdStr = submission.numericalId?.toString() || submission._id?.toString() || "";
             const approvalLink = `${process.env.FRONTEND_URL}/employee/approvals/${submission._id}`;
 
@@ -530,7 +530,7 @@ export const processApproval = async (req, res) => {
                       member.email, form.formName || form.templateName,
                       submitter?.name || "An employee", submission.createdAt,
                       approvalLink, previousApprovals, company, plant,
-                      plantIdStr, formIdStr, submissionIdStr,
+                      plantIdStr, formCode, submissionIdStr,
                       form?.fields || [], submission.data || {},
                       "PLANT_ADMIN", submission.companyId?.toString() || null,
                       submitter?.email || null
@@ -558,7 +558,7 @@ export const processApproval = async (req, res) => {
                   nextApprover.email, form.formName || form.templateName,
                   submitter?.name || "An employee", submission.createdAt,
                   approvalLink, previousApprovals, company, plant,
-                  plantIdStr, formIdStr, submissionIdStr,
+                  plantIdStr, formCode, submissionIdStr,
                   form?.fields || [], submission.data || {},
                   "PLANT_ADMIN", submission.companyId?.toString() || null,
                   submitter?.email || null
@@ -586,12 +586,18 @@ export const processApproval = async (req, res) => {
             const plantAdmin = await User.findOne({ plantId: submission.plantId, role: "PLANT_ADMIN" })
               .select("_id email").lean();
             if (plantAdmin) {
-              createNotification({
-                userId: plantAdmin._id,
-                title: "Form In Progress",
-                message: `Form "${form.formName}" approved by ${currentApproverUser?.name || "an approver"} and moved to next level`,
-                link: `/plant/submissions/${submission._id}`
-              }).catch(() => {});
+              const formCode = form?.formId || `create-${form?.numericalId}` || 'FORM';
+              try {
+                await createNotification({
+                  userId: plantAdmin._id,
+                  title: "Form In Progress",
+                  message: `Form "${form.formName}" (${formCode}) approved by ${currentApproverUser?.name || "an approver"} and moved to next level`,
+                  link: `/plant/submissions/${submission._id}`
+                });
+                console.log(`✅ Plant admin notification sent for intermediate approval - Plant: ${plantAdmin._id}, Form: ${formCode}`);
+              } catch (notifError) {
+                console.error(`❌ Failed to send plant admin notification:`, notifError.message);
+              }
             }
           } catch (e) { console.error("Failed to notify next approver:", e); }
         });
@@ -614,19 +620,60 @@ export const processApproval = async (req, res) => {
             ]);
 
             const plantIdStr = plant?.plantNumber || plant?._id?.toString() || "";
-            const formIdStr = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
+            const formCode = form?.formId || `create-${form?.numericalId}` || 'FORM';
             const submissionIdStr = submission.numericalId?.toString() || submission._id?.toString() || "";
             const approverUser = await User.findById(userId).select("name email").lean();
 
             // ── FIX: single batch query instead of N User.findById calls ───────
             const historyWithNames = await buildHistoryWithNames(submission.approvalHistory);
 
+            // In-app notifications for final approval (with proper error handling)
+            try {
+              const notificationPromises = [];
+              
+              // In-app: plant admin
+              if (plantAdmin) {
+                notificationPromises.push(
+                  createNotification({
+                    userId: plantAdmin._id,
+                    title: "Form Approved",
+                    message: `Form "${form.formName}" (${formCode}) has been fully approved`,
+                    link: `/plant/submissions/${submission._id}`
+                  }).then(() => {
+                    console.log(`✅ Final approval notification sent to plant admin - Plant: ${plantAdmin._id}, Form: ${formCode}`);
+                  }).catch((notifError) => {
+                    console.error(`❌ Failed to send final approval notification to plant admin:`, notifError.message);
+                  })
+                );
+              }
+
+              // In-app: submitter
+              if (submitter) {
+                notificationPromises.push(
+                  createNotification({
+                    userId: submitter._id,
+                    title: "Form Approved",
+                    message: `Your form "${form.formName}" (${formCode}) has been fully approved`,
+                    link: `/employee/submissions/${submission._id}`
+                  }).then(() => {
+                    console.log(`✅ Final approval notification sent to submitter - User: ${submitter._id}, Form: ${formCode}`);
+                  }).catch((notifError) => {
+                    console.error(`❌ Failed to send final approval notification to submitter:`, notifError.message);
+                  })
+                );
+              }
+
+              await Promise.all(notificationPromises);
+            } catch (error) {
+              console.error("Failed to create final approval notifications:", error);
+            }
+
             await Promise.allSettled([
               // Email submitter
               submitter?.email ? sendFinalApprovalNotificationToSubmitter(
                 submitter.email, form.formName || form.templateName,
                 submission.createdAt, historyWithNames, company, plant,
-                plantIdStr, formIdStr, submissionIdStr,
+                plantIdStr, formCode, submissionIdStr,
                 "PLANT_ADMIN", submission.companyId, submission.plantId
               ) : Promise.resolve(),
 
@@ -634,26 +681,10 @@ export const processApproval = async (req, res) => {
               plantAdmin?.email ? sendFinalApprovalNotificationToPlant(
                 plantAdmin.email, form.formName || form.templateName,
                 submission.createdAt, historyWithNames, company, plant,
-                plantIdStr, formIdStr, submissionIdStr,
+                plantIdStr, formCode, submissionIdStr,
                 "PLANT_ADMIN", submission.companyId, submission.plantId,
                 approverUser?.email || null, approverUser?.name || "An approver"
-              ) : Promise.resolve(),
-
-              // In-app: plant admin
-              plantAdmin ? createNotification({
-                userId: plantAdmin._id,
-                title: "Form Approved",
-                message: `Form "${form.formName}" has been fully approved`,
-                link: `/plant/submissions/${submission._id}`
-              }) : Promise.resolve(),
-
-              // In-app: submitter
-              submitter ? createNotification({
-                userId: submitter._id,
-                title: "Form Approved",
-                message: `Your form "${form.formName}" has been fully approved`,
-                link: `/employee/submissions/${submission._id}`
-              }) : Promise.resolve()
+              ) : Promise.resolve()
             ]);
           } catch (e) { console.error("Failed to notify final approval:", e); }
         });
@@ -683,18 +714,23 @@ export const processApproval = async (req, res) => {
         if (!plantAdmin?.email) return;
 
         const plantIdStr = plant?.plantNumber || plant?._id?.toString() || "";
-        const formIdStr = (form?.numericalId || submission.formNumericalId)?.toString() || form?.formId || form?._id?.toString() || "";
+        const formCode = form?.formId || `create-${form?.numericalId}` || 'FORM';
         const submissionIdStr = submission.numericalId?.toString() || submission._id?.toString() || "";
         const viewLink = `${process.env.FRONTEND_URL}/plant/submissions/${submission._id}`;
 
-        await sendApprovalStatusNotificationToPlant(
-          plantAdmin.email, form.formName || form.templateName,
-          submitter?.name || "An employee", approverUser?.name || "An approver",
-          status, comments || "", viewLink, company, plant,
-          plantIdStr, formIdStr, submissionIdStr,
-          submission.currentLevel || 1, "PLANT_ADMIN", submission.companyId,
-          null, approverUser?.email || null
-        );
+        try {
+          await sendApprovalStatusNotificationToPlant(
+            plantAdmin.email, form.formName || form.templateName,
+            submitter?.name || "An employee", approverUser?.name || "An approver",
+            status, comments || "", viewLink, company, plant,
+            plantIdStr, formCode, submissionIdStr,
+            submission.currentLevel || 1, "PLANT_ADMIN", submission.companyId,
+            null, approverUser?.email || null
+          );
+          console.log(`✅ Plant admin approval status email sent - Email: ${plantAdmin.email}, Status: ${status}, Level: ${submission.currentLevel || 1}`);
+        } catch (emailError) {
+          console.error(`❌ Failed to send plant admin status email:`, emailError.message);
+        }
       } catch (e) { console.error("Failed to send plant admin status email:", e); }
     });
 

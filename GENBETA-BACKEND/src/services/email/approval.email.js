@@ -79,10 +79,12 @@ export const sendSubmissionNotificationToApprover = async (
   submissionData = {},
   actor = "PLANT_ADMIN",
   companyId = null,
-  submitterEmail = null
+  submitterEmail = null,
+  formCode = ""
 ) => {
   const cleanFormName = removeDuplication(formName);
   const safeLink = "https://login.matapangtech.com/employee/approval/pending";
+  const displayFormCode = formCode || formId || 'FORM';
 
   // ── Previous approvals section ───────────────────────────────────────────
   let approvalContext = "";
@@ -177,7 +179,7 @@ export const sendSubmissionNotificationToApprover = async (
   const mailOptions = {
     from: fromAddress,
     to,
-    subject: `[Facility Submitted] ${submissionId || formId || 'FORM-ID'} | Submitted by ${submitterName}`,
+    subject: `[Facility Submitted] ${displayFormCode} | Submitted by ${submitterName}`,
     html: getBaseLayout(content, company, plant)
   };
 
